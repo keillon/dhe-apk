@@ -1,6 +1,9 @@
 import type {
+  ChangePasswordInput,
   CreateInspectionInput,
+  CreateUserInput,
   UpdateInspectionInput,
+  UpdateProfileInput,
   Client,
   DashboardStats,
   Equipment,
@@ -17,8 +20,21 @@ const DEMO_USER: User = {
   nome: "João Silva",
   cargo: "Técnico Hidráulico",
   empresa: "DHE Componentes Hidráulicos",
+  role: "tecnico",
   created_at: new Date().toISOString(),
 };
+
+const DEMO_ADMIN: User = {
+  id: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+  email: "admin@dhepr.com.br",
+  nome: "Administrador DHE",
+  cargo: "Administrador",
+  empresa: "DHE Componentes Hidráulicos",
+  role: "admin",
+  created_at: new Date().toISOString(),
+};
+
+let demoSessionUser: User = DEMO_USER;
 
 const DEMO_CLIENTS: Client[] = [
   {
@@ -152,8 +168,13 @@ const DEMO_NOTIFICATIONS: Notification[] = [
 export const demoData = {
   async login(email: string, _password: string): Promise<User> {
     await delay(800);
+    if (email === "admin@dhepr.com.br") {
+      demoSessionUser = { ...DEMO_ADMIN, email };
+      return demoSessionUser;
+    }
     if (email === "tecnico@dhepr.com.br" || email.includes("@")) {
-      return { ...DEMO_USER, email };
+      demoSessionUser = { ...DEMO_USER, email };
+      return demoSessionUser;
     }
     throw new Error("Credenciais inválidas");
   },
@@ -318,6 +339,35 @@ export const demoData = {
     ];
 
     return updated;
+  },
+
+  async updateProfile(data: UpdateProfileInput): Promise<User> {
+    await delay(400);
+    demoSessionUser = { ...demoSessionUser, ...data };
+    return { ...demoSessionUser };
+  },
+
+  async changePassword(data: ChangePasswordInput): Promise<void> {
+    await delay(500);
+    if (data.senha_atual !== "123456") {
+      throw new Error("Senha atual incorreta");
+    }
+    if (data.senha_nova.length < 6) {
+      throw new Error("A nova senha deve ter pelo menos 6 caracteres");
+    }
+  },
+
+  async createUser(data: CreateUserInput): Promise<User> {
+    await delay(500);
+    return {
+      id: generateId(),
+      email: data.email,
+      nome: data.nome,
+      cargo: data.cargo ?? "Técnico",
+      empresa: data.empresa ?? "DHE Componentes Hidráulicos",
+      role: data.role ?? "tecnico",
+      created_at: new Date().toISOString(),
+    };
   },
 
   async getNotifications(): Promise<Notification[]> {

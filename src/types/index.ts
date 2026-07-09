@@ -7,12 +7,16 @@ export type NotificationType =
   | "manutencao_vencida"
   | "oleo_contaminado";
 
+export type UserRole = "admin" | "tecnico";
+
 export interface User {
   id: string;
   email: string;
   nome: string;
   cargo: string;
   empresa: string;
+  role: UserRole;
+  foto_url?: string;
   created_at: string;
 }
 
@@ -97,6 +101,25 @@ export interface CreateInspectionInput {
   checklist: ChecklistItem;
   fotos?: CreateInspectionPhotoInput[];
   assinatura_url?: string;
+}
+
+export interface UpdateProfileInput {
+  nome?: string;
+  foto_url?: string;
+}
+
+export interface ChangePasswordInput {
+  senha_atual: string;
+  senha_nova: string;
+}
+
+export interface CreateUserInput {
+  email: string;
+  password: string;
+  nome: string;
+  cargo?: string;
+  empresa?: string;
+  role?: UserRole;
 }
 
 export interface UpdateInspectionInput {

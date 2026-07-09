@@ -2,12 +2,13 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { Printer, Share2, QrCode } from "lucide-react-native";
 import { BackHeader, Button, Card, EmptyState, ErrorState, Loading, Screen } from "@/components";
-import { useEquipments } from "@/hooks";
+import { useEquipments, useRequireAdmin } from "@/hooks";
 import { buildBulkQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
 import { colors } from "@/theme";
 
 export default function QrCodesScreen() {
   const router = useRouter();
+  const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: equipments, isLoading, error, refetch } = useEquipments();
 
   const handlePrintAll = async () => {
@@ -20,23 +21,24 @@ export default function QrCodesScreen() {
     await shareQrPdf(buildBulkQrPrintHtml(equipments), "QR Codes DHE");
   };
 
+  if (authLoading || !allowed) return <Loading fullScreen />;
   if (isLoading) return <Loading fullScreen />;
   if (error) return <ErrorState onRetry={refetch} />;
 
   return (
     <Screen
       title="QR Codes para Impressão"
-      subtitle="Cada QR contém apenas o ID. Os dados vêm do banco ao escanear."
+      subtitle="Gere e imprima QR Codes dos equipamentos cadastrados."
     >
       <BackHeader />
 
       <Card className="mb-6 border-dhe-primary/40 bg-dhe-elevated">
         <Text className="text-base font-bold text-dhe-text">Como funciona</Text>
         <Text className="mt-2 text-sm leading-6 text-dhe-textSecondary">
-          1. Cadastre o equipamento no banco{"\n"}
-          2. Gere o QR com o ID único (ex: DHE-0001){"\n"}
+          1. Selecione o equipamento{"\n"}
+          2. Gere o QR com o ID único{"\n"}
           3. Imprima e cole na máquina{"\n"}
-          4. O QR nunca muda — dados sempre do banco
+          4. O técnico escaneia para registrar inspeções
         </Text>
       </Card>
 

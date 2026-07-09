@@ -23,6 +23,8 @@ export function mapUser(user: {
   nome: string;
   cargo: string;
   empresa: string;
+  role: "admin" | "tecnico";
+  fotoUrl: string | null;
   createdAt: Date;
 }): ApiUser {
   return {
@@ -31,6 +33,8 @@ export function mapUser(user: {
     nome: user.nome,
     cargo: user.cargo,
     empresa: user.empresa,
+    role: user.role,
+    foto_url: user.fotoUrl ?? undefined,
     created_at: user.createdAt.toISOString(),
   };
 }
@@ -121,6 +125,8 @@ export function mapInspection(
       nome: string;
       cargo: string;
       empresa: string;
+      role: "admin" | "tecnico";
+      fotoUrl: string | null;
       createdAt: Date;
     } | null;
     fotos?: Array<{

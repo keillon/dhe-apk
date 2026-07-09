@@ -3,7 +3,7 @@ import axios from "axios";
 export function getApiErrorMessage(error: unknown, fallback = "Erro desconhecido."): string {
   if (axios.isAxiosError(error)) {
     if (!error.response) {
-      return "Sem conexão com a API. Verifique a internet e EXPO_PUBLIC_API_URL.";
+      return "Sem conexão. Verifique sua internet e tente novamente.";
     }
 
     const data = error.response.data;
@@ -16,7 +16,7 @@ export function getApiErrorMessage(error: unknown, fallback = "Erro desconhecido
       }
     }
 
-    return `Erro ${error.response.status} na API.`;
+    return "Não foi possível concluir a operação. Tente novamente.";
   }
 
   if (error instanceof Error && error.message) {

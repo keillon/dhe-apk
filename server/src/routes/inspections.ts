@@ -5,6 +5,7 @@ import { mapInspection } from "../lib/mappers";
 import { parseOptionalDate } from "../lib/parse-date";
 import { persistInspectionMedia } from "../lib/media-storage";
 import { authMiddleware } from "../middleware/auth";
+import { adminMiddleware } from "../middleware/admin";
 
 const checklistSchema = z.object({
   vazamentos: z.boolean(),
@@ -200,7 +201,8 @@ inspectionsRouter.post("/", async (req, res) => {
   }
 });
 
-inspectionsRouter.put("/:id", async (req, res) => {
+inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
+  const inspectionId = String(req.params.id);
   const parsed = updateInspectionSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Dados inválidos", details: parsed.error.flatten() });
@@ -216,7 +218,7 @@ inspectionsRouter.put("/:id", async (req, res) => {
   }
 
   const existing = await prisma.inspecao.findUnique({
-    where: { id: req.params.id },
+    where: { id: inspectionId },
     include: { fotos: true, assinatura: true },
   });
 

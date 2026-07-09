@@ -4,6 +4,8 @@ export interface ApiUser {
   nome: string;
   cargo: string;
   empresa: string;
+  role: "admin" | "tecnico";
+  foto_url?: string;
   created_at: string;
 }
 

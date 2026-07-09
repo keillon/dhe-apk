@@ -30,6 +30,11 @@ enum PhotoType {
   depois
 }
 
+enum UserRole {
+  admin
+  tecnico
+}
+
 model Usuario {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -37,6 +42,8 @@ model Usuario {
   nome       String
   cargo      String   @default("Técnico")
   empresa    String   @default("DHE Componentes Hidráulicos")
+  role       UserRole @default(tecnico)
+  fotoUrl    String?  @map("foto_url")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 

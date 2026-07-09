@@ -10,12 +10,13 @@ import {
   QrPrintCard,
   Screen,
 } from "@/components";
-import { useEquipment } from "@/hooks";
+import { useEquipment, useRequireAdmin } from "@/hooks";
 import { buildQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
 import { colors } from "@/theme";
 
 export default function QrPrintScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: equipment, isLoading, error, refetch } = useEquipment(id);
   const cardRef = useRef<View>(null);
 
@@ -29,6 +30,7 @@ export default function QrPrintScreen() {
     await shareQrPdf(buildQrPrintHtml(equipment), `QR-${equipment.qr_code}`);
   };
 
+  if (authLoading || !allowed) return <Loading fullScreen />;
   if (isLoading) return <Loading fullScreen />;
   if (error || !equipment) {
     return <ErrorState onRetry={refetch} message="Equipamento não encontrado." />;

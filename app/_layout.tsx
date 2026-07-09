@@ -1,6 +1,7 @@
 import "react-native-gesture-handler";
 import "../global.css";
 import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { FeedbackHost } from "@/components";
+import { colors } from "@/theme";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,17 +54,37 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, segments, router]);
 
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.bg,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   return <>{children}</>;
 }
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
       <QueryClientProvider client={queryClient}>
         <AuthGuard>
           <StatusBar style="light" />
           <FeedbackHost />
-          <Stack screenOptions={{ headerShown: false }}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen
@@ -82,6 +104,7 @@ export default function RootLayout() {
             <Stack.Screen name="client/[id]" />
             <Stack.Screen name="qrcodes/index" />
             <Stack.Screen name="qrcodes/print/[id]" />
+            <Stack.Screen name="profile/change-password" />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

@@ -1,10 +1,7 @@
-import { Pressable, Text } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
-import { InspectionForm, Loading } from "@/components";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { InspectionForm, Loading, BackHeader, PageContainer } from "@/components";
 import { useEquipment } from "@/hooks";
-import { colors } from "@/theme";
 
 export default function NewInspectionScreen() {
   const { equipmentId } = useLocalSearchParams<{ equipmentId: string }>();
@@ -15,10 +12,9 @@ export default function NewInspectionScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <Pressable onPress={() => router.back()} className="mb-2 flex-row items-center px-5 pt-2">
-        <ArrowLeft size={20} color={colors.text} />
-        <Text className="ml-2 text-dhe-text">Voltar</Text>
-      </Pressable>
+      <PageContainer className="px-5 pt-2">
+        <BackHeader fallback={`/equipment/${equipmentId}`} />
+      </PageContainer>
 
       <InspectionForm
         mode="create"

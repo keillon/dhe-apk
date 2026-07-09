@@ -7,14 +7,16 @@ import {
   Calendar,
   TrendingUp,
 } from "lucide-react-native";
-import { Card, StatCard, Loading, ErrorState } from "@/components";
-import { useDashboardStats, useEquipments } from "@/hooks";
+import { Card, StatCard, Loading, ErrorState, PageContainer } from "@/components";
+import { useDashboardStats, useEquipments, useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
 
 export default function DashboardScreen() {
+  const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: equipments } = useEquipments();
 
+  if (authLoading || !allowed) return <Loading fullScreen />;
   if (isLoading) return <Loading fullScreen />;
   if (error) return <ErrorState onRetry={refetch} />;
 

@@ -14,6 +14,7 @@ export function getConnectionInfo() {
 }
 
 const TOKEN_KEY = "dhe_auth_token";
+const DEMO_USER_KEY = "dhe_demo_user";
 
 export const http = axios.create({
   baseURL: isApiConfigured ? `${API_URL}/api` : undefined,
@@ -35,6 +36,15 @@ export async function saveToken(token: string): Promise<void> {
 
 export async function clearToken(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
+  await SecureStore.deleteItemAsync(DEMO_USER_KEY);
+}
+
+export async function saveDemoUser(userJson: string): Promise<void> {
+  await SecureStore.setItemAsync(DEMO_USER_KEY, userJson);
+}
+
+export async function getDemoUser(): Promise<string | null> {
+  return SecureStore.getItemAsync(DEMO_USER_KEY);
 }
 
 export async function getToken(): Promise<string | null> {

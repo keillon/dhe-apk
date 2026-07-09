@@ -3,16 +3,18 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Search, Building2, ChevronRight } from "lucide-react-native";
-import { Card, Input, Loading, ErrorState, EmptyState } from "@/components";
-import { useClients, useEquipments } from "@/hooks";
+import { Card, Input, Loading, ErrorState, EmptyState, PageContainer } from "@/components";
+import { useClients, useEquipments, useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
 
 export default function ClientsScreen() {
   const [search, setSearch] = useState("");
   const router = useRouter();
+  const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: clients, isLoading, error, refetch } = useClients();
   const { data: equipments } = useEquipments();
 
+  if (authLoading || !allowed) return <Loading fullScreen />;
   const filtered = clients?.filter(
     (c) =>
       c.nome.toLowerCase().includes(search.toLowerCase()) ||

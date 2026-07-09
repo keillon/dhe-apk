@@ -16,6 +16,7 @@ export {
 export type { LocalPhoto } from "./images";
 export { getPhotoPreviewUri } from "./images";
 export { resolveMediaUrl } from "./media-url";
+export { isAdmin, getRoleLabel } from "./roles";
 
 export function formatDate(date: string | undefined): string {
   if (!date) return "—";
