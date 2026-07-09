@@ -1,6 +1,6 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -15,7 +15,7 @@ import {
   SignaturePad,
 } from "@/components";
 import { useCreateInspection, useEquipment } from "@/hooks";
-import { useAuthStore, useSignatureStore } from "@/store";
+import { useAuthStore } from "@/store";
 import {
   CHECKLIST_LABELS,
   DEFAULT_CHECKLIST,
@@ -48,17 +48,6 @@ export default function NewInspectionScreen() {
   const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>([]);
   const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>([]);
   const [assinatura, setAssinatura] = useState<string | null>(null);
-  const signatureResult = useSignatureStore((s) => s.result);
-  const clearSignatureResult = useSignatureStore((s) => s.clearResult);
-
-  useFocusEffect(
-    useCallback(() => {
-      if (signatureResult) {
-        setAssinatura(signatureResult);
-        clearSignatureResult();
-      }
-    }, [signatureResult, clearSignatureResult])
-  );
 
   const toggleChecklist = (key: keyof ChecklistItem) => {
     setChecklist((prev: ChecklistItem) => ({ ...prev, [key]: !prev[key] }));

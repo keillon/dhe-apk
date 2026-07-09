@@ -6,6 +6,7 @@ import { colors } from "@/theme";
 export { generateId } from "./id";
 export { getApiErrorMessage } from "./api-error";
 export { maskDateInput, isValidDateBR, dateBRToISO } from "./masks";
+export { normalizeSignatureDataUrl } from "./signature";
 export type { LocalPhoto } from "./images";
 
 export function formatDate(date: string | undefined): string {

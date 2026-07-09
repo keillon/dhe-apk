@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Pressable, Modal } from "react-native";
+import { View, Text, ScrollView, Pressable, Modal, Image as RNImage } from "react-native";
 import { useState } from "react";
 import { Image } from "expo-image";
 import { PenLine, X } from "lucide-react-native";
@@ -60,10 +60,15 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
             </Text>
           </View>
           <Pressable onPress={() => setPreviewUri(assinaturaUrl)}>
-            <Image
+            <RNImage
               source={{ uri: assinaturaUrl }}
-              style={{ height: 96, width: "100%", borderRadius: 12, backgroundColor: colors.elevated }}
-              contentFit="contain"
+              style={{
+                height: 96,
+                width: "100%",
+                borderRadius: 12,
+                backgroundColor: colors.elevated,
+              }}
+              resizeMode="contain"
             />
           </Pressable>
         </View>

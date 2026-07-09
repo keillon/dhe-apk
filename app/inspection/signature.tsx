@@ -1,11 +1,13 @@
-import { useEffect, useRef } from "react";
-import { View, Text, Pressable, StatusBar } from "react-native";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { View, Text, Pressable, StatusBar, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
+import * as Haptics from "expo-haptics";
 import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-canvas";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, Trash2, Check } from "lucide-react-native";
 import { useSignatureStore } from "@/store";
+import { normalizeSignatureDataUrl } from "@/utils/signature";
 import { colors } from "@/theme";
 
 const signatureWebStyle = `
@@ -40,38 +42,83 @@ const signatureWebStyle = `
 export default function SignatureScreen() {
   const router = useRouter();
   const ref = useRef<SignatureViewRef>(null);
-  const setResult = useSignatureStore((s) => s.setResult);
+  const savingRef = useRef(false);
+
+  const setPendingResult = useSignatureStore((s) => s.setPendingResult);
+
+  const [canvasReady, setCanvasReady] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [hasDrawn, setHasDrawn] = useState(false);
 
   useEffect(() => {
     ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE).catch(() => {});
 
     return () => {
       ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP).catch(() => {});
+      savingRef.current = false;
     };
   }, []);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
+    if (savingRef.current) return;
     router.back();
-  };
+  }, [router]);
 
-  const handleClear = () => {
+  const handleClear = useCallback(() => {
+    if (savingRef.current) return;
     ref.current?.clearSignature();
-  };
+    setHasDrawn(false);
+  }, []);
 
-  const handleConfirm = () => {
+  const finishWithError = useCallback((message: string) => {
+    savingRef.current = false;
+    setSaving(false);
+    Alert.alert("Assinatura", message);
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (savingRef.current || saving || !canvasReady) return;
+
+    if (!hasDrawn) {
+      Alert.alert("Assinatura vazia", "Desenhe a assinatura antes de confirmar.");
+      return;
+    }
+
+    savingRef.current = true;
+    setSaving(true);
     ref.current?.readSignature();
-  };
+  }, [canvasReady, hasDrawn, saving]);
 
-  const handleOK = (signature: string) => {
-    setResult(`data:image/png;base64,${signature}`);
-    router.back();
-  };
+  const handleOK = useCallback(
+    (signature: string) => {
+      if (!savingRef.current) return;
+
+      const dataUrl = normalizeSignatureDataUrl(signature);
+      if (!dataUrl) {
+        finishWithError("Não foi possível capturar a assinatura. Tente novamente.");
+        return;
+      }
+
+      setPendingResult(dataUrl);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      router.back();
+    },
+    [finishWithError, router, setPendingResult]
+  );
+
+  const handleEmpty = useCallback(() => {
+    finishWithError("A assinatura está vazia. Desenhe antes de confirmar.");
+  }, [finishWithError]);
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top", "bottom", "left", "right"]}>
       <StatusBar hidden />
       <View className="flex-row items-center justify-between px-4 py-3">
-        <Pressable onPress={handleClose} className="flex-row items-center rounded-xl bg-dhe-card px-4 py-2">
+        <Pressable
+          onPress={handleClose}
+          disabled={saving}
+          className={`flex-row items-center rounded-xl bg-dhe-card px-4 py-2 ${saving ? "opacity-50" : ""}`}
+        >
           <X size={18} color={colors.text} />
           <Text className="ml-2 text-sm font-semibold text-dhe-text">Cancelar</Text>
         </Pressable>
@@ -80,10 +127,30 @@ export default function SignatureScreen() {
       </View>
 
       <View className="mx-4 mb-3 flex-1 overflow-hidden rounded-2xl border border-dhe-border bg-dhe-elevated">
+        {!canvasReady && (
+          <View
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 2,
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: colors.elevated,
+            }}
+          >
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text className="mt-3 text-sm text-dhe-textMuted">Preparando área de assinatura...</Text>
+          </View>
+        )}
         <SignatureCanvas
           ref={ref}
           onOK={handleOK}
-          onEmpty={() => {}}
+          onEmpty={handleEmpty}
+          onBegin={() => setHasDrawn(true)}
+          onLoadEnd={() => setCanvasReady(true)}
           webStyle={signatureWebStyle}
           backgroundColor={colors.elevated}
           penColor={colors.text}
@@ -91,6 +158,9 @@ export default function SignatureScreen() {
           clearText=""
           confirmText=""
           autoClear={false}
+          nestedScrollEnabled={false}
+          trimWhitespace
+          imageType="image/png"
           style={{ flex: 1 }}
         />
       </View>
@@ -98,17 +168,29 @@ export default function SignatureScreen() {
       <View className="flex-row gap-3 px-4 pb-4">
         <Pressable
           onPress={handleClear}
-          className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-card py-4"
+          disabled={saving || !canvasReady}
+          className={`flex-1 flex-row items-center justify-center rounded-xl bg-dhe-card py-4 ${
+            saving || !canvasReady ? "opacity-50" : ""
+          }`}
         >
           <Trash2 size={18} color={colors.textMuted} />
           <Text className="ml-2 text-sm font-bold text-dhe-textSecondary">Limpar</Text>
         </Pressable>
         <Pressable
           onPress={handleConfirm}
-          className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-primary py-4"
+          disabled={saving || !canvasReady}
+          className={`flex-1 flex-row items-center justify-center rounded-xl bg-dhe-primary py-4 ${
+            saving || !canvasReady ? "opacity-50" : ""
+          }`}
         >
-          <Check size={18} color={colors.bg} />
-          <Text className="ml-2 text-sm font-bold text-dhe-bg">Confirmar assinatura</Text>
+          {saving ? (
+            <ActivityIndicator size="small" color={colors.bg} />
+          ) : (
+            <Check size={18} color={colors.bg} />
+          )}
+          <Text className="ml-2 text-sm font-bold text-dhe-bg">
+            {saving ? "Salvando..." : "Confirmar assinatura"}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>
