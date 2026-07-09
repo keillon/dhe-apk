@@ -1,15 +1,32 @@
 import { View, Text, ScrollView, Pressable, Modal, Image as RNImage } from "react-native";
 import { useState } from "react";
-import { Image } from "expo-image";
 import { PenLine, X } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
 import { colors } from "@/theme";
 
-const THUMB_SIZE = 80;
+const THUMB_SIZE = 88;
 
 interface InspectionGalleryProps {
   fotos?: InspectionPhoto[];
   assinaturaUrl?: string;
+}
+
+function PhotoThumb({
+  uri,
+  onPress,
+}: {
+  uri: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
+      <RNImage
+        source={{ uri }}
+        style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12, backgroundColor: colors.elevated }}
+        resizeMode="cover"
+      />
+    </Pressable>
+  );
 }
 
 export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalleryProps) {
@@ -19,51 +36,45 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
 
   if (fotos.length === 0 && !assinaturaUrl) return null;
 
-  const renderPhotoRow = (title: string, photos: InspectionPhoto[], accent: string) => {
+  const renderPhotoGrid = (title: string, photos: InspectionPhoto[], accent: string) => {
     if (photos.length === 0) return null;
 
     return (
-      <View className="mb-3">
+      <View className="mb-4">
         <Text className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: accent }}>
           {title} ({photos.length})
         </Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View className="flex-row flex-wrap">
           {photos.map((photo) => (
-            <Pressable
+            <PhotoThumb
               key={photo.id}
+              uri={photo.url}
               onPress={() => setPreviewUri(photo.url)}
-              style={{ marginRight: 8 }}
-            >
-              <Image
-                source={{ uri: photo.url }}
-                style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12 }}
-                contentFit="cover"
-              />
-            </Pressable>
+            />
           ))}
-        </ScrollView>
+        </View>
       </View>
     );
   };
 
   return (
     <View>
-      {renderPhotoRow("Antes", antes, colors.warning)}
-      {renderPhotoRow("Depois", depois, colors.success)}
+      {renderPhotoGrid("Antes", antes, colors.warning)}
+      {renderPhotoGrid("Depois", depois, colors.success)}
 
       {assinaturaUrl && (
         <View>
           <View className="mb-2 flex-row items-center">
             <PenLine size={14} color={colors.primary} />
             <Text className="ml-1 text-xs font-bold uppercase tracking-wide text-dhe-primary">
-              Assinatura
+              Assinatura do cliente
             </Text>
           </View>
           <Pressable onPress={() => setPreviewUri(assinaturaUrl)}>
             <RNImage
               source={{ uri: assinaturaUrl }}
               style={{
-                height: 96,
+                height: 110,
                 width: "100%",
                 borderRadius: 12,
                 backgroundColor: colors.elevated,
@@ -86,10 +97,10 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
             <X size={28} color="#fff" />
           </Pressable>
           {previewUri && (
-            <Image
+            <RNImage
               source={{ uri: previewUri }}
               style={{ width: "92%", height: "75%" }}
-              contentFit="contain"
+              resizeMode="contain"
             />
           )}
         </Pressable>

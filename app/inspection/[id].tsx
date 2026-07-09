@@ -1,19 +1,11 @@
-import { ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pressable } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
-import { Card, InspectionGallery, Loading, ErrorState } from "@/components";
+import { Card, Loading, ErrorState, InspectionDetailContent } from "@/components";
 import { useInspection } from "@/hooks";
-import {
-  formatDate,
-  formatDateTime,
-  getContaminationColor,
-  getContaminationLabel,
-  CHECKLIST_LABELS,
-} from "@/utils";
+import { formatDateTime } from "@/utils";
 import { colors } from "@/theme";
-import type { ChecklistItem } from "@/types";
 
 export default function InspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,62 +28,9 @@ export default function InspectionDetailScreen() {
           {formatDateTime(inspection.created_at)} • {inspection.tecnico?.nome}
         </Text>
 
-        <Card className="mb-4">
-          <View className="mb-3 flex-row justify-between">
-            <Text className="text-sm text-dhe-textMuted">Nível do óleo</Text>
-            <Text className="text-sm font-bold text-dhe-primary">{inspection.nivel_oleo}%</Text>
-          </View>
-          <View className="mb-3 h-2 overflow-hidden rounded-full bg-dhe-elevated">
-            <View
-              className="h-full rounded-full bg-dhe-primary"
-              style={{ width: `${inspection.nivel_oleo}%` }}
-            />
-          </View>
-          <View className="mb-3 flex-row justify-between">
-            <Text className="text-sm text-dhe-textMuted">Contaminação</Text>
-            <Text
-              className="text-sm font-bold"
-              style={{ color: getContaminationColor(inspection.contaminacao_oleo) }}
-            >
-              {getContaminationLabel(inspection.contaminacao_oleo)}
-            </Text>
-          </View>
-          {inspection.data_ultima_limpeza && (
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-dhe-textMuted">Última limpeza</Text>
-              <Text className="text-sm font-medium text-dhe-text">
-                {formatDate(inspection.data_ultima_limpeza)}
-              </Text>
-            </View>
-          )}
+        <Card className="mb-8">
+          <InspectionDetailContent inspection={inspection} showHeader={false} />
         </Card>
-
-        {inspection.complemento && (
-          <Card className="mb-4">
-            <Text className="mb-2 text-sm font-bold text-dhe-text">Observações</Text>
-            <Text className="text-sm leading-6 text-dhe-textSecondary">{inspection.complemento}</Text>
-          </Card>
-        )}
-
-        <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-text">Checklist</Text>
-          {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key: keyof ChecklistItem) => (
-            <View key={key} className="mb-2 flex-row items-center">
-              <Text className="mr-2">{inspection.checklist[key] ? "✅" : "⬜"}</Text>
-              <Text className="text-sm text-dhe-text">{CHECKLIST_LABELS[key]}</Text>
-            </View>
-          ))}
-        </Card>
-
-        {(inspection.fotos?.length || inspection.assinatura_url) && (
-          <Card className="mb-8">
-            <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos e assinatura</Text>
-            <InspectionGallery
-              fotos={inspection.fotos}
-              assinaturaUrl={inspection.assinatura_url}
-            />
-          </Card>
-        )}
       </ScrollView>
     </SafeAreaView>
   );

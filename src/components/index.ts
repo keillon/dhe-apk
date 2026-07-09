@@ -7,6 +7,7 @@ export { OilLevelSlider } from "./OilLevelSlider";
 export { PhotoPickerSection } from "./PhotoPickerSection";
 export { SignaturePad } from "./SignaturePad";
 export { InspectionGallery } from "./InspectionGallery";
+export { InspectionDetailContent } from "./InspectionDetailContent";
 export { Loading } from "./Loading";
 export { Skeleton, CardSkeleton } from "./Skeleton";
 export { EmptyState } from "./EmptyState";
