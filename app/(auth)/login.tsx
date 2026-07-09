@@ -12,7 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { DheLogo, Button, Input } from "@/components";
 import { api } from "@/services/api";
+import { getConnectionInfo } from "@/services/http";
 import { useAuthStore } from "@/store";
+import { getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
 
 export default function LoginScreen() {
@@ -23,6 +25,7 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const { setUser } = useAuthStore();
   const router = useRouter();
+  const connection = getConnectionInfo();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -37,8 +40,15 @@ export default function LoginScreen() {
       const user = await api.login(email, password);
       setUser(user);
       router.replace("/(tabs)");
-    } catch {
-      setError("Email ou senha inválidos.");
+    } catch (error) {
+      setError(
+        getApiErrorMessage(
+          error,
+          connection.mode === "api"
+            ? "Não foi possível conectar à API. Verifique internet e se a VPS está acessível."
+            : "Email ou senha inválidos."
+        )
+      );
     } finally {
       setLoading(false);
     }
@@ -69,6 +79,17 @@ export default function LoginScreen() {
             <Text className="mb-6 text-sm text-dhe-textSecondary">
               Acesse com suas credenciais DHE
             </Text>
+
+            <View className="mb-4 rounded-xl border border-dhe-border bg-dhe-elevated px-4 py-3">
+              <Text className="text-xs font-semibold uppercase text-dhe-textMuted">
+                Servidor
+              </Text>
+              <Text className="mt-1 text-sm text-dhe-text">
+                {connection.mode === "api"
+                  ? connection.url
+                  : "Modo demonstração (sem API)"}
+              </Text>
+            </View>
 
             <Input
               label="Email"

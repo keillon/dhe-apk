@@ -33,7 +33,14 @@ docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
 
 ```bash
 ufw allow 4002/tcp
-# ou no painel do provedor, abra a porta 4002 TCP
+ufw status
+```
+
+**Também abra a porta 4002 TCP no painel do provedor** (Hostinger, etc.). Sem isso o APK no celular não alcança a API.
+
+Teste de fora da VPS (no seu PC):
+```bash
+curl http://195.35.40.86:4002/health
 ```
 
 ### 3. Testar na VPS

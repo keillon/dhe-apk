@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.dhepr.hidraulicos",
+      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#001423",
         "foregroundImage": "./assets/icon.png"
