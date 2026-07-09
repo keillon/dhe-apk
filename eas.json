@@ -8,13 +8,13 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://195.35.40.86:4002"
+        "EXPO_PUBLIC_API_URL": "http://195.35.40.86"
       }
     },
     "preview": {
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://195.35.40.86:4002"
+        "EXPO_PUBLIC_API_URL": "http://195.35.40.86"
       },
       "android": {
         "buildType": "apk"
@@ -22,7 +22,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://195.35.40.86:4002"
+        "EXPO_PUBLIC_API_URL": "http://195.35.40.86"
       },
       "android": {
         "buildType": "apk"

@@ -1,17 +1,17 @@
 # Deploy DHE na VPS (banco PostgreSQL isolado)
 
-## Setup por IP — sem site/domínio (recomendado agora)
+## Setup recomendado — porta 80 via Traefik (sem domínio)
 
-### 1. Na VPS — subir API + banco
+A Hostinger e outros provedores **bloqueiam portas customizadas** (4002) mesmo com UFW aberto.
+A solução é expor a API pela **porta 80**, que já está liberada.
+
+### 1. Na VPS — configurar `.env`
 
 ```bash
-cd /var/www/dhe-app/server   # ou onde clonou o repo
+cd /var/www/dhe-apk/server
 git pull
-cp .env.example .env
-nano .env   # DHE_DB_PASSWORD e JWT_SECRET
+nano .env
 ```
-
-Edite o `.env` da VPS:
 
 ```env
 DHE_DB_PASSWORD=sua_senha_forte
@@ -19,54 +19,55 @@ JWT_SECRET=seu_jwt_longo_e_aleatorio
 PORT=4002
 NODE_ENV=production
 DATABASE_URL=postgresql://dhe_app:sua_senha_forte@dhe-postgres:5432/dhe_hidraulicos?schema=public
+DHE_VPS_IP=195.35.40.86
 ```
 
-Suba com o compose **sem Traefik** (expõe porta 4002 no IP):
+### 2. Subir com Traefik (porta 80)
 
 ```bash
-docker compose -f docker-compose.vps.yml up -d --build
-docker compose -f docker-compose.vps.yml exec dhe-api npx prisma migrate deploy
-docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
+docker network create traefik-public 2>/dev/null || true
+
+# Parar compose antigo na 4002 (se estiver rodando)
+docker compose -f docker-compose.vps.yml down
+
+# Subir pela porta 80
+docker compose -f docker-compose.vps-traefik.yml up -d --build
+docker compose -f docker-compose.vps-traefik.yml exec dhe-api npx tsx prisma/seed.ts
 ```
 
-### 2. Liberar porta no firewall da VPS
+### 3. Testar
 
+Na VPS:
 ```bash
-ufw allow 4002/tcp
-ufw status
+curl http://localhost:4002/health          # interno — deve funcionar
+curl http://195.35.40.86/health          # externo via Traefik porta 80
 ```
 
-**Também abra a porta 4002 TCP no painel do provedor** (Hostinger, etc.). Sem isso o APK no celular não alcança a API.
-
-Teste de fora da VPS (no seu PC):
+No seu PC:
 ```bash
-curl http://195.35.40.86:4002/health
+curl http://195.35.40.86/health
 ```
 
-### 3. Testar na VPS
-
-```bash
-curl http://localhost:4002/health
-# Esperado: {"status":"ok","database":"connected",...}
+Esperado:
+```json
+{"status":"ok","database":"connected",...}
 ```
 
-### 4. No PC — configurar o app
+### 4. Configurar o app / APK
 
-Na **raiz** do projeto (não em `server/`), crie `.env`:
+Na **raiz** do projeto:
 
 ```env
-EXPO_PUBLIC_API_URL=http://195.35.40.86:4002
+EXPO_PUBLIC_API_URL=http://195.35.40.86
 ```
 
-Troque `195.35.40.86` pelo IP real da VPS.
-
-Reinicie o Expo:
+**Sem `:4002`** — usa porta 80.
 
 ```bash
 npm run start:clean
+# ou gere novo APK:
+eas build --platform android --profile preview
 ```
-
-No app → **Perfil** deve mostrar **"Conectado ao banco VPS"** com o IP.
 
 ### 5. Credenciais (após seed)
 
@@ -75,9 +76,23 @@ No app → **Perfil** deve mostrar **"Conectado ao banco VPS"** com o IP.
 
 ---
 
-## Opção futura: com domínio + Traefik
+## Alternativa — porta 4002 direta
 
-Quando tiver site/domínio, use `docker-compose.yml` (com Traefik) e:
+Só funciona se o **painel do provedor** liberar a porta 4002.
+
+```bash
+docker compose -f docker-compose.vps.yml up -d --build
+```
+
+```env
+EXPO_PUBLIC_API_URL=http://195.35.40.86:4002
+```
+
+---
+
+## Opção futura: com domínio + HTTPS
+
+Quando tiver site/domínio, use `docker-compose.yml` (Traefik + SSL):
 
 ```env
 EXPO_PUBLIC_API_URL=https://api-dhe.seudominio.com.br
@@ -85,40 +100,12 @@ EXPO_PUBLIC_API_URL=https://api-dhe.seudominio.com.br
 
 ---
 
-## Opção alternativa: PostgreSQL já instalado no host
-
-```bash
-DHE_DB_PASSWORD='senha_forte' ./scripts/create-dhe-database-only.sh
-```
-
-Depois no `.env`:
-
-```
-DATABASE_URL=postgresql://dhe_app:SENHA@localhost:5432/dhe_hidraulicos?schema=public
-```
-
-```bash
-npm run db:migrate
-npm run db:seed
-npm run dev
-```
-
----
-
-## Segurança
-
-| O que faz | O que NÃO faz |
-|-----------|---------------|
-| Cria banco `dhe_hidraulicos` | Não apaga outros bancos |
-| Cria usuário `dhe_app` | Não altera usuários existentes |
-| Volume `dhe_postgres_data` isolado | Não compartilha dados com outros apps |
-| Container `dhe-postgres` separado | Não reinicia outros containers |
-
 ## Troubleshooting
 
 | Problema | Solução |
 |----------|---------|
-| App mostra "Modo demonstração" | `EXPO_PUBLIC_API_URL` está vazio ou no lugar errado — deve ficar na **raiz** do app |
-| Login falha / timeout | Porta 4002 fechada no firewall ou containers parados |
-| `database: disconnected` no health | Postgres não subiu — `docker compose -f docker-compose.vps.yml logs dhe-postgres` |
-| Inspeção não salva | Faça logout e login de novo (token antigo do modo demo) |
+| `localhost:4002` OK, IP externo falha | Use `docker-compose.vps-traefik.yml` (porta 80) |
+| App mostra "Modo demonstração" | `EXPO_PUBLIC_API_URL` vazio ou na pasta errada — deve ficar na **raiz** |
+| Login falha no APK | Gere APK novo após mudar URL; confira `usesCleartextTraffic` |
+| `database: disconnected` | `docker compose -f docker-compose.vps-traefik.yml logs dhe-api` |
+| Traefik não roteia | Confirme `DHE_VPS_IP` no `.env` e rede `traefik-public` |
