@@ -36,8 +36,11 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       PORT: 4002
       NODE_ENV: production
+      UPLOAD_DIR: /app/uploads
     ports:
       - "0.0.0.0:8090:4002"
+    volumes:
+      - dhe_uploads:/app/uploads
     networks:
       - dhe-internal
     healthcheck:
@@ -50,6 +53,8 @@ services:
 volumes:
   dhe_postgres_data:
     name: dhe_postgres_data
+  dhe_uploads:
+    name: dhe_uploads
 
 networks:
   dhe-internal:

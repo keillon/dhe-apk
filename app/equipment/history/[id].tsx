@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, Eye, Pencil } from "lucide-react-native";
 import {
   Card,
   Loading,
@@ -191,6 +191,22 @@ export default function HistoryScreen() {
                 <Text className="text-xs font-bold uppercase tracking-wide text-dhe-primary">
                   Inspeção #{filteredInspections.length - index}
                 </Text>
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => router.push(`/inspection/${inspection.id}`)}
+                    className="flex-row items-center rounded-full bg-dhe-elevated px-3 py-1.5"
+                  >
+                    <Eye size={14} color={colors.primary} />
+                    <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
+                    className="flex-row items-center rounded-full bg-dhe-primary px-3 py-1.5"
+                  >
+                    <Pencil size={14} color={colors.bg} />
+                    <Text className="ml-1 text-xs font-bold text-dhe-bg">Editar</Text>
+                  </Pressable>
+                </View>
               </View>
               <InspectionDetailContent inspection={inspection} />
             </Card>

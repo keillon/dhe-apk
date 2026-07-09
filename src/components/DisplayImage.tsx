@@ -8,19 +8,22 @@ import {
 } from "react-native";
 import * as FileSystem from "expo-file-system/legacy";
 import { colors } from "@/theme";
+import { resolveMediaUrl } from "@/utils/media-url";
 
 const uriCache = new Map<string, string>();
 
 async function resolveImageUri(uri: string): Promise<string> {
   if (!uri) return uri;
-  if (!uri.startsWith("data:")) return uri;
+
+  const normalized = resolveMediaUrl(uri);
+  if (!normalized.startsWith("data:")) return normalized;
 
   const cacheKey = `${uri.length}:${uri.slice(0, 40)}`;
   const cached = uriCache.get(cacheKey);
   if (cached) return cached;
 
-  const match = uri.match(/^data:([^;]+);base64,(.+)$/s);
-  if (!match) return uri;
+  const match = normalized.match(/^data:([^;]+);base64,(.+)$/s);
+  if (!match) return normalized;
 
   const mime = match[1];
   const base64 = match[2];

@@ -7,6 +7,7 @@ import type {
   Equipment,
   Inspection,
   Notification,
+  UpdateInspectionInput,
   User,
 } from "@/types";
 
@@ -131,6 +132,15 @@ export const api = {
     if (!isApiConfigured) return demoData.createInspection(data);
 
     const { data: inspection } = await http.post<Inspection>("/inspections", data, {
+      timeout: 120000,
+    });
+    return inspection;
+  },
+
+  async updateInspection(id: string, data: UpdateInspectionInput): Promise<Inspection> {
+    if (!isApiConfigured) return demoData.updateInspection(id, data);
+
+    const { data: inspection } = await http.put<Inspection>(`/inspections/${id}`, data, {
       timeout: 120000,
     });
     return inspection;

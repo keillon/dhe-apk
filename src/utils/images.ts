@@ -109,8 +109,12 @@ export async function captureMultipleFromCamera(
       break;
     }
 
-    const takeMore = await feedback.confirm("Foto adicionada", "Deseja tirar outra foto?", "Tirar outra");
-    if (!takeMore) break;
+    const takeMore = await feedback.choose("Foto adicionada", "Deseja tirar outra foto?", [
+      { text: "Não", value: "no", style: "cancel" },
+      { text: "Tirar outra", value: "yes", style: "primary" },
+    ]);
+
+    if (takeMore !== "yes") break;
   }
 }
 

@@ -1,5 +1,6 @@
 import type {
   CreateInspectionInput,
+  UpdateInspectionInput,
   Client,
   DashboardStats,
   Equipment,
@@ -269,6 +270,54 @@ export const demoData = {
     }
 
     return inspection;
+  },
+
+  async updateInspection(id: string, data: UpdateInspectionInput): Promise<Inspection> {
+    await delay(600);
+
+    const index = demoInspections.findIndex((i) => i.id === id);
+    if (index === -1) throw new Error("Inspeção não encontrada.");
+
+    if (!data.fotos.some((f) => f.tipo === "antes")) {
+      throw new Error("Adicione pelo menos uma foto em Antes.");
+    }
+    if (!data.fotos.some((f) => f.tipo === "depois")) {
+      throw new Error("Adicione pelo menos uma foto em Depois.");
+    }
+    if (!data.assinatura_url) {
+      throw new Error("A assinatura do cliente é obrigatória.");
+    }
+    if (!Object.values(data.checklist).some(Boolean)) {
+      throw new Error("Marque pelo menos um item do checklist.");
+    }
+
+    const existing = demoInspections[index];
+    const fotos: InspectionPhoto[] = data.fotos.map((foto, fotoIndex) => ({
+      id: `foto-${generateId()}-${fotoIndex}`,
+      inspecao_id: existing.id,
+      url: foto.url,
+      tipo: foto.tipo,
+      created_at: new Date().toISOString(),
+    }));
+
+    const updated: Inspection = {
+      ...existing,
+      nivel_oleo: data.nivel_oleo,
+      contaminacao_oleo: data.contaminacao_oleo,
+      data_ultima_limpeza: data.data_ultima_limpeza,
+      complemento: data.complemento,
+      checklist: data.checklist,
+      assinatura_url: data.assinatura_url,
+      fotos,
+    };
+
+    demoInspections = [
+      ...demoInspections.slice(0, index),
+      updated,
+      ...demoInspections.slice(index + 1),
+    ];
+
+    return updated;
   },
 
   async getNotifications(): Promise<Notification[]> {

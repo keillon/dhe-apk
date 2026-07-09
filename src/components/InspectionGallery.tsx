@@ -3,6 +3,7 @@ import { useState } from "react";
 import { PenLine, X } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
 import { DisplayImage } from "./DisplayImage";
+import { resolveMediaUrl } from "@/utils/media-url";
 import { colors } from "@/theme";
 
 const THUMB_SIZE = 88;
@@ -13,10 +14,11 @@ interface InspectionGalleryProps {
 }
 
 function PhotoThumb({ uri, onPress }: { uri: string; onPress: () => void }) {
+  const resolved = resolveMediaUrl(uri);
   return (
     <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
       <DisplayImage
-        uri={uri}
+        uri={resolved}
         style={{
           width: THUMB_SIZE,
           height: THUMB_SIZE,
@@ -43,7 +45,11 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
         </Text>
         <View className="flex-row flex-wrap">
           {photos.map((photo) => (
-            <PhotoThumb key={photo.id} uri={photo.url} onPress={() => setPreviewUri(photo.url)} />
+            <PhotoThumb
+              key={photo.id}
+              uri={photo.url}
+              onPress={() => setPreviewUri(resolveMediaUrl(photo.url))}
+            />
           ))}
         </View>
       </View>
@@ -63,9 +69,9 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
               Assinatura do cliente
             </Text>
           </View>
-          <Pressable onPress={() => setPreviewUri(assinaturaUrl)}>
+          <Pressable onPress={() => setPreviewUri(resolveMediaUrl(assinaturaUrl))}>
             <DisplayImage
-              uri={assinaturaUrl}
+              uri={resolveMediaUrl(assinaturaUrl)}
               style={{
                 height: 110,
                 width: "100%",

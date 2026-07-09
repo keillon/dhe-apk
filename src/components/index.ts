@@ -8,6 +8,7 @@ export { PhotoPickerSection } from "./PhotoPickerSection";
 export { SignaturePad } from "./SignaturePad";
 export { InspectionGallery } from "./InspectionGallery";
 export { InspectionDetailContent } from "./InspectionDetailContent";
+export { InspectionForm } from "./InspectionForm";
 export { AppToast } from "./AppToast";
 export { AppDialog } from "./AppDialog";
 export { FeedbackHost } from "./FeedbackHost";

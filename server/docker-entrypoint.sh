@@ -19,5 +19,8 @@ if ! npx prisma migrate deploy; then
   exit 1
 fi
 
+echo "[dhe-api] Preparando diretório de uploads..."
+mkdir -p /app/uploads
+
 echo "[dhe-api] Subindo servidor na porta ${PORT:-4002}..."
 exec node dist/index.js

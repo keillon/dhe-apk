@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { mapInspection } from "../lib/mappers";
 import { parseOptionalDate } from "../lib/parse-date";
+import { persistInspectionMedia } from "../lib/media-storage";
 import { authMiddleware } from "../middleware/auth";
 
 const checklistSchema = z.object({
@@ -23,9 +24,7 @@ const fotoSchema = z.object({
   url: z.string().min(1),
 });
 
-const createInspectionSchema = z.object({
-  equipamento_id: z.string().min(1),
-  tecnico_id: z.string().min(1),
+const inspectionPayloadSchema = z.object({
   nivel_oleo: z.number().min(0).max(100),
   contaminacao_oleo: z.enum(["baixa", "media", "alta"]),
   data_ultima_limpeza: z.string().min(1),
@@ -34,6 +33,42 @@ const createInspectionSchema = z.object({
   fotos: z.array(fotoSchema).min(2).max(10),
   assinatura_url: z.string().min(1),
 });
+
+const createInspectionSchema = inspectionPayloadSchema.extend({
+  equipamento_id: z.string().min(1),
+  tecnico_id: z.string().min(1),
+});
+
+const updateInspectionSchema = inspectionPayloadSchema;
+
+function validateInspectionFields(data: z.infer<typeof inspectionPayloadSchema>) {
+  const parsedDate = parseOptionalDate(data.data_ultima_limpeza);
+  if (!parsedDate) {
+    return { error: "Data da última limpeza inválida. Use DD/MM/AAAA ou AAAA-MM-DD." };
+  }
+
+  if (!data.fotos.some((f) => f.tipo === "antes")) {
+    return { error: "Adicione pelo menos uma foto em Antes." };
+  }
+
+  if (!data.fotos.some((f) => f.tipo === "depois")) {
+    return { error: "Adicione pelo menos uma foto em Depois." };
+  }
+
+  if (!Object.values(data.checklist).some(Boolean)) {
+    return { error: "Marque pelo menos um item do checklist." };
+  }
+
+  return { parsedDate };
+}
+
+async function saveInspectionMedia(
+  inspecaoId: string,
+  fotos: z.infer<typeof fotoSchema>[],
+  assinaturaUrl: string
+) {
+  return persistInspectionMedia(inspecaoId, fotos, assinaturaUrl);
+}
 
 export const inspectionsRouter = Router();
 
@@ -82,6 +117,12 @@ inspectionsRouter.post("/", async (req, res) => {
 
   const data = parsed.data;
   const tecnicoId = req.auth!.userId;
+  const validation = validateInspectionFields(data);
+
+  if ("error" in validation) {
+    res.status(400).json({ error: validation.error });
+    return;
+  }
 
   const equipment = await prisma.equipamento.findUnique({
     where: { id: data.equipamento_id },
@@ -89,35 +130,6 @@ inspectionsRouter.post("/", async (req, res) => {
 
   if (!equipment) {
     res.status(404).json({ error: "Equipamento não encontrado" });
-    return;
-  }
-
-  const parsedDate = parseOptionalDate(data.data_ultima_limpeza);
-  if (!data.data_ultima_limpeza || !parsedDate) {
-    res.status(400).json({
-      error: "Data da última limpeza é obrigatória. Use DD/MM/AAAA ou AAAA-MM-DD.",
-    });
-    return;
-  }
-
-  if (!data.fotos?.some((f) => f.tipo === "antes")) {
-    res.status(400).json({ error: "Adicione pelo menos uma foto em Antes." });
-    return;
-  }
-
-  if (!data.fotos?.some((f) => f.tipo === "depois")) {
-    res.status(400).json({ error: "Adicione pelo menos uma foto em Depois." });
-    return;
-  }
-
-  if (!data.assinatura_url) {
-    res.status(400).json({ error: "A assinatura do cliente é obrigatória." });
-    return;
-  }
-
-  const checklistOk = Object.values(data.checklist).some(Boolean);
-  if (!checklistOk) {
-    res.status(400).json({ error: "Marque pelo menos um item do checklist." });
     return;
   }
 
@@ -129,30 +141,28 @@ inspectionsRouter.post("/", async (req, res) => {
           tecnicoId,
           nivelOleo: data.nivel_oleo,
           contaminacaoOleo: data.contaminacao_oleo,
-          dataUltimaLimpeza: parsedDate,
+          dataUltimaLimpeza: validation.parsedDate,
           complemento: data.complemento,
           checklist: data.checklist,
         },
       });
 
-      if (data.fotos?.length) {
-        await tx.foto.createMany({
-          data: data.fotos.map((foto) => ({
-            inspecaoId: created.id,
-            url: foto.url,
-            tipo: foto.tipo,
-          })),
-        });
-      }
+      const media = await saveInspectionMedia(created.id, data.fotos, data.assinatura_url);
 
-      if (data.assinatura_url) {
-        await tx.assinatura.create({
-          data: {
-            inspecaoId: created.id,
-            url: data.assinatura_url,
-          },
-        });
-      }
+      await tx.foto.createMany({
+        data: media.fotos.map((foto) => ({
+          inspecaoId: created.id,
+          url: foto.url,
+          tipo: foto.tipo,
+        })),
+      });
+
+      await tx.assinatura.create({
+        data: {
+          inspecaoId: created.id,
+          url: media.assinaturaUrl,
+        },
+      });
 
       await tx.historico.create({
         data: {
@@ -165,8 +175,8 @@ inspectionsRouter.post("/", async (req, res) => {
             data_ultima_limpeza: created.dataUltimaLimpeza,
             complemento: created.complemento,
             checklist: created.checklist,
-            fotos_count: data.fotos?.length ?? 0,
-            tem_assinatura: !!data.assinatura_url,
+            fotos_count: media.fotos.length,
+            tem_assinatura: true,
             created_at: created.createdAt,
           },
         },
@@ -187,5 +197,94 @@ inspectionsRouter.post("/", async (req, res) => {
   } catch (error) {
     console.error("Erro ao criar inspeção:", error);
     res.status(500).json({ error: "Erro ao salvar inspeção no banco de dados" });
+  }
+});
+
+inspectionsRouter.put("/:id", async (req, res) => {
+  const parsed = updateInspectionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Dados inválidos", details: parsed.error.flatten() });
+    return;
+  }
+
+  const data = parsed.data;
+  const validation = validateInspectionFields(data);
+
+  if ("error" in validation) {
+    res.status(400).json({ error: validation.error });
+    return;
+  }
+
+  const existing = await prisma.inspecao.findUnique({
+    where: { id: req.params.id },
+    include: { fotos: true, assinatura: true },
+  });
+
+  if (!existing) {
+    res.status(404).json({ error: "Inspeção não encontrada" });
+    return;
+  }
+
+  try {
+    const inspection = await prisma.$transaction(async (tx) => {
+      const updated = await tx.inspecao.update({
+        where: { id: existing.id },
+        data: {
+          nivelOleo: data.nivel_oleo,
+          contaminacaoOleo: data.contaminacao_oleo,
+          dataUltimaLimpeza: validation.parsedDate,
+          complemento: data.complemento,
+          checklist: data.checklist,
+        },
+      });
+
+      await tx.foto.deleteMany({ where: { inspecaoId: existing.id } });
+      if (existing.assinatura) {
+        await tx.assinatura.delete({ where: { inspecaoId: existing.id } });
+      }
+
+      const media = await saveInspectionMedia(existing.id, data.fotos, data.assinatura_url);
+
+      await tx.foto.createMany({
+        data: media.fotos.map((foto) => ({
+          inspecaoId: existing.id,
+          url: foto.url,
+          tipo: foto.tipo,
+        })),
+      });
+
+      await tx.assinatura.create({
+        data: {
+          inspecaoId: existing.id,
+          url: media.assinaturaUrl,
+        },
+      });
+
+      await tx.historico.update({
+        where: { inspecaoId: existing.id },
+        data: {
+          dados: {
+            nivel_oleo: updated.nivelOleo,
+            contaminacao_oleo: updated.contaminacaoOleo,
+            data_ultima_limpeza: updated.dataUltimaLimpeza,
+            complemento: updated.complemento,
+            checklist: updated.checklist,
+            fotos_count: media.fotos.length,
+            tem_assinatura: true,
+            updated_at: new Date().toISOString(),
+          },
+        },
+      });
+
+      return tx.inspecao.findUniqueOrThrow({
+        where: { id: existing.id },
+        include: { tecnico: true, fotos: true, assinatura: true },
+      });
+    });
+
+    res.json(mapInspection(inspection));
+  } catch (error) {
+    console.error("Erro ao atualizar inspeção:", error);
+    res.status(500).json({ error: "Erro ao atualizar inspeção" });
   }
 });

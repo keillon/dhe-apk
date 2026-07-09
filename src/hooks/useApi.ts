@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import type { CreateInspectionInput } from "@/types";
+import type { CreateInspectionInput, UpdateInspectionInput } from "@/types";
 
 export function useDashboardStats() {
   return useQuery({
@@ -75,6 +75,21 @@ export function useCreateInspection() {
       queryClient.invalidateQueries({ queryKey: ["equipment", variables.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
+    },
+  });
+}
+
+export function useUpdateInspection() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateInspectionInput }) =>
+      api.updateInspection(id, data),
+    onSuccess: (inspection) => {
+      queryClient.invalidateQueries({ queryKey: ["inspections", inspection.equipamento_id] });
+      queryClient.invalidateQueries({ queryKey: ["inspection", inspection.id] });
+      queryClient.invalidateQueries({ queryKey: ["equipment", inspection.equipamento_id] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
   });
 }

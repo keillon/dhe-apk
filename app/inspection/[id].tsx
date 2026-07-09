@@ -1,8 +1,8 @@
 import { ScrollView, Text, View, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
-import { Card, Loading, ErrorState, InspectionDetailContent } from "@/components";
+import { ArrowLeft, Pencil } from "lucide-react-native";
+import { Card, Loading, ErrorState, InspectionDetailContent, Button } from "@/components";
 import { useInspection } from "@/hooks";
 import { formatDateTime } from "@/utils";
 import { colors } from "@/theme";
@@ -27,6 +27,17 @@ export default function InspectionDetailScreen() {
         <Text className="mb-6 text-sm text-dhe-textSecondary">
           {formatDateTime(inspection.created_at)} • {inspection.tecnico?.nome}
         </Text>
+
+        <View className="mb-4 flex-row gap-2">
+          <Button
+            title="Editar"
+            variant="outline"
+            size="sm"
+            className="flex-1"
+            icon={<Pencil size={16} color={colors.primary} />}
+            onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
+          />
+        </View>
 
         <Card className="mb-8">
           <InspectionDetailContent inspection={inspection} showHeader={false} />

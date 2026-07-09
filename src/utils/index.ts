@@ -15,6 +15,7 @@ export {
 } from "./inspection-validation";
 export type { LocalPhoto } from "./images";
 export { getPhotoPreviewUri } from "./images";
+export { resolveMediaUrl } from "./media-url";
 
 export function formatDate(date: string | undefined): string {
   if (!date) return "—";

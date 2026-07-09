@@ -3,15 +3,20 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import { InspectionForm, Loading } from "@/components";
-import { useEquipment } from "@/hooks";
+import { useEquipment, useInspection } from "@/hooks";
 import { colors } from "@/theme";
 
-export default function NewInspectionScreen() {
-  const { equipmentId } = useLocalSearchParams<{ equipmentId: string }>();
+export default function EditInspectionScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { data: equipment } = useEquipment(equipmentId);
+  const { data: inspection, isLoading: loadingInspection } = useInspection(id);
+  const { data: equipment, isLoading: loadingEquipment } = useEquipment(
+    inspection?.equipamento_id ?? ""
+  );
 
-  if (!equipment) return <Loading fullScreen />;
+  if (loadingInspection || loadingEquipment || !inspection || !equipment) {
+    return <Loading fullScreen />;
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
@@ -21,10 +26,11 @@ export default function NewInspectionScreen() {
       </Pressable>
 
       <InspectionForm
-        mode="create"
-        equipmentId={equipmentId}
+        mode="edit"
+        equipmentId={equipment.id}
         equipmentName={equipment.nome}
-        onSaved={() => router.replace(`/equipment/${equipmentId}`)}
+        inspection={inspection}
+        onSaved={() => router.replace(`/inspection/${inspection.id}`)}
       />
     </SafeAreaView>
   );

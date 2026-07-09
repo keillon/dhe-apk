@@ -1,2 +1,2 @@
-export { useDashboardStats, useEquipments, useEquipment, useClients, useClient, useInspections, useInspection, useNotifications, useCreateInspection } from "./useApi";
+export { useDashboardStats, useEquipments, useEquipment, useClients, useClient, useInspections, useInspection, useNotifications, useCreateInspection, useUpdateInspection } from "./useApi";
 export { useNetworkStatus } from "./useNetworkStatus";

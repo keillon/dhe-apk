@@ -99,6 +99,16 @@ export interface CreateInspectionInput {
   assinatura_url?: string;
 }
 
+export interface UpdateInspectionInput {
+  nivel_oleo: number;
+  contaminacao_oleo: OilContamination;
+  data_ultima_limpeza: string;
+  complemento?: string;
+  checklist: ChecklistItem;
+  fotos: CreateInspectionPhotoInput[];
+  assinatura_url: string;
+}
+
 export interface Notification {
   id: string;
   usuario_id: string;

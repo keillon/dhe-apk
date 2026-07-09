@@ -1,8 +1,10 @@
 import { useCallback, useRef, useState } from "react";
-import { View, Text, Pressable, Image, Modal, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, Modal, ActivityIndicator } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { PenLine, PenTool, ZoomIn } from "lucide-react-native";
+import { DisplayImage } from "./DisplayImage";
 import { useSignatureStore } from "@/store";
+import { resolveMediaUrl } from "@/utils/media-url";
 import { colors } from "@/theme";
 
 interface SignaturePadProps {
@@ -14,8 +16,8 @@ interface SignaturePadProps {
 export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
   const router = useRouter();
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
   const navigatingRef = useRef(false);
+  const resolvedValue = value ? resolveMediaUrl(value) : null;
 
   const isOpening = useSignatureStore((s) => s.isOpening);
   const setOpening = useSignatureStore((s) => s.setOpening);
@@ -26,7 +28,6 @@ export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
       const pending = consumePendingResult();
       if (pending) {
         onChange(pending);
-        setImageError(false);
       }
       navigatingRef.current = false;
       setOpening(false);
@@ -44,7 +45,6 @@ export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
 
   const handleClear = () => {
     onChange(null);
-    setImageError(false);
   };
 
   return (
@@ -56,22 +56,21 @@ export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
 
       {error ? <Text className="mb-2 text-sm text-dhe-danger">{error}</Text> : null}
 
-      {value && !imageError ? (
+      {resolvedValue ? (
         <View
           className={`overflow-hidden rounded-2xl border bg-dhe-elevated ${
             error ? "border-dhe-danger" : "border-dhe-border"
           }`}
         >
           <Pressable onPress={() => setPreviewOpen(true)}>
-            <Image
-              source={{ uri: value }}
+            <DisplayImage
+              uri={resolvedValue}
               style={{
                 height: 120,
                 width: "100%",
                 backgroundColor: colors.elevated,
               }}
               resizeMode="contain"
-              onError={() => setImageError(true)}
             />
             <View
               style={{
@@ -139,9 +138,9 @@ export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
           className="flex-1 items-center justify-center bg-black/90"
           onPress={() => setPreviewOpen(false)}
         >
-          {value && (
-            <Image
-              source={{ uri: value }}
+          {resolvedValue && (
+            <DisplayImage
+              uri={resolvedValue}
               style={{ width: "92%", height: "70%" }}
               resizeMode="contain"
             />

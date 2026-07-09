@@ -10,6 +10,7 @@ import {
   getPhotoPreviewUri,
   type LocalPhoto,
 } from "@/utils/images";
+import { resolveMediaUrl } from "@/utils/media-url";
 
 interface PhotoPickerSectionProps {
   fotosAntes: LocalPhoto[];
@@ -81,11 +82,11 @@ function PhotoGrid({
         {photos.map((photo, index) => (
           <Pressable
             key={`${photo.uri}-${index}`}
-            onPress={() => setPreviewUri(getPhotoPreviewUri(photo))}
+            onPress={() => setPreviewUri(resolveMediaUrl(getPhotoPreviewUri(photo)))}
             style={{ marginRight: 8 }}
           >
             <DisplayImage
-              uri={getPhotoPreviewUri(photo)}
+              uri={resolveMediaUrl(getPhotoPreviewUri(photo))}
               style={{
                 width: THUMB_SIZE,
                 height: THUMB_SIZE,
@@ -184,7 +185,7 @@ function PhotoGrid({
           </Pressable>
           {previewUri && (
             <DisplayImage
-              uri={previewUri}
+              uri={resolveMediaUrl(previewUri)}
               style={{ width: "92%", height: "75%" }}
               resizeMode="contain"
             />
