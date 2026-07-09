@@ -21,7 +21,7 @@
       "package": "com.dhepr.hidraulicos",
       "adaptiveIcon": {
         "backgroundColor": "#001423",
-        "foregroundImage": "./assets/logo-dhe-white.webp"
+        "foregroundImage": "./assets/icon.png"
       },
       "permissions": [
         "android.permission.CAMERA",
