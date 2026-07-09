@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
@@ -15,7 +15,7 @@ import {
   SignaturePad,
 } from "@/components";
 import { useCreateInspection, useEquipment } from "@/hooks";
-import { useAuthStore } from "@/store";
+import { useAuthStore, useSignatureStore } from "@/store";
 import {
   CHECKLIST_LABELS,
   DEFAULT_CHECKLIST,
@@ -48,6 +48,17 @@ export default function NewInspectionScreen() {
   const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>([]);
   const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>([]);
   const [assinatura, setAssinatura] = useState<string | null>(null);
+  const signatureResult = useSignatureStore((s) => s.result);
+  const clearSignatureResult = useSignatureStore((s) => s.clearResult);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (signatureResult) {
+        setAssinatura(signatureResult);
+        clearSignatureResult();
+      }
+    }, [signatureResult, clearSignatureResult])
+  );
 
   const toggleChecklist = (key: keyof ChecklistItem) => {
     setChecklist((prev: ChecklistItem) => ({ ...prev, [key]: !prev[key] }));
@@ -95,7 +106,12 @@ export default function NewInspectionScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1 px-5 pb-8"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+      >
         <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center pt-2">
           <ArrowLeft size={20} color={colors.text} />
           <Text className="ml-2 text-dhe-text">Voltar</Text>

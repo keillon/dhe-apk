@@ -68,8 +68,9 @@ export function useCreateInspection() {
 
   return useMutation({
     mutationFn: (data: CreateInspectionInput) => api.createInspection(data),
-    onSuccess: (_, variables) => {
+    onSuccess: (inspection, variables) => {
       queryClient.invalidateQueries({ queryKey: ["inspections", variables.equipamento_id] });
+      queryClient.invalidateQueries({ queryKey: ["inspection", inspection.id] });
       queryClient.invalidateQueries({ queryKey: ["equipment", variables.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["equipments"] });

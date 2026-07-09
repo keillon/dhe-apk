@@ -5,6 +5,8 @@ import { PenLine, X } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
 import { colors } from "@/theme";
 
+const THUMB_SIZE = 80;
+
 interface InspectionGalleryProps {
   fotos?: InspectionPhoto[];
   assinaturaUrl?: string;
@@ -23,14 +25,18 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
     return (
       <View className="mb-3">
         <Text className="mb-2 text-xs font-bold uppercase tracking-wide" style={{ color: accent }}>
-          {title}
+          {title} ({photos.length})
         </Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {photos.map((photo) => (
-            <Pressable key={photo.id} onPress={() => setPreviewUri(photo.url)} className="mr-2">
+            <Pressable
+              key={photo.id}
+              onPress={() => setPreviewUri(photo.url)}
+              style={{ marginRight: 8 }}
+            >
               <Image
                 source={{ uri: photo.url }}
-                className="h-20 w-20 rounded-xl"
+                style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12 }}
                 contentFit="cover"
               />
             </Pressable>
@@ -56,7 +62,7 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
           <Pressable onPress={() => setPreviewUri(assinaturaUrl)}>
             <Image
               source={{ uri: assinaturaUrl }}
-              className="h-24 w-full rounded-xl bg-dhe-elevated"
+              style={{ height: 96, width: "100%", borderRadius: 12, backgroundColor: colors.elevated }}
               contentFit="contain"
             />
           </Pressable>
@@ -68,13 +74,16 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
           className="flex-1 items-center justify-center bg-black/90"
           onPress={() => setPreviewUri(null)}
         >
-          <Pressable className="absolute right-5 top-12 z-10" onPress={() => setPreviewUri(null)}>
+          <Pressable
+            style={{ position: "absolute", top: 48, right: 20, zIndex: 10 }}
+            onPress={() => setPreviewUri(null)}
+          >
             <X size={28} color="#fff" />
           </Pressable>
           {previewUri && (
             <Image
               source={{ uri: previewUri }}
-              style={{ width: "90%", height: "70%" }}
+              style={{ width: "92%", height: "75%" }}
               contentFit="contain"
             />
           )}

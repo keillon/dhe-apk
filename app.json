@@ -47,7 +47,8 @@
           "photosPermission": "Permitir que o DHE acesse fotos para registrar inspeções."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-screen-orientation"
     ],
     "experiments": {
       "typedRoutes": true

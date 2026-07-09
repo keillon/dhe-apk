@@ -48,15 +48,7 @@ export async function pickFromGallery(
   }));
 }
 
-export async function pickFromCamera(
-  currentCount: number,
-  max = MAX_PHOTOS_PER_TYPE
-): Promise<LocalPhoto | null> {
-  if (currentCount >= max) {
-    Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
-    return null;
-  }
-
+async function takeSinglePhoto(): Promise<LocalPhoto | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== "granted") {
     Alert.alert("Permissão necessária", "Permita o acesso à câmera para tirar fotos.");
@@ -75,4 +67,46 @@ export async function pickFromCamera(
     uri: asset.uri,
     dataUrl: assetToDataUrl(asset),
   };
+}
+
+export async function captureMultipleFromCamera(
+  currentCount: number,
+  onPhotoTaken: (photo: LocalPhoto) => void,
+  max = MAX_PHOTOS_PER_TYPE
+): Promise<void> {
+  let count = currentCount;
+
+  while (count < max) {
+    const photo = await takeSinglePhoto();
+    if (!photo) break;
+
+    onPhotoTaken(photo);
+    count++;
+
+    if (count >= max) {
+      Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
+      break;
+    }
+
+    const takeMore = await new Promise<boolean>((resolve) => {
+      Alert.alert("Foto adicionada", "Deseja tirar outra foto?", [
+        { text: "Concluir", style: "cancel", onPress: () => resolve(false) },
+        { text: "Tirar outra", onPress: () => resolve(true) },
+      ]);
+    });
+
+    if (!takeMore) break;
+  }
+}
+
+export async function pickFromCamera(
+  currentCount: number,
+  max = MAX_PHOTOS_PER_TYPE
+): Promise<LocalPhoto | null> {
+  if (currentCount >= max) {
+    Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
+    return null;
+  }
+
+  return takeSinglePhoto();
 }

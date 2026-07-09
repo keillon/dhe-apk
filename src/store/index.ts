@@ -30,3 +30,5 @@ export const useThemeStore = create<ThemeState>((set) => ({
   toggleTheme: () => set((s) => ({ isDark: !s.isDark })),
   setDark: (isDark) => set({ isDark }),
 }));
+
+export { useSignatureStore } from "./signature";

@@ -70,6 +70,10 @@ export default function RootLayout() {
             <Stack.Screen name="equipment/[id]" />
             <Stack.Screen name="inspection/new" />
             <Stack.Screen name="inspection/[id]" />
+            <Stack.Screen
+              name="inspection/signature"
+              options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
+            />
             <Stack.Screen name="equipment/history/[id]" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="client/[id]" />

@@ -1,8 +1,7 @@
-import { useRef, useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-canvas";
 import { Image } from "expo-image";
-import { PenLine, Trash2 } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { PenLine, PenTool } from "lucide-react-native";
 import { colors } from "@/theme";
 
 interface SignaturePadProps {
@@ -10,46 +9,15 @@ interface SignaturePadProps {
   onChange: (dataUrl: string | null) => void;
 }
 
-const signatureWebStyle = `
-  .m-signature-pad {
-    box-shadow: none;
-    border: none;
-    margin: 0;
-  }
-  .m-signature-pad--body {
-    border: none;
-    border-radius: 12px;
-  }
-  .m-signature-pad--footer {
-    display: none;
-    margin: 0;
-  }
-  body, html {
-    width: 100%;
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
-`;
-
 export function SignaturePad({ value, onChange }: SignaturePadProps) {
-  const ref = useRef<SignatureViewRef>(null);
-  const [editing, setEditing] = useState(!value);
+  const router = useRouter();
 
-  const handleOK = (signature: string) => {
-    onChange(`data:image/png;base64,${signature}`);
-    setEditing(false);
+  const handleOpen = () => {
+    router.push("/inspection/signature");
   };
 
   const handleClear = () => {
-    ref.current?.clearSignature();
     onChange(null);
-    setEditing(true);
-  };
-
-  const handleEdit = () => {
-    onChange(null);
-    setEditing(true);
   };
 
   return (
@@ -59,54 +27,33 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
         <Text className="ml-2 text-sm font-bold text-dhe-text">Assinatura do cliente</Text>
       </View>
 
-      {editing ? (
+      {value ? (
         <View className="overflow-hidden rounded-2xl border border-dhe-border bg-dhe-elevated">
-          <View style={{ height: 180 }}>
-            <SignatureCanvas
-              ref={ref}
-              onOK={handleOK}
-              onEmpty={() => onChange(null)}
-              webStyle={signatureWebStyle}
-              backgroundColor={colors.elevated}
-              penColor={colors.text}
-              descriptionText=""
-              clearText=""
-              confirmText=""
-              autoClear={false}
-            />
-          </View>
-          <View className="flex-row gap-2 border-t border-dhe-border p-3">
-            <Pressable
-              onPress={handleClear}
-              className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-card py-3"
-            >
-              <Trash2 size={16} color={colors.textMuted} />
-              <Text className="ml-2 text-sm font-semibold text-dhe-textSecondary">Limpar</Text>
+          <Image
+            source={{ uri: value }}
+            style={{ height: 100, width: "100%" }}
+            contentFit="contain"
+          />
+          <View className="flex-row border-t border-dhe-border">
+            <Pressable onPress={handleOpen} className="flex-1 items-center py-3">
+              <Text className="text-sm font-semibold text-dhe-primary">Refazer assinatura</Text>
             </Pressable>
-            <Pressable
-              onPress={() => ref.current?.readSignature()}
-              className="flex-1 items-center justify-center rounded-xl bg-dhe-primary py-3"
-            >
-              <Text className="text-sm font-bold text-dhe-bg">Confirmar</Text>
+            <Pressable onPress={handleClear} className="flex-1 items-center border-l border-dhe-border py-3">
+              <Text className="text-sm font-semibold text-dhe-danger">Remover</Text>
             </Pressable>
           </View>
         </View>
       ) : (
-        <View className="overflow-hidden rounded-2xl border border-dhe-border bg-dhe-elevated">
-          {value && (
-            <Image
-              source={{ uri: value }}
-              style={{ height: 120, width: "100%" }}
-              contentFit="contain"
-            />
-          )}
-          <Pressable
-            onPress={handleEdit}
-            className="items-center border-t border-dhe-border py-3"
-          >
-            <Text className="text-sm font-semibold text-dhe-primary">Alterar assinatura</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={handleOpen}
+          className="items-center rounded-2xl border border-dashed border-dhe-border bg-dhe-elevated py-8"
+        >
+          <PenTool size={28} color={colors.primary} />
+          <Text className="mt-3 text-base font-bold text-dhe-primary">Abrir tela de assinatura</Text>
+          <Text className="mt-1 px-6 text-center text-xs text-dhe-textMuted">
+            Abre em tela cheia no modo paisagem para assinar com mais espaço
+          </Text>
+        </Pressable>
       )}
     </View>
   );

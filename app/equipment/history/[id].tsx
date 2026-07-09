@@ -12,6 +12,8 @@ import {
 } from "@/utils";
 import { colors } from "@/theme";
 
+const THUMB_SIZE = 48;
+
 export default function HistoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -43,8 +45,9 @@ export default function HistoryScreen() {
           />
         ) : (
           inspections?.map((inspection) => {
-            const fotoCount = inspection.fotos?.length ?? 0;
-            const primeiraFoto = inspection.fotos?.[0];
+            const fotos = inspection.fotos ?? [];
+            const fotoCount = fotos.length;
+            const previewFotos = fotos.slice(0, 3);
 
             return (
               <Pressable
@@ -78,28 +81,56 @@ export default function HistoryScreen() {
                     </Text>
                   )}
                   {(fotoCount > 0 || inspection.assinatura_url) && (
-                    <View className="mt-3 flex-row items-center gap-3">
-                      {primeiraFoto && (
-                        <Image
-                          source={{ uri: primeiraFoto.url }}
-                          className="h-12 w-12 rounded-lg"
-                          contentFit="cover"
-                        />
+                    <View className="mt-3">
+                      {previewFotos.length > 0 && (
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-2">
+                          {previewFotos.map((foto) => (
+                            <Image
+                              key={foto.id}
+                              source={{ uri: foto.url }}
+                              style={{
+                                width: THUMB_SIZE,
+                                height: THUMB_SIZE,
+                                borderRadius: 8,
+                                marginRight: 6,
+                              }}
+                              contentFit="cover"
+                            />
+                          ))}
+                          {fotoCount > 3 && (
+                            <View
+                              style={{
+                                width: THUMB_SIZE,
+                                height: THUMB_SIZE,
+                                borderRadius: 8,
+                                backgroundColor: colors.elevated,
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                            >
+                              <Text className="text-xs font-bold text-dhe-textMuted">
+                                +{fotoCount - 3}
+                              </Text>
+                            </View>
+                          )}
+                        </ScrollView>
                       )}
-                      {fotoCount > 0 && (
-                        <View className="flex-row items-center">
-                          <Camera size={12} color={colors.textMuted} />
-                          <Text className="ml-1 text-xs text-dhe-textMuted">
-                            {fotoCount} foto{fotoCount > 1 ? "s" : ""}
-                          </Text>
-                        </View>
-                      )}
-                      {inspection.assinatura_url && (
-                        <View className="flex-row items-center">
-                          <PenLine size={12} color={colors.primary} />
-                          <Text className="ml-1 text-xs text-dhe-primary">Assinatura</Text>
-                        </View>
-                      )}
+                      <View className="flex-row items-center gap-3">
+                        {fotoCount > 0 && (
+                          <View className="flex-row items-center">
+                            <Camera size={12} color={colors.textMuted} />
+                            <Text className="ml-1 text-xs text-dhe-textMuted">
+                              {fotoCount} foto{fotoCount > 1 ? "s" : ""}
+                            </Text>
+                          </View>
+                        )}
+                        {inspection.assinatura_url && (
+                          <View className="flex-row items-center">
+                            <PenLine size={12} color={colors.primary} />
+                            <Text className="ml-1 text-xs text-dhe-primary">Assinatura</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                   )}
                 </Card>

@@ -1,57 +1,80 @@
-import { useRef } from "react";
-import { View, Text, Pressable, type LayoutChangeEvent, type GestureResponderEvent } from "react-native";
+import { useEffect, useState } from "react";
+import { View, Text, TextInput, Pressable } from "react-native";
+import Slider from "@react-native-community/slider";
+import { colors } from "@/theme";
+
 interface OilLevelSliderProps {
   value: number;
   onChange: (value: number) => void;
 }
 
-export function OilLevelSlider({ value, onChange }: OilLevelSliderProps) {
-  const trackWidth = useRef(0);
+function clampOilLevel(value: number): number {
+  return Math.min(100, Math.max(0, Math.round(value)));
+}
 
-  const handleLayout = (e: LayoutChangeEvent) => {
-    trackWidth.current = e.nativeEvent.layout.width;
+export function OilLevelSlider({ value, onChange }: OilLevelSliderProps) {
+  const [manualText, setManualText] = useState(String(value));
+
+  useEffect(() => {
+    setManualText(String(value));
+  }, [value]);
+
+  const applyManualValue = (text: string) => {
+    setManualText(text);
+    if (text === "") return;
+
+    const parsed = Number(text.replace(/\D/g, ""));
+    if (!Number.isNaN(parsed)) {
+      onChange(clampOilLevel(parsed));
+    }
   };
 
-  const handlePress = (e: GestureResponderEvent) => {
-    if (trackWidth.current <= 0) return;
-    const x = e.nativeEvent.locationX;
-    const pct = Math.round(Math.min(100, Math.max(0, (x / trackWidth.current) * 100)));
-    onChange(pct);
+  const handleSliderChange = (next: number) => {
+    const clamped = clampOilLevel(next);
+    onChange(clamped);
+    setManualText(String(clamped));
   };
 
   return (
     <View>
-      <Text className="mb-3 text-sm font-bold text-dhe-text">Nível do óleo: {value}%</Text>
-      <Pressable
-        onPress={handlePress}
-        onLayout={handleLayout}
-        className="h-12 justify-center rounded-2xl bg-dhe-elevated px-1"
-      >
-        <View className="h-4 overflow-hidden rounded-full bg-dhe-border">
-          <View
-            className="h-full rounded-full bg-dhe-primary"
-            style={{ width: `${value}%` }}
+      <View className="mb-3 flex-row items-center justify-between">
+        <Text className="text-sm font-bold text-dhe-text">Nível do óleo</Text>
+        <View className="flex-row items-center rounded-xl border border-dhe-border bg-dhe-card px-3 py-2">
+          <TextInput
+            className="min-w-[40px] text-center text-base font-bold text-dhe-primary"
+            keyboardType="number-pad"
+            maxLength={3}
+            value={manualText}
+            onChangeText={applyManualValue}
+            onBlur={() => setManualText(String(value))}
+            selectTextOnFocus
           />
+          <Text className="text-base font-bold text-dhe-primary">%</Text>
         </View>
-        <View
-          className="absolute h-7 w-7 rounded-full border-2 border-dhe-bg bg-dhe-primary"
-          style={{
-            left: `${value}%`,
-            marginLeft: -14,
-            top: "50%",
-            marginTop: -14,
-          }}
-        />
-      </Pressable>
-      <View className="mt-2 flex-row justify-between">
+      </View>
+
+      <Slider
+        value={value}
+        onValueChange={handleSliderChange}
+        minimumValue={0}
+        maximumValue={100}
+        step={1}
+        minimumTrackTintColor={colors.primary}
+        maximumTrackTintColor={colors.border}
+        thumbTintColor={colors.primary}
+        style={{ width: "100%", height: 40 }}
+      />
+
+      <View className="mb-1 flex-row justify-between">
         <Text className="text-xs text-dhe-textMuted">0%</Text>
         <Text className="text-xs text-dhe-textMuted">100%</Text>
       </View>
-      <View className="mt-3 flex-row gap-2">
+
+      <View className="mt-2 flex-row gap-2">
         {[0, 25, 50, 75, 100].map((val) => (
           <Pressable
             key={val}
-            onPress={() => onChange(val)}
+            onPress={() => handleSliderChange(val)}
             className={`flex-1 items-center rounded-xl py-2 ${
               value === val ? "bg-dhe-primary" : "bg-dhe-card"
             }`}
