@@ -1,60 +1,55 @@
 # Deploy DHE na VPS (banco PostgreSQL isolado)
 
-## Setup recomendado — porta 8090
+## Setup — porta 8090
 
 | Porta | Situação |
 |-------|----------|
-| 4002 | Bloqueada pelo provedor (Hostinger) |
-| 80 | Redireciona pra HTTPS (`Moved Permanently`) — não serve a API |
-| **8090** | Liberada no UFW — **use esta** |
+| 4002 | Bloqueada pelo provedor |
+| 80 | `301 Moved Permanently` (Traefik → HTTPS) |
+| **8090** | Use esta |
 
-### 1. Na VPS
+### Subir na VPS
 
 ```bash
 cd /var/www/dhe-apk/server
 git pull
-nano .env   # DHE_DB_PASSWORD, JWT_SECRET
+chmod +x scripts/vps-up.sh
+./scripts/vps-up.sh
 ```
 
-```env
-DHE_DB_PASSWORD=sua_senha_forte
-JWT_SECRET=seu_jwt_longo_e_aleatorio
-PORT=4002
-NODE_ENV=production
-DATABASE_URL=postgresql://dhe_app:sua_senha_forte@dhe-postgres:5432/dhe_hidraulicos?schema=public
+O script usa `--wait` e só testa o health **depois** da API ficar pronta.
+
+**Não rode `curl` logo após o `up`** — espere ver nos logs:
+```
+DHE API rodando na porta 4002
 ```
 
-### 2. Subir API na porta 8090
+### Teste manual
 
 ```bash
-# Parar outros composes se estiverem rodando
-docker compose -f docker-compose.vps-traefik.yml down 2>/dev/null || true
-docker compose -f docker-compose.vps.yml down
+# Na VPS (use 127.0.0.1, não localhost)
+curl http://127.0.0.1:8090/health
 
-docker compose -f docker-compose.vps.yml up -d --build
-docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
-```
-
-### 3. Testar
-
-Na VPS:
-```bash
-curl http://localhost:8090/health
-```
-
-No seu PC:
-```bash
+# No seu PC
 curl http://195.35.40.86:8090/health
 ```
 
-Esperado:
-```json
-{"status":"ok","database":"connected",...}
+### Se local OK mas PC/celular falha (UFW + Docker)
+
+O UFW pode bloquear portas publicadas pelo Docker. Rode na VPS:
+
+```bash
+# Ver se a porta está aberta
+ss -tlnp | grep 8090
+docker port dhe-api
+
+# Liberar encaminhamento Docker → container
+sudo iptables -I DOCKER-USER -p tcp --dport 8090 -j ACCEPT
 ```
 
-### 4. App / APK
+Ou no painel Hostinger, libere **8090 TCP** no firewall do servidor.
 
-Na **raiz** do projeto:
+### App / APK
 
 ```env
 EXPO_PUBLIC_API_URL=http://195.35.40.86:8090
@@ -65,18 +60,14 @@ npm run start:clean
 eas build --platform android --profile preview
 ```
 
-### 5. Credenciais
+### Credenciais
 
 - Email: `tecnico@dhepr.com.br`
 - Senha: `123456`
 
----
+### Logs se der erro
 
-## Troubleshooting
-
-| Problema | Solução |
-|----------|---------|
-| `curl :80/health` → Moved Permanently | Normal — Traefik redireciona HTTP→HTTPS. Use porta **8090** |
-| `:4002` timeout | Provedor bloqueia. Use porta **8090** |
-| App em modo demonstração | `EXPO_PUBLIC_API_URL` na **raiz** do app, não em `server/` |
-| Login falha no APK | Gere APK novo após mudar a URL |
+```bash
+docker compose -f docker-compose.vps.yml logs dhe-api --tail 50
+docker compose -f docker-compose.vps.yml ps
+```
