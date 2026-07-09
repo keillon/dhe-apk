@@ -1,0 +1,66 @@
+import "../global.css";
+import { useEffect } from "react";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAuthStore } from "@/store";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 1000 * 60 * 5,
+    },
+  },
+});
+
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading, setLoading } = useAuthStore();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    setLoading(false);
+  }, [setLoading]);
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === "(auth)";
+
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace("/(auth)/login");
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, isLoading, segments, router]);
+
+  return <>{children}</>;
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <QueryClientProvider client={queryClient}>
+        <AuthGuard>
+          <StatusBar style="light" />
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen
+              name="scan"
+              options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
+            />
+            <Stack.Screen name="equipment/[id]" />
+            <Stack.Screen name="inspection/new" />
+            <Stack.Screen name="inspection/[id]" />
+            <Stack.Screen name="equipment/history/[id]" />
+            <Stack.Screen name="notifications" />
+            <Stack.Screen name="client/[id]" />
+          </Stack>
+        </AuthGuard>
+      </QueryClientProvider>
+    </GestureHandlerRootView>
+  );
+}

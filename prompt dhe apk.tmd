@@ -1,0 +1,524 @@
+Você é um Desenvolvedor Sênior Full Stack especialista em React Native, Expo, TypeScript, NativeWind (Tailwind CSS), Supabase/PostgreSQL, arquitetura limpa, UX/UI e aplicativos corporativos.
+
+Seu objetivo é desenvolver um aplicativo profissional para a empresa DHE Componentes Hidráulicos.
+
+O aplicativo deve ter aparência premium, moderna e transmitir confiança, inspirado na identidade visual do site da empresa:
+https://www.dhepr.com.br/
+
+===========================
+TECNOLOGIAS
+===========================
+
+Utilize:
+
+- React Native
+- Expo SDK
+- TypeScript
+- Expo Router
+- NativeWind (Tailwind CSS)
+- React Query (TanStack)
+- Zustand
+- React Hook Form
+- Zod
+- Axios
+- React Native SVG
+- Expo Camera
+- Expo Barcode Scanner
+- React Native Reanimated
+- React Native Gesture Handler
+- React Native Bottom Sheet
+- React Native Paper
+- React Native FlashList
+- React Native MMKV
+- Supabase
+- PostgreSQL
+
+Arquitetura:
+
+src/
+
+components/
+
+screens/
+
+hooks/
+
+services/
+
+database/
+
+store/
+
+utils/
+
+types/
+
+assets/
+
+theme/
+
+===========================
+OBJETIVO
+===========================
+
+Criar um aplicativo utilizado pelos técnicos da DHE para registrar inspeções e manutenções em equipamentos hidráulicos.
+
+O aplicativo deve ser extremamente simples de utilizar.
+
+Poucos cliques.
+
+Interface limpa.
+
+Grandes botões.
+
+Responsivo.
+
+Animações suaves.
+
+Dark Mode.
+
+===========================
+LOGIN
+===========================
+
+Login com
+
+Email
+
+Senha
+
+Esqueci minha senha
+
+Persistência de login
+
+===========================
+HOME
+===========================
+
+Mostrar
+
+Bom dia, João.
+
+Quantidade de equipamentos
+
+Quantidade de inspeções do dia
+
+Equipamentos pendentes
+
+Botão grande
+
+ESCANEAR QR CODE
+
+===========================
+QR CODE
+===========================
+
+IMPORTANTE
+
+O QR Code NÃO guarda informações.
+
+O QR Code contém apenas um ID único.
+
+Exemplo
+
+DHE-0001
+
+ou
+
+UUID
+
+Ao escanear
+
+Buscar no banco de dados
+
+Toda informação deve vir do banco.
+
+O QR Code nunca muda.
+
+Nunca deve ser necessário imprimir outro QR Code.
+
+===========================
+FLUXO
+===========================
+
+Técnico abre aplicativo
+
+↓
+
+Login
+
+↓
+
+Escaneia QR Code
+
+↓
+
+Busca equipamento
+
+↓
+
+Abre ficha da máquina
+
+↓
+
+Atualiza informações
+
+↓
+
+Salvar
+
+↓
+
+Banco atualizado
+
+↓
+
+QR continua igual
+
+===========================
+CADASTRO EQUIPAMENTO
+===========================
+
+Cada equipamento possui
+
+ID
+
+QR Code
+
+Cliente
+
+Empresa
+
+Nome do equipamento
+
+Número de patrimônio
+
+Marca
+
+Modelo
+
+Número de série
+
+Ano
+
+Localização
+
+Foto
+
+Status
+
+Operando
+
+Parado
+
+Manutenção
+
+===========================
+TELA EQUIPAMENTO
+===========================
+
+Foto grande
+
+Nome
+
+Status
+
+Cliente
+
+Local
+
+Última inspeção
+
+Próxima manutenção
+
+Botão
+
+Nova Inspeção
+
+Botão
+
+Histórico
+
+===========================
+NOVA INSPEÇÃO
+===========================
+
+Campos
+
+Nível do óleo (%)
+
+Slider
+
+0 a 100
+
+Contaminação do óleo
+
+Baixa
+
+Média
+
+Alta
+
+Data da última limpeza do reservatório
+
+Campo Data
+
+Complemento
+
+Campo grande
+
+Exemplo
+
+Vazamento no cilindro X
+
+Checklist
+
+☐ Vazamentos
+
+☐ Mangueiras
+
+☐ Cilindros
+
+☐ Motor
+
+☐ Bomba
+
+☐ Pressão
+
+☐ Temperatura
+
+☐ Filtros
+
+☐ Ruídos
+
+☐ Acoplamentos
+
+Fotos
+
+Adicionar fotos
+
+Antes
+
+Depois
+
+Assinatura do cliente
+
+Botão
+
+Salvar inspeção
+
+===========================
+HISTÓRICO
+===========================
+
+Lista cronológica
+
+Cada inspeção mostra
+
+Data
+
+Técnico
+
+Nível do óleo
+
+Contaminação
+
+Observações
+
+Fotos
+
+Ao clicar
+
+Abrir detalhes completos.
+
+===========================
+DASHBOARD
+===========================
+
+Mostrar
+
+Equipamentos cadastrados
+
+Inspeções realizadas
+
+Pendências
+
+Próximas manutenções
+
+Gráficos modernos
+
+===========================
+NOTIFICAÇÕES
+===========================
+
+Alertar quando
+
+Equipamento precisa de inspeção
+
+Manutenção vencida
+
+Óleo contaminado
+
+===========================
+CLIENTES
+===========================
+
+Lista
+
+Pesquisar
+
+Visualizar equipamentos
+
+===========================
+PERFIL
+===========================
+
+Nome
+
+Cargo
+
+Empresa
+
+Alterar senha
+
+Logout
+
+===========================
+BANCO DE DADOS
+===========================
+
+Criar todas as tabelas.
+
+usuarios
+
+clientes
+
+equipamentos
+
+inspecoes
+
+historico
+
+fotos
+
+assinaturas
+
+notificacoes
+
+Criar relacionamentos.
+
+Criar índices.
+
+Criar migrations.
+
+===========================
+REGRAS
+===========================
+
+Toda inspeção gera histórico.
+
+Nunca apagar dados.
+
+Apenas adicionar novos registros.
+
+Manter histórico completo.
+
+===========================
+QR CODE
+===========================
+
+Cada equipamento possui apenas UM QR Code.
+
+Mesmo após centenas de inspeções.
+
+As informações sempre vêm do banco.
+
+===========================
+DESIGN
+===========================
+
+Inspirar-se na identidade visual da DHE.
+
+Visual industrial.
+
+Moderno.
+
+Minimalista.
+
+Premium.
+
+Muito branco.
+
+Azul predominante.
+
+Cinza claro.
+
+Cartões arredondados.
+
+Ícones Lucide.
+
+Sombras suaves.
+
+Botões grandes.
+
+Interface semelhante aos aplicativos da Apple.
+
+===========================
+EXTRAS
+===========================
+
+Criar componentes reutilizáveis.
+
+Criar Loading.
+
+Skeleton.
+
+Empty State.
+
+Error State.
+
+Offline Mode.
+
+Sincronização automática quando houver internet.
+
+Persistência local usando MMKV.
+
+===========================
+QUALIDADE
+===========================
+
+Código limpo.
+
+Separação por responsabilidades.
+
+Comentários apenas quando necessário.
+
+Componentes reutilizáveis.
+
+Tipagem completa.
+
+Sem código duplicado.
+
+===========================
+ENTREGA
+===========================
+
+Gerar todo o projeto pronto para execução.
+
+Criar todas as telas.
+
+Criar navegação.
+
+Criar banco.
+
+Criar serviços.
+
+Criar modelos.
+
+Criar hooks.
+
+Criar tema.
+
+Criar componentes.
+
+Criar estrutura profissional pronta para produção.

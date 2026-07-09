@@ -1,0 +1,63 @@
+{
+  "expo": {
+    "name": "DHE Hidráulicos",
+    "slug": "dhe-hidraulicos",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "dhe",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/logo-dhe-white.webp",
+      "resizeMode": "contain",
+      "backgroundColor": "#001423"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dhepr.hidraulicos"
+    },
+    "android": {
+      "package": "com.dhepr.hidraulicos",
+      "adaptiveIcon": {
+        "backgroundColor": "#001423",
+        "foregroundImage": "./assets/logo-dhe-white.webp"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Permitir que o DHE acesse a câmera para escanear QR Codes dos equipamentos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permitir que o DHE acesse fotos para registrar inspeções."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "dhe-hidraulicos-app"
+      }
+    }
+  }
+}
