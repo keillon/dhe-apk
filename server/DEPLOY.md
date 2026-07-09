@@ -58,16 +58,35 @@ sudo iptables -I DOCKER-USER -p tcp --dport 8090 -j ACCEPT
 
 Ou no painel Hostinger, libere **8090 TCP** no firewall do servidor.
 
-### App / APK
+### Liberar acesso externo (celular / PC)
+
+A API pode funcionar em `localhost:8090` mas o APK não conecta se a porta estiver fechada pra fora.
+
+```bash
+chmod +x scripts/vps-open-port.sh
+./scripts/vps-open-port.sh
+```
+
+Se o teste **Público** falhar, abra **8090 TCP** no painel Hostinger:
+**VPS → Segurança → Firewall** (ou rede do servidor).
+
+Teste no PC:
+```bash
+curl http://195.35.40.86:8090/health
+```
+
+Só depois disso o APK vai conectar. Gere APK novo se ainda usa build antigo:
+```bash
+eas build --platform android --profile preview
+```
+
+### App / APK (no PC — raiz do projeto, NÃO em server/)
 
 ```env
 EXPO_PUBLIC_API_URL=http://195.35.40.86:8090
 ```
 
-```bash
-npm run start:clean
-eas build --platform android --profile preview
-```
+O `server/.env` **não afeta o APK** — só configura banco/API no Docker.
 
 ### Credenciais
 
