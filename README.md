@@ -1,36 +1,28 @@
 # DHE Hidráulicos — App de Inspeções
 
-Aplicativo profissional para técnicos da **DHE Componentes Hidráulicos**.
-
 ## App mobile
 
 ```bash
 npm install
-cp .env.example .env   # EXPO_PUBLIC_API_URL=http://IP_VPS
+cp .env.example .env
 npm run start:clean
 ```
 
-No **Perfil** → **"Conectado ao banco VPS"**.
+```env
+EXPO_PUBLIC_API_URL=http://195.35.40.86:8090
+```
 
-- Email: `tecnico@dhepr.com.br`
-- Senha: `123456`
+Login: `tecnico@dhepr.com.br` / `123456`
 
-## API + Banco na VPS
-
-Veja [server/DEPLOY.md](server/DEPLOY.md).
+## API na VPS
 
 ```bash
-# Na VPS — porta 80 via Traefik (recomendado)
 cd server
-docker compose -f docker-compose.vps-traefik.yml up -d --build
-curl http://195.35.40.86/health
+docker compose -f docker-compose.vps.yml up -d --build
+curl http://195.35.40.86:8090/health
 ```
 
-No PC / APK:
-
-```env
-EXPO_PUBLIC_API_URL=http://195.35.40.86
-```
+Veja [server/DEPLOY.md](server/DEPLOY.md).
 
 ## Build APK
 

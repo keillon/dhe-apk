@@ -1,7 +1,8 @@
-# Stack DHE na VPS — acesso por IP, sem domínio/Traefik.
+# Stack DHE na VPS — acesso direto pela porta 8090 (liberada no UFW).
+# A porta 80 redireciona pra HTTPS (Traefik) e a 4002 é bloqueada pelo provedor.
 # Uso na VPS:
 #   docker compose -f docker-compose.vps.yml up -d --build
-#   docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
+#   curl http://localhost:8090/health
 
 services:
   dhe-postgres:
@@ -36,7 +37,7 @@ services:
       PORT: 4002
       NODE_ENV: production
     ports:
-      - "0.0.0.0:4002:4002"
+      - "0.0.0.0:8090:4002"
     networks:
       - dhe-internal
     healthcheck:
