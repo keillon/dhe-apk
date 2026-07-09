@@ -8,9 +8,10 @@ import { colors } from "@/theme";
 interface SignaturePadProps {
   value: string | null;
   onChange: (dataUrl: string | null) => void;
+  error?: string;
 }
 
-export function SignaturePad({ value, onChange }: SignaturePadProps) {
+export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
   const router = useRouter();
   const [previewOpen, setPreviewOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
@@ -50,11 +51,17 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
     <View>
       <View className="mb-2 flex-row items-center">
         <PenLine size={16} color={colors.primary} />
-        <Text className="ml-2 text-sm font-bold text-dhe-text">Assinatura do cliente</Text>
+        <Text className="ml-2 text-sm font-bold text-dhe-text">Assinatura do cliente *</Text>
       </View>
 
+      {error ? <Text className="mb-2 text-sm text-dhe-danger">{error}</Text> : null}
+
       {value && !imageError ? (
-        <View className="overflow-hidden rounded-2xl border border-dhe-border bg-dhe-elevated">
+        <View
+          className={`overflow-hidden rounded-2xl border bg-dhe-elevated ${
+            error ? "border-dhe-danger" : "border-dhe-border"
+          }`}
+        >
           <Pressable onPress={() => setPreviewOpen(true)}>
             <Image
               source={{ uri: value }}
@@ -106,9 +113,9 @@ export function SignaturePad({ value, onChange }: SignaturePadProps) {
         <Pressable
           onPress={handleOpen}
           disabled={isOpening}
-          className={`items-center rounded-2xl border border-dashed border-dhe-border bg-dhe-elevated py-8 ${
-            isOpening ? "opacity-70" : ""
-          }`}
+          className={`items-center rounded-2xl border border-dashed bg-dhe-elevated py-8 ${
+            error ? "border-dhe-danger" : "border-dhe-border"
+          } ${isOpening ? "opacity-70" : ""}`}
         >
           {isOpening ? (
             <>

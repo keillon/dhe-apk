@@ -220,6 +220,22 @@ export const demoData = {
   async createInspection(data: CreateInspectionInput): Promise<Inspection> {
     await delay(600);
 
+    if (!data.data_ultima_limpeza) {
+      throw new Error("Data da última limpeza é obrigatória.");
+    }
+    if (!data.fotos?.some((f) => f.tipo === "antes")) {
+      throw new Error("Adicione pelo menos uma foto em Antes.");
+    }
+    if (!data.fotos?.some((f) => f.tipo === "depois")) {
+      throw new Error("Adicione pelo menos uma foto em Depois.");
+    }
+    if (!data.assinatura_url) {
+      throw new Error("A assinatura do cliente é obrigatória.");
+    }
+    if (!Object.values(data.checklist).some(Boolean)) {
+      throw new Error("Marque pelo menos um item do checklist.");
+    }
+
     const fotos: InspectionPhoto[] =
       data.fotos?.map((foto, index) => ({
         id: `foto-${generateId()}-${index}`,

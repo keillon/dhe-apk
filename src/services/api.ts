@@ -130,7 +130,9 @@ export const api = {
   async createInspection(data: CreateInspectionInput): Promise<Inspection> {
     if (!isApiConfigured) return demoData.createInspection(data);
 
-    const { data: inspection } = await http.post<Inspection>("/inspections", data);
+    const { data: inspection } = await http.post<Inspection>("/inspections", data, {
+      timeout: 120000,
+    });
     return inspection;
   },
 

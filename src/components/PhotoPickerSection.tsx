@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Modal, Alert } from "react-native";
-import { Image } from "expo-image";
+import { View, Text, Pressable, ScrollView, Modal, Alert, Image as RNImage } from "react-native";
 import { Camera, ImagePlus, X, ZoomIn } from "lucide-react-native";
 import { colors } from "@/theme";
 import {
   pickFromGallery,
   captureMultipleFromCamera,
+  getPhotoPreviewUri,
   type LocalPhoto,
 } from "@/utils/images";
 
@@ -14,6 +14,8 @@ interface PhotoPickerSectionProps {
   fotosDepois: LocalPhoto[];
   onChangeAntes: (photos: LocalPhoto[]) => void;
   onChangeDepois: (photos: LocalPhoto[]) => void;
+  errorAntes?: string;
+  errorDepois?: string;
 }
 
 const THUMB_SIZE = 96;
@@ -23,11 +25,13 @@ function PhotoGrid({
   photos,
   onChange,
   accentColor,
+  error,
 }: {
   title: string;
   photos: LocalPhoto[];
   onChange: (photos: LocalPhoto[]) => void;
   accentColor: string;
+  error?: string;
 }) {
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const [capturing, setCapturing] = useState(false);
@@ -67,7 +71,7 @@ function PhotoGrid({
     <View className="mb-4">
       <View className="mb-2 flex-row items-center justify-between">
         <Text className="text-sm font-bold" style={{ color: accentColor }}>
-          {title}
+          {title} *
         </Text>
         <Text className="text-xs text-dhe-textMuted">{photos.length}/5</Text>
       </View>
@@ -81,13 +85,18 @@ function PhotoGrid({
         {photos.map((photo, index) => (
           <Pressable
             key={`${photo.uri}-${index}`}
-            onPress={() => setPreviewUri(photo.uri)}
+            onPress={() => setPreviewUri(getPhotoPreviewUri(photo))}
             style={{ marginRight: 8 }}
           >
-            <Image
-              source={{ uri: photo.uri }}
-              style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12 }}
-              contentFit="cover"
+            <RNImage
+              source={{ uri: getPhotoPreviewUri(photo) }}
+              style={{
+                width: THUMB_SIZE,
+                height: THUMB_SIZE,
+                borderRadius: 12,
+                backgroundColor: colors.elevated,
+              }}
+              resizeMode="cover"
             />
             <Pressable
               onPress={() => removePhoto(index)}
@@ -128,7 +137,7 @@ function PhotoGrid({
               borderRadius: 12,
               borderWidth: 1,
               borderStyle: "dashed",
-              borderColor: colors.border,
+              borderColor: error ? colors.danger : colors.border,
               backgroundColor: colors.elevated,
               alignItems: "center",
               justifyContent: "center",
@@ -139,6 +148,8 @@ function PhotoGrid({
           </View>
         )}
       </ScrollView>
+
+      {error ? <Text className="mb-2 text-sm text-dhe-danger">{error}</Text> : null}
 
       <View className="flex-row gap-2">
         <Pressable
@@ -177,10 +188,10 @@ function PhotoGrid({
             <X size={28} color="#fff" />
           </Pressable>
           {previewUri && (
-            <Image
+            <RNImage
               source={{ uri: previewUri }}
               style={{ width: "92%", height: "75%" }}
-              contentFit="contain"
+              resizeMode="contain"
             />
           )}
         </Pressable>
@@ -194,21 +205,28 @@ export function PhotoPickerSection({
   fotosDepois,
   onChangeAntes,
   onChangeDepois,
+  errorAntes,
+  errorDepois,
 }: PhotoPickerSectionProps) {
   return (
     <View>
-      <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos</Text>
+      <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos *</Text>
+      <Text className="mb-3 text-xs text-dhe-textMuted">
+        Obrigatório: pelo menos 1 foto em Antes e 1 em Depois.
+      </Text>
       <PhotoGrid
         title="Antes"
         photos={fotosAntes}
         onChange={onChangeAntes}
         accentColor={colors.warning}
+        error={errorAntes}
       />
       <PhotoGrid
         title="Depois"
         photos={fotosDepois}
         onChange={onChangeDepois}
         accentColor={colors.success}
+        error={errorDepois}
       />
     </View>
   );

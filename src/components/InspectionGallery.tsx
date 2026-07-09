@@ -18,13 +18,38 @@ function PhotoThumb({
   uri: string;
   onPress: () => void;
 }) {
+  const [failed, setFailed] = useState(false);
+
   return (
     <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
       <RNImage
         source={{ uri }}
-        style={{ width: THUMB_SIZE, height: THUMB_SIZE, borderRadius: 12, backgroundColor: colors.elevated }}
+        style={{
+          width: THUMB_SIZE,
+          height: THUMB_SIZE,
+          borderRadius: 12,
+          backgroundColor: colors.elevated,
+        }}
         resizeMode="cover"
+        onError={() => setFailed(true)}
       />
+      {failed && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
+            borderRadius: 12,
+            backgroundColor: colors.elevated,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Text className="text-[10px] text-dhe-textMuted">Erro</Text>
+        </View>
+      )}
     </Pressable>
   );
 }

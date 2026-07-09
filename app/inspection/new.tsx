@@ -20,7 +20,10 @@ import {
   CHECKLIST_LABELS,
   DEFAULT_CHECKLIST,
   getApiErrorMessage,
-  isValidDateBR,
+  validateInspectionForm,
+  hasInspectionFormErrors,
+  getFirstInspectionError,
+  type InspectionFormErrors,
 } from "@/utils";
 import type { ChecklistItem, OilContamination } from "@/types";
 import type { LocalPhoto } from "@/utils/images";
@@ -42,25 +45,39 @@ export default function NewInspectionScreen() {
   const [nivelOleo, setNivelOleo] = useState(75);
   const [contaminacao, setContaminacao] = useState<OilContamination>("baixa");
   const [dataLimpeza, setDataLimpeza] = useState("");
-  const [dataLimpezaError, setDataLimpezaError] = useState("");
   const [complemento, setComplemento] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem>({ ...DEFAULT_CHECKLIST });
   const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>([]);
   const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>([]);
   const [assinatura, setAssinatura] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<InspectionFormErrors>({});
 
   const toggleChecklist = (key: keyof ChecklistItem) => {
     setChecklist((prev: ChecklistItem) => ({ ...prev, [key]: !prev[key] }));
+    if (formErrors.checklist) {
+      setFormErrors((prev) => ({ ...prev, checklist: undefined }));
+    }
   };
 
   const handleSave = async () => {
     if (!user || !equipmentId) return;
 
-    if (dataLimpeza && !isValidDateBR(dataLimpeza)) {
-      setDataLimpezaError("Data inválida. Use o formato DD/MM/AAAA.");
+    const errors = validateInspectionForm({
+      dataLimpeza,
+      fotosAntesCount: fotosAntes.length,
+      fotosDepoisCount: fotosDepois.length,
+      assinatura,
+      checklist,
+    });
+
+    if (hasInspectionFormErrors(errors)) {
+      setFormErrors(errors);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Alert.alert("Campos obrigatórios", getFirstInspectionError(errors));
       return;
     }
-    setDataLimpezaError("");
+
+    setFormErrors({});
 
     const fotos = [
       ...fotosAntes.map((f) => ({ tipo: "antes" as const, url: f.dataUrl })),
@@ -73,11 +90,11 @@ export default function NewInspectionScreen() {
         tecnico_id: user.id,
         nivel_oleo: nivelOleo,
         contaminacao_oleo: contaminacao,
-        data_ultima_limpeza: dataLimpeza || undefined,
+        data_ultima_limpeza: dataLimpeza,
         complemento: complemento || undefined,
         checklist,
-        fotos: fotos.length > 0 ? fotos : undefined,
-        assinatura_url: assinatura ?? undefined,
+        fotos,
+        assinatura_url: assinatura!,
       });
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -107,14 +124,17 @@ export default function NewInspectionScreen() {
         </Pressable>
 
         <Text className="mb-1 text-2xl font-bold text-dhe-text">Nova Inspeção</Text>
-        <Text className="mb-6 text-sm text-dhe-textSecondary">{equipment.nome}</Text>
+        <Text className="mb-2 text-sm text-dhe-textSecondary">{equipment.nome}</Text>
+        <Text className="mb-6 text-xs text-dhe-textMuted">
+          Campos com * são obrigatórios para salvar.
+        </Text>
 
         <Card className="mb-4">
           <OilLevelSlider value={nivelOleo} onChange={setNivelOleo} />
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-text">Contaminação do óleo</Text>
+          <Text className="mb-3 text-sm font-bold text-dhe-text">Contaminação do óleo *</Text>
           <View className="flex-row gap-2">
             {CONTAMINATION_OPTIONS.map((opt) => (
               <Pressable
@@ -142,13 +162,15 @@ export default function NewInspectionScreen() {
         </Card>
 
         <DateInput
-          label="Data da última limpeza do reservatório"
+          label="Data da última limpeza do reservatório *"
           value={dataLimpeza}
           onChangeText={(text) => {
             setDataLimpeza(text);
-            if (dataLimpezaError) setDataLimpezaError("");
+            if (formErrors.dataLimpeza) {
+              setFormErrors((prev) => ({ ...prev, dataLimpeza: undefined }));
+            }
           }}
-          error={dataLimpezaError}
+          error={formErrors.dataLimpeza}
         />
 
         <Input
@@ -161,8 +183,15 @@ export default function NewInspectionScreen() {
           style={{ minHeight: 100, textAlignVertical: "top" }}
         />
 
-        <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-text">Checklist</Text>
+        <Card className={`mb-4 ${formErrors.checklist ? "border border-dhe-danger" : ""}`}>
+          <Text className="mb-1 text-sm font-bold text-dhe-text">Checklist *</Text>
+          {formErrors.checklist ? (
+            <Text className="mb-3 text-sm text-dhe-danger">{formErrors.checklist}</Text>
+          ) : (
+            <Text className="mb-3 text-xs text-dhe-textMuted">
+              Marque pelo menos um item verificado.
+            </Text>
+          )}
           {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key: keyof ChecklistItem) => (
             <Pressable
               key={key}
@@ -187,13 +216,34 @@ export default function NewInspectionScreen() {
           <PhotoPickerSection
             fotosAntes={fotosAntes}
             fotosDepois={fotosDepois}
-            onChangeAntes={setFotosAntes}
-            onChangeDepois={setFotosDepois}
+            onChangeAntes={(photos) => {
+              setFotosAntes(photos);
+              if (formErrors.fotosAntes) {
+                setFormErrors((prev) => ({ ...prev, fotosAntes: undefined }));
+              }
+            }}
+            onChangeDepois={(photos) => {
+              setFotosDepois(photos);
+              if (formErrors.fotosDepois) {
+                setFormErrors((prev) => ({ ...prev, fotosDepois: undefined }));
+              }
+            }}
+            errorAntes={formErrors.fotosAntes}
+            errorDepois={formErrors.fotosDepois}
           />
         </Card>
 
         <Card className="mb-4">
-          <SignaturePad value={assinatura} onChange={setAssinatura} />
+          <SignaturePad
+            value={assinatura}
+            onChange={(value) => {
+              setAssinatura(value);
+              if (formErrors.assinatura) {
+                setFormErrors((prev) => ({ ...prev, assinatura: undefined }));
+              }
+            }}
+            error={formErrors.assinatura}
+          />
         </Card>
 
         <Button

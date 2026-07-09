@@ -28,11 +28,11 @@ const createInspectionSchema = z.object({
   tecnico_id: z.string().min(1),
   nivel_oleo: z.number().min(0).max(100),
   contaminacao_oleo: z.enum(["baixa", "media", "alta"]),
-  data_ultima_limpeza: z.string().optional(),
+  data_ultima_limpeza: z.string().min(1),
   complemento: z.string().optional(),
   checklist: checklistSchema,
-  fotos: z.array(fotoSchema).max(10).optional(),
-  assinatura_url: z.string().optional(),
+  fotos: z.array(fotoSchema).min(2).max(10),
+  assinatura_url: z.string().min(1),
 });
 
 export const inspectionsRouter = Router();
@@ -93,10 +93,31 @@ inspectionsRouter.post("/", async (req, res) => {
   }
 
   const parsedDate = parseOptionalDate(data.data_ultima_limpeza);
-  if (data.data_ultima_limpeza && !parsedDate) {
+  if (!data.data_ultima_limpeza || !parsedDate) {
     res.status(400).json({
-      error: "Data da última limpeza inválida. Use DD/MM/AAAA ou AAAA-MM-DD.",
+      error: "Data da última limpeza é obrigatória. Use DD/MM/AAAA ou AAAA-MM-DD.",
     });
+    return;
+  }
+
+  if (!data.fotos?.some((f) => f.tipo === "antes")) {
+    res.status(400).json({ error: "Adicione pelo menos uma foto em Antes." });
+    return;
+  }
+
+  if (!data.fotos?.some((f) => f.tipo === "depois")) {
+    res.status(400).json({ error: "Adicione pelo menos uma foto em Depois." });
+    return;
+  }
+
+  if (!data.assinatura_url) {
+    res.status(400).json({ error: "A assinatura do cliente é obrigatória." });
+    return;
+  }
+
+  const checklistOk = Object.values(data.checklist).some(Boolean);
+  if (!checklistOk) {
+    res.status(400).json({ error: "Marque pelo menos um item do checklist." });
     return;
   }
 

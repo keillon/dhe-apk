@@ -1,4 +1,5 @@
 import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system/legacy";
 import { Alert } from "react-native";
 
 export interface LocalPhoto {
@@ -7,13 +8,40 @@ export interface LocalPhoto {
 }
 
 const MAX_PHOTOS_PER_TYPE = 5;
+const IMAGE_QUALITY = 0.5;
 
-export function assetToDataUrl(asset: ImagePicker.ImagePickerAsset): string {
+function guessMimeType(uri: string, mimeType?: string | null): string {
+  if (mimeType) return mimeType;
+  if (uri.toLowerCase().endsWith(".png")) return "image/png";
+  return "image/jpeg";
+}
+
+export async function assetToLocalPhoto(
+  asset: ImagePicker.ImagePickerAsset
+): Promise<LocalPhoto> {
+  const mime = guessMimeType(asset.uri, asset.mimeType);
+
   if (asset.base64) {
-    const mime = asset.mimeType ?? "image/jpeg";
-    return `data:${mime};base64,${asset.base64}`;
+    return {
+      uri: asset.uri,
+      dataUrl: `data:${mime};base64,${asset.base64}`,
+    };
   }
-  return asset.uri;
+
+  try {
+    const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return {
+      uri: asset.uri,
+      dataUrl: `data:${mime};base64,${base64}`,
+    };
+  } catch {
+    return {
+      uri: asset.uri,
+      dataUrl: asset.uri,
+    };
+  }
 }
 
 export async function pickFromGallery(
@@ -36,16 +64,13 @@ export async function pickFromGallery(
     mediaTypes: ["images"],
     allowsMultipleSelection: true,
     selectionLimit: remaining,
-    quality: 0.6,
+    quality: IMAGE_QUALITY,
     base64: true,
   });
 
   if (result.canceled) return [];
 
-  return result.assets.map((asset) => ({
-    uri: asset.uri,
-    dataUrl: assetToDataUrl(asset),
-  }));
+  return Promise.all(result.assets.map(assetToLocalPhoto));
 }
 
 async function takeSinglePhoto(): Promise<LocalPhoto | null> {
@@ -56,17 +81,13 @@ async function takeSinglePhoto(): Promise<LocalPhoto | null> {
   }
 
   const result = await ImagePicker.launchCameraAsync({
-    quality: 0.6,
+    quality: IMAGE_QUALITY,
     base64: true,
   });
 
   if (result.canceled || !result.assets[0]) return null;
 
-  const asset = result.assets[0];
-  return {
-    uri: asset.uri,
-    dataUrl: assetToDataUrl(asset),
-  };
+  return assetToLocalPhoto(result.assets[0]);
 }
 
 export async function captureMultipleFromCamera(
@@ -109,4 +130,10 @@ export async function pickFromCamera(
   }
 
   return takeSinglePhoto();
+}
+
+export function getPhotoPreviewUri(photo: LocalPhoto): string {
+  return photo.uri.startsWith("file:") || photo.uri.startsWith("content:")
+    ? photo.uri
+    : photo.dataUrl;
 }
