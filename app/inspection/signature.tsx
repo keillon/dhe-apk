@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { View, Text, Pressable, StatusBar, Alert, ActivityIndicator } from "react-native";
+import { View, Text, Pressable, StatusBar, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import * as ScreenOrientation from "expo-screen-orientation";
 import * as Haptics from "expo-haptics";
@@ -7,6 +7,7 @@ import SignatureCanvas, { type SignatureViewRef } from "react-native-signature-c
 import { SafeAreaView } from "react-native-safe-area-context";
 import { X, Trash2, Check } from "lucide-react-native";
 import { useSignatureStore } from "@/store";
+import { feedback } from "@/services/feedback";
 import { normalizeSignatureDataUrl } from "@/utils/signature";
 import { colors } from "@/theme";
 
@@ -73,14 +74,14 @@ export default function SignatureScreen() {
   const finishWithError = useCallback((message: string) => {
     savingRef.current = false;
     setSaving(false);
-    Alert.alert("Assinatura", message);
+    feedback.toast.warning(message);
   }, []);
 
   const handleConfirm = useCallback(() => {
     if (savingRef.current || saving || !canvasReady) return;
 
     if (!hasDrawn) {
-      Alert.alert("Assinatura vazia", "Desenhe a assinatura antes de confirmar.");
+      feedback.toast.warning("Desenhe a assinatura antes de confirmar.");
       return;
     }
 
@@ -101,6 +102,7 @@ export default function SignatureScreen() {
 
       setPendingResult(dataUrl);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      feedback.toast.success("Assinatura confirmada");
       router.back();
     },
     [finishWithError, router, setPendingResult]

@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Modal, Alert, Image as RNImage } from "react-native";
+import { View, Text, Pressable, ScrollView, Modal } from "react-native";
 import { Camera, ImagePlus, X, ZoomIn } from "lucide-react-native";
+import { feedback } from "@/services/feedback";
+import { DisplayImage } from "./DisplayImage";
 import { colors } from "@/theme";
 import {
   pickFromGallery,
@@ -56,15 +58,9 @@ function PhotoGrid({
     }
   };
 
-  const removePhoto = (index: number) => {
-    Alert.alert("Remover foto", "Deseja remover esta foto?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Remover",
-        style: "destructive",
-        onPress: () => onChange(photos.filter((_, i) => i !== index)),
-      },
-    ]);
+  const removePhoto = async (index: number) => {
+    const confirmed = await feedback.confirm("Remover foto", "Deseja remover esta foto?", "Remover");
+    if (confirmed) onChange(photos.filter((_, i) => i !== index));
   };
 
   return (
@@ -88,13 +84,12 @@ function PhotoGrid({
             onPress={() => setPreviewUri(getPhotoPreviewUri(photo))}
             style={{ marginRight: 8 }}
           >
-            <RNImage
-              source={{ uri: getPhotoPreviewUri(photo) }}
+            <DisplayImage
+              uri={getPhotoPreviewUri(photo)}
               style={{
                 width: THUMB_SIZE,
                 height: THUMB_SIZE,
                 borderRadius: 12,
-                backgroundColor: colors.elevated,
               }}
               resizeMode="cover"
             />
@@ -188,8 +183,8 @@ function PhotoGrid({
             <X size={28} color="#fff" />
           </Pressable>
           {previewUri && (
-            <RNImage
-              source={{ uri: previewUri }}
+            <DisplayImage
+              uri={previewUri}
               style={{ width: "92%", height: "75%" }}
               resizeMode="contain"
             />

@@ -32,3 +32,4 @@ export const useThemeStore = create<ThemeState>((set) => ({
 }));
 
 export { useSignatureStore } from "./signature";
+export { useFeedbackStore } from "./feedback";

@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -14,6 +14,7 @@ import { Card, Button } from "@/components";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { getConnectionInfo } from "@/services/http";
+import { feedback } from "@/services/feedback";
 import { colors } from "@/theme";
 
 export default function ProfileScreen() {
@@ -22,19 +23,13 @@ export default function ProfileScreen() {
 
   const connection = getConnectionInfo();
 
-  const handleLogout = () => {
-    Alert.alert("Sair", "Deseja realmente sair do aplicativo?", [
-      { text: "Cancelar", style: "cancel" },
-      {
-        text: "Sair",
-        style: "destructive",
-        onPress: async () => {
-          await api.logout();
-          logout();
-          router.replace("/(auth)/login");
-        },
-      },
-    ]);
+  const handleLogout = async () => {
+    const confirmed = await feedback.confirm("Sair", "Deseja realmente sair do aplicativo?", "Sair");
+    if (!confirmed) return;
+
+    await api.logout();
+    logout();
+    router.replace("/(auth)/login");
   };
 
   const infoItems = [

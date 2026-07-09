@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Printer,
 } from "lucide-react-native";
-import { DheLogo, Button, Card, StatCard, Loading, ErrorState, OfflineBanner } from "@/components";
+import { DheLogo, Button, Card, StatCard, Loading, ErrorState, OfflineBanner, RefreshableScrollView } from "@/components";
 import { useDashboardStats, useEquipments, useNetworkStatus } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { getGreeting } from "@/utils";
@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const { isOffline } = useNetworkStatus();
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
-  const { data: equipments } = useEquipments();
+  const { data: equipments, refetch: refetchEquipments } = useEquipments();
 
   const pendingEquipments = equipments?.filter(
     (e) => e.proxima_manutencao && new Date(e.proxima_manutencao) < new Date()
@@ -34,7 +34,13 @@ export default function HomeScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       {isOffline && <OfflineBanner />}
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <RefreshableScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        onRefresh={async () => {
+          await Promise.all([refetch(), refetchEquipments()]);
+        }}
+      >
         <View className="bg-dhe-surface px-5 pb-8 pt-4">
           <View className="mb-5 flex-row items-center justify-between">
             <DheLogo variant="white" size="sm" />
@@ -131,7 +137,7 @@ export default function HomeScreen() {
             </Pressable>
           ))}
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 }

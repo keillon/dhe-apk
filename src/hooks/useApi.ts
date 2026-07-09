@@ -44,6 +44,7 @@ export function useInspections(equipmentId: string) {
     queryKey: ["inspections", equipmentId],
     queryFn: () => api.getInspectionsByEquipment(equipmentId),
     enabled: !!equipmentId,
+    staleTime: 0,
   });
 }
 

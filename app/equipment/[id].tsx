@@ -1,9 +1,9 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, ClipboardPlus, History, MapPin, Building2, Calendar } from "lucide-react-native";
 import { Image } from "expo-image";
-import { Button, Card, StatusBadge, Loading, ErrorState } from "@/components";
+import { Button, Card, StatusBadge, Loading, ErrorState, RefreshableScrollView } from "@/components";
 import { useEquipment } from "@/hooks";
 import { formatDate } from "@/utils";
 import { colors } from "@/theme";
@@ -18,7 +18,7 @@ export default function EquipmentScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <RefreshableScrollView showsVerticalScrollIndicator={false} onRefresh={refetch}>
         <View className="bg-dhe-surface px-5 pb-6 pt-2">
           <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center">
             <ArrowLeft size={20} color={colors.text} />
@@ -116,7 +116,7 @@ export default function EquipmentScreen() {
             icon={<History size={20} color={colors.primary} />}
           />
         </View>
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 }

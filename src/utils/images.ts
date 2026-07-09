@@ -1,6 +1,6 @@
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
-import { Alert } from "react-native";
+import { feedback } from "@/services/feedback";
 
 export interface LocalPhoto {
   uri: string;
@@ -50,13 +50,13 @@ export async function pickFromGallery(
 ): Promise<LocalPhoto[]> {
   const remaining = max - currentCount;
   if (remaining <= 0) {
-    Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
+    await feedback.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
     return [];
   }
 
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
   if (status !== "granted") {
-    Alert.alert("Permissão necessária", "Permita o acesso à galeria para adicionar fotos.");
+    await feedback.alert("Permissão necessária", "Permita o acesso à galeria para adicionar fotos.");
     return [];
   }
 
@@ -76,7 +76,7 @@ export async function pickFromGallery(
 async function takeSinglePhoto(): Promise<LocalPhoto | null> {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
   if (status !== "granted") {
-    Alert.alert("Permissão necessária", "Permita o acesso à câmera para tirar fotos.");
+    await feedback.alert("Permissão necessária", "Permita o acesso à câmera para tirar fotos.");
     return null;
   }
 
@@ -105,17 +105,11 @@ export async function captureMultipleFromCamera(
     count++;
 
     if (count >= max) {
-      Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
+      await feedback.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
       break;
     }
 
-    const takeMore = await new Promise<boolean>((resolve) => {
-      Alert.alert("Foto adicionada", "Deseja tirar outra foto?", [
-        { text: "Concluir", style: "cancel", onPress: () => resolve(false) },
-        { text: "Tirar outra", onPress: () => resolve(true) },
-      ]);
-    });
-
+    const takeMore = await feedback.confirm("Foto adicionada", "Deseja tirar outra foto?", "Tirar outra");
     if (!takeMore) break;
   }
 }
@@ -125,7 +119,7 @@ export async function pickFromCamera(
   max = MAX_PHOTOS_PER_TYPE
 ): Promise<LocalPhoto | null> {
   if (currentCount >= max) {
-    Alert.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
+    await feedback.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
     return null;
   }
 

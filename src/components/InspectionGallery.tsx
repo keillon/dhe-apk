@@ -1,7 +1,8 @@
-import { View, Text, ScrollView, Pressable, Modal, Image as RNImage } from "react-native";
+import { View, Text, Pressable, Modal } from "react-native";
 import { useState } from "react";
 import { PenLine, X } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
+import { DisplayImage } from "./DisplayImage";
 import { colors } from "@/theme";
 
 const THUMB_SIZE = 88;
@@ -11,45 +12,18 @@ interface InspectionGalleryProps {
   assinaturaUrl?: string;
 }
 
-function PhotoThumb({
-  uri,
-  onPress,
-}: {
-  uri: string;
-  onPress: () => void;
-}) {
-  const [failed, setFailed] = useState(false);
-
+function PhotoThumb({ uri, onPress }: { uri: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
-      <RNImage
-        source={{ uri }}
+      <DisplayImage
+        uri={uri}
         style={{
           width: THUMB_SIZE,
           height: THUMB_SIZE,
           borderRadius: 12,
-          backgroundColor: colors.elevated,
         }}
         resizeMode="cover"
-        onError={() => setFailed(true)}
       />
-      {failed && (
-        <View
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            borderRadius: 12,
-            backgroundColor: colors.elevated,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Text className="text-[10px] text-dhe-textMuted">Erro</Text>
-        </View>
-      )}
     </Pressable>
   );
 }
@@ -58,8 +32,6 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
   const [previewUri, setPreviewUri] = useState<string | null>(null);
   const antes = fotos.filter((f) => f.tipo === "antes");
   const depois = fotos.filter((f) => f.tipo === "depois");
-
-  if (fotos.length === 0 && !assinaturaUrl) return null;
 
   const renderPhotoGrid = (title: string, photos: InspectionPhoto[], accent: string) => {
     if (photos.length === 0) return null;
@@ -71,11 +43,7 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
         </Text>
         <View className="flex-row flex-wrap">
           {photos.map((photo) => (
-            <PhotoThumb
-              key={photo.id}
-              uri={photo.url}
-              onPress={() => setPreviewUri(photo.url)}
-            />
+            <PhotoThumb key={photo.id} uri={photo.url} onPress={() => setPreviewUri(photo.url)} />
           ))}
         </View>
       </View>
@@ -87,7 +55,7 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
       {renderPhotoGrid("Antes", antes, colors.warning)}
       {renderPhotoGrid("Depois", depois, colors.success)}
 
-      {assinaturaUrl && (
+      {assinaturaUrl ? (
         <View>
           <View className="mb-2 flex-row items-center">
             <PenLine size={14} color={colors.primary} />
@@ -96,19 +64,22 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
             </Text>
           </View>
           <Pressable onPress={() => setPreviewUri(assinaturaUrl)}>
-            <RNImage
-              source={{ uri: assinaturaUrl }}
+            <DisplayImage
+              uri={assinaturaUrl}
               style={{
                 height: 110,
                 width: "100%",
                 borderRadius: 12,
-                backgroundColor: colors.elevated,
               }}
               resizeMode="contain"
             />
           </Pressable>
         </View>
-      )}
+      ) : null}
+
+      {!fotos.length && !assinaturaUrl ? (
+        <Text className="text-sm text-dhe-textMuted">Nenhuma mídia disponível para exibir.</Text>
+      ) : null}
 
       <Modal visible={!!previewUri} transparent animationType="fade">
         <Pressable
@@ -122,8 +93,8 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
             <X size={28} color="#fff" />
           </Pressable>
           {previewUri && (
-            <RNImage
-              source={{ uri: previewUri }}
+            <DisplayImage
+              uri={previewUri}
               style={{ width: "92%", height: "75%" }}
               resizeMode="contain"
             />

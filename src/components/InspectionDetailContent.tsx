@@ -100,11 +100,7 @@ export function InspectionDetailContent({
           <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos e assinatura</Text>
           <InspectionGallery fotos={inspection.fotos} assinaturaUrl={inspection.assinatura_url} />
         </View>
-      ) : (
-        <View className="mb-2 rounded-2xl bg-dhe-elevated p-4">
-          <Text className="text-sm text-dhe-textMuted">Sem fotos ou assinatura registradas.</Text>
-        </View>
-      )}
+      ) : null}
     </View>
   );
 }
