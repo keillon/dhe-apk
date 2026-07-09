@@ -3,14 +3,17 @@ import { demoData } from "./demo-data";
 import type {
   ChangePasswordInput,
   Client,
+  ClientInput,
   CreateInspectionInput,
   CreateUserInput,
   DashboardStats,
   Equipment,
+  EquipmentInput,
   Inspection,
   Notification,
   UpdateInspectionInput,
   UpdateProfileInput,
+  UpdateUserInput,
   User,
 } from "@/types";
 
@@ -193,6 +196,79 @@ export const api = {
 
     const { data: user } = await http.post<User>("/auth/users", data);
     return user;
+  },
+
+  async getUsers(): Promise<User[]> {
+    if (!isApiConfigured) return demoData.getUsers();
+
+    const { data } = await http.get<User[]>("/auth/users");
+    return data;
+  },
+
+  async updateUser(id: string, data: UpdateUserInput): Promise<User> {
+    if (!isApiConfigured) return demoData.updateUser(id, data);
+
+    const { data: user } = await http.put<User>(`/auth/users/${id}`, data);
+    return user;
+  },
+
+  async deleteUser(id: string): Promise<void> {
+    if (!isApiConfigured) return demoData.deleteUser(id);
+
+    await http.delete(`/auth/users/${id}`);
+  },
+
+  async createClient(data: ClientInput): Promise<Client> {
+    if (!isApiConfigured) return demoData.createClient(data);
+
+    const { data: client } = await http.post<Client>("/clients", data);
+    return client;
+  },
+
+  async updateClient(id: string, data: ClientInput): Promise<Client> {
+    if (!isApiConfigured) return demoData.updateClient(id, data);
+
+    const { data: client } = await http.put<Client>(`/clients/${id}`, data);
+    return client;
+  },
+
+  async deleteClient(id: string): Promise<void> {
+    if (!isApiConfigured) return demoData.deleteClient(id);
+
+    await http.delete(`/clients/${id}`);
+  },
+
+  async getNextQrCode(): Promise<string> {
+    if (!isApiConfigured) return demoData.getNextQrCode();
+
+    const { data } = await http.get<{ qr_code: string }>("/equipments/next-qr");
+    return data.qr_code;
+  },
+
+  async createEquipment(data: EquipmentInput): Promise<Equipment> {
+    if (!isApiConfigured) return demoData.createEquipment(data);
+
+    const { data: equipment } = await http.post<Equipment>("/equipments", data);
+    return equipment;
+  },
+
+  async updateEquipment(id: string, data: EquipmentInput): Promise<Equipment> {
+    if (!isApiConfigured) return demoData.updateEquipment(id, data);
+
+    const { data: equipment } = await http.put<Equipment>(`/equipments/${id}`, data);
+    return equipment;
+  },
+
+  async deleteEquipment(id: string): Promise<void> {
+    if (!isApiConfigured) return demoData.deleteEquipment(id);
+
+    await http.delete(`/equipments/${id}`);
+  },
+
+  async deleteInspection(id: string): Promise<void> {
+    if (!isApiConfigured) return demoData.deleteInspection(id);
+
+    await http.delete(`/inspections/${id}`);
   },
 
   async getNotifications(userId: string): Promise<Notification[]> {

@@ -1,9 +1,12 @@
 import type {
   ChangePasswordInput,
+  ClientInput,
   CreateInspectionInput,
   CreateUserInput,
+  EquipmentInput,
   UpdateInspectionInput,
   UpdateProfileInput,
+  UpdateUserInput,
   Client,
   DashboardStats,
   Equipment,
@@ -36,7 +39,21 @@ const DEMO_ADMIN: User = {
 
 let demoSessionUser: User = DEMO_USER;
 
-const DEMO_CLIENTS: Client[] = [
+let demoUsers: User[] = [DEMO_ADMIN, DEMO_USER];
+
+function nextDemoQrCode(): string {
+  const numbers = demoEquipments
+    .map((e) => {
+      const match = e.qr_code.match(/^DHE-(\d+)$/);
+      return match ? parseInt(match[1], 10) : 0;
+    })
+    .filter((n) => n > 0);
+
+  const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+  return `DHE-${String(next).padStart(4, "0")}`;
+}
+
+let demoClients: Client[] = [
   {
     id: "11111111-1111-1111-1111-111111111111",
     nome: "Carlos Mendes",
@@ -55,7 +72,7 @@ const DEMO_CLIENTS: Client[] = [
   },
 ];
 
-const DEMO_EQUIPMENTS: Equipment[] = [
+let demoEquipments: Equipment[] = [
   {
     id: "44444444-4444-4444-4444-444444444444",
     qr_code: "DHE-0001",
@@ -73,7 +90,7 @@ const DEMO_EQUIPMENTS: Equipment[] = [
     proxima_manutencao: new Date(Date.now() + 15 * 86400000).toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    cliente: DEMO_CLIENTS[0],
+    cliente: demoClients[0],
   },
   {
     id: "55555555-5555-5555-5555-555555555555",
@@ -92,7 +109,7 @@ const DEMO_EQUIPMENTS: Equipment[] = [
     proxima_manutencao: new Date(Date.now() - 5 * 86400000).toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    cliente: DEMO_CLIENTS[0],
+    cliente: demoClients[0],
   },
   {
     id: "66666666-6666-6666-6666-666666666666",
@@ -111,7 +128,7 @@ const DEMO_EQUIPMENTS: Equipment[] = [
     proxima_manutencao: new Date(Date.now() + 23 * 86400000).toISOString(),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
-    cliente: DEMO_CLIENTS[1],
+    cliente: demoClients[1],
   },
 ];
 
@@ -198,12 +215,12 @@ export const demoData = {
     ).length;
 
     return {
-      equipamentos_cadastrados: DEMO_EQUIPMENTS.length,
+      equipamentos_cadastrados: demoEquipments.length,
       inspecoes_realizadas: demoInspections.length,
-      pendencias: DEMO_EQUIPMENTS.filter(
+      pendencias: demoEquipments.filter(
         (e) => e.proxima_manutencao && new Date(e.proxima_manutencao) < new Date()
       ).length,
-      proximas_manutencoes: DEMO_EQUIPMENTS.filter(
+      proximas_manutencoes: demoEquipments.filter(
         (e) =>
           e.proxima_manutencao &&
           new Date(e.proxima_manutencao) > new Date() &&
@@ -215,27 +232,27 @@ export const demoData = {
 
   async getEquipments(): Promise<Equipment[]> {
     await delay(400);
-    return DEMO_EQUIPMENTS;
+    return demoEquipments;
   },
 
   async getEquipmentByQrCode(qrCode: string): Promise<Equipment | null> {
     await delay(500);
-    return DEMO_EQUIPMENTS.find((e) => e.qr_code === qrCode) ?? null;
+    return demoEquipments.find((e) => e.qr_code === qrCode) ?? null;
   },
 
   async getEquipmentById(id: string): Promise<Equipment | null> {
     await delay(400);
-    return DEMO_EQUIPMENTS.find((e) => e.id === id) ?? null;
+    return demoEquipments.find((e) => e.id === id) ?? null;
   },
 
   async getClients(): Promise<Client[]> {
     await delay(400);
-    return DEMO_CLIENTS;
+    return demoClients;
   },
 
   async getClientById(id: string): Promise<Client | null> {
     await delay(300);
-    return DEMO_CLIENTS.find((c) => c.id === id) ?? null;
+    return demoClients.find((c) => c.id === id) ?? null;
   },
 
   async getInspectionsByEquipment(equipmentId: string): Promise<Inspection[]> {
@@ -250,7 +267,7 @@ export const demoData = {
     return demoInspections
       .filter((i) => i.tecnico_id === demoSessionUser.id)
       .map((inspection) => {
-        const equipment = DEMO_EQUIPMENTS.find((e) => e.id === inspection.equipamento_id);
+        const equipment = demoEquipments.find((e) => e.id === inspection.equipamento_id);
         return equipment ? { ...inspection, equipamento: equipment } : inspection;
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -307,7 +324,7 @@ export const demoData = {
     inspection.fotos = fotos.map((f) => ({ ...f, inspecao_id: inspection.id }));
     demoInspections = [inspection, ...demoInspections];
 
-    const eq = DEMO_EQUIPMENTS.find((e) => e.id === data.equipamento_id);
+    const eq = demoEquipments.find((e) => e.id === data.equipamento_id);
     if (eq) {
       eq.ultima_inspecao = inspection.created_at;
     }
@@ -386,7 +403,7 @@ export const demoData = {
 
   async createUser(data: CreateUserInput): Promise<User> {
     await delay(500);
-    return {
+    const user: User = {
       id: generateId(),
       email: data.email,
       nome: data.nome,
@@ -395,6 +412,207 @@ export const demoData = {
       role: data.role ?? "tecnico",
       created_at: new Date().toISOString(),
     };
+    demoUsers = [...demoUsers, user];
+    return user;
+  },
+
+  async getUsers(): Promise<User[]> {
+    await delay(300);
+    return demoUsers;
+  },
+
+  async updateUser(id: string, data: UpdateUserInput): Promise<User> {
+    await delay(400);
+    const index = demoUsers.findIndex((u) => u.id === id);
+    if (index < 0) throw new Error("Usuário não encontrado");
+
+    const updated: User = {
+      ...demoUsers[index],
+      ...(data.nome !== undefined ? { nome: data.nome } : {}),
+      ...(data.cargo !== undefined ? { cargo: data.cargo } : {}),
+      ...(data.empresa !== undefined ? { empresa: data.empresa } : {}),
+      ...(data.role !== undefined ? { role: data.role } : {}),
+    };
+
+    demoUsers = [
+      ...demoUsers.slice(0, index),
+      updated,
+      ...demoUsers.slice(index + 1),
+    ];
+
+    if (demoSessionUser.id === id) {
+      demoSessionUser = { ...demoSessionUser, ...updated };
+    }
+
+    return updated;
+  },
+
+  async deleteUser(id: string): Promise<void> {
+    await delay(400);
+    if (demoSessionUser.id === id) {
+      throw new Error("Não é possível excluir o usuário logado.");
+    }
+
+    const hasInspections = demoInspections.some((i) => i.tecnico_id === id);
+    if (hasInspections) {
+      throw new Error("Usuário possui inspeções registradas.");
+    }
+
+    const index = demoUsers.findIndex((u) => u.id === id);
+    if (index < 0) throw new Error("Usuário não encontrado");
+
+    demoUsers = demoUsers.filter((u) => u.id !== id);
+  },
+
+  async createClient(data: ClientInput): Promise<Client> {
+    await delay(400);
+    const client: Client = {
+      id: generateId(),
+      nome: data.nome,
+      empresa: data.empresa,
+      email: data.email,
+      telefone: data.telefone,
+      created_at: new Date().toISOString(),
+    };
+    demoClients = [...demoClients, client];
+    return client;
+  },
+
+  async updateClient(id: string, data: ClientInput): Promise<Client> {
+    await delay(400);
+    const index = demoClients.findIndex((c) => c.id === id);
+    if (index < 0) throw new Error("Cliente não encontrado");
+
+    const updated: Client = {
+      ...demoClients[index],
+      nome: data.nome,
+      empresa: data.empresa,
+      email: data.email,
+      telefone: data.telefone,
+    };
+
+    demoClients = [
+      ...demoClients.slice(0, index),
+      updated,
+      ...demoClients.slice(index + 1),
+    ];
+
+    demoEquipments = demoEquipments.map((eq) =>
+      eq.cliente_id === id
+        ? { ...eq, empresa: data.empresa, cliente: updated }
+        : eq
+    );
+
+    return updated;
+  },
+
+  async deleteClient(id: string): Promise<void> {
+    await delay(400);
+    const hasEquipments = demoEquipments.some((e) => e.cliente_id === id);
+    if (hasEquipments) {
+      throw new Error("Cliente possui equipamentos cadastrados.");
+    }
+
+    demoClients = demoClients.filter((c) => c.id !== id);
+  },
+
+  async getNextQrCode(): Promise<string> {
+    await delay(200);
+    return nextDemoQrCode();
+  },
+
+  async createEquipment(data: EquipmentInput): Promise<Equipment> {
+    await delay(500);
+    const client = demoClients.find((c) => c.id === data.cliente_id);
+    if (!client) throw new Error("Cliente não encontrado");
+
+    const equipment: Equipment = {
+      id: generateId(),
+      qr_code: nextDemoQrCode(),
+      cliente_id: data.cliente_id,
+      empresa: client.empresa,
+      nome: data.nome,
+      patrimonio: data.patrimonio,
+      marca: data.marca,
+      modelo: data.modelo,
+      numero_serie: data.numero_serie,
+      ano: data.ano,
+      localizacao: data.localizacao,
+      status: data.status,
+      foto_url: data.foto_url,
+      proxima_manutencao: data.proxima_manutencao,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      cliente: client,
+    };
+
+    demoEquipments = [...demoEquipments, equipment];
+    return equipment;
+  },
+
+  async updateEquipment(id: string, data: EquipmentInput): Promise<Equipment> {
+    await delay(400);
+    const index = demoEquipments.findIndex((e) => e.id === id);
+    if (index < 0) throw new Error("Equipamento não encontrado");
+
+    const client = demoClients.find((c) => c.id === data.cliente_id);
+    if (!client) throw new Error("Cliente não encontrado");
+
+    const updated: Equipment = {
+      ...demoEquipments[index],
+      cliente_id: data.cliente_id,
+      empresa: client.empresa,
+      nome: data.nome,
+      patrimonio: data.patrimonio,
+      marca: data.marca,
+      modelo: data.modelo,
+      numero_serie: data.numero_serie,
+      ano: data.ano,
+      localizacao: data.localizacao,
+      status: data.status,
+      foto_url: data.foto_url,
+      proxima_manutencao: data.proxima_manutencao,
+      updated_at: new Date().toISOString(),
+      cliente: client,
+    };
+
+    demoEquipments = [
+      ...demoEquipments.slice(0, index),
+      updated,
+      ...demoEquipments.slice(index + 1),
+    ];
+
+    return updated;
+  },
+
+  async deleteEquipment(id: string): Promise<void> {
+    await delay(400);
+    const hasInspections = demoInspections.some((i) => i.equipamento_id === id);
+    if (hasInspections) {
+      throw new Error("Equipamento possui inspeções registradas.");
+    }
+
+    demoEquipments = demoEquipments.filter((e) => e.id !== id);
+  },
+
+  async deleteInspection(id: string): Promise<void> {
+    await delay(400);
+    const inspection = demoInspections.find((i) => i.id === id);
+    if (!inspection) throw new Error("Inspeção não encontrada");
+
+    demoInspections = demoInspections.filter((i) => i.id !== id);
+
+    const remaining = demoInspections
+      .filter((i) => i.equipamento_id === inspection.equipamento_id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    const lastDate = remaining[0]?.created_at;
+
+    demoEquipments = demoEquipments.map((eq) =>
+      eq.id === inspection.equipamento_id
+        ? { ...eq, ultima_inspecao: lastDate, updated_at: new Date().toISOString() }
+        : eq
+    );
   },
 
   async getNotifications(): Promise<Notification[]> {

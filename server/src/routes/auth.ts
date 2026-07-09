@@ -36,6 +36,14 @@ const createUserSchema = z.object({
   role: z.enum(["admin", "tecnico"]).default("tecnico"),
 });
 
+const updateUserSchema = z.object({
+  nome: z.string().min(2).optional(),
+  cargo: z.string().min(2).optional(),
+  empresa: z.string().min(2).optional(),
+  role: z.enum(["admin", "tecnico"]).optional(),
+  password: z.string().min(6).optional(),
+});
+
 export const authRouter = Router();
 
 authRouter.post("/login", async (req, res) => {
@@ -185,4 +193,82 @@ authRouter.post("/users", authMiddleware, adminMiddleware, async (req, res) => {
   });
 
   res.status(201).json(mapUser(user));
+});
+
+authRouter.get("/users", authMiddleware, adminMiddleware, async (_req, res) => {
+  try {
+    const users = await prisma.usuario.findMany({ orderBy: { nome: "asc" } });
+    res.json(users.map(mapUser));
+  } catch (error) {
+    console.error("Erro ao listar usuários:", error);
+    res.status(500).json({ error: "Erro ao buscar usuários" });
+  }
+});
+
+authRouter.put("/users/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  const parsed = updateUserSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Dados inválidos" });
+    return;
+  }
+
+  const id = String(req.params.id);
+  const data = parsed.data;
+
+  try {
+    const existing = await prisma.usuario.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Usuário não encontrado" });
+      return;
+    }
+
+    const updateData: {
+      nome?: string;
+      cargo?: string;
+      empresa?: string;
+      role?: "admin" | "tecnico";
+      senhaHash?: string;
+    } = {};
+
+    if (data.nome) updateData.nome = data.nome;
+    if (data.cargo) updateData.cargo = data.cargo;
+    if (data.empresa) updateData.empresa = data.empresa;
+    if (data.role) updateData.role = data.role;
+    if (data.password) updateData.senhaHash = await bcrypt.hash(data.password, 10);
+
+    const user = await prisma.usuario.update({
+      where: { id },
+      data: updateData,
+    });
+
+    res.json(mapUser(user));
+  } catch (error) {
+    console.error("Erro ao atualizar usuário:", error);
+    res.status(500).json({ error: "Erro ao atualizar usuário" });
+  }
+});
+
+authRouter.delete("/users/:id", authMiddleware, adminMiddleware, async (req, res) => {
+  const id = String(req.params.id);
+
+  if (id === req.auth!.userId) {
+    res.status(400).json({ error: "Você não pode remover sua própria conta." });
+    return;
+  }
+
+  try {
+    const inspectionCount = await prisma.inspecao.count({ where: { tecnicoId: id } });
+    if (inspectionCount > 0) {
+      res.status(409).json({
+        error: "Usuário possui inspeções registradas e não pode ser removido.",
+      });
+      return;
+    }
+
+    await prisma.usuario.delete({ where: { id } });
+    res.json({ message: "Usuário removido com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover usuário:", error);
+    res.status(500).json({ error: "Erro ao remover usuário" });
+  }
 });

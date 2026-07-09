@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, Building2, ChevronRight } from "lucide-react-native";
-import { Card, Input, Loading, ErrorState, EmptyState, PageContainer } from "@/components";
+import { Search, Building2, ChevronRight, Plus } from "lucide-react-native";
+import { Card, Input, Loading, ErrorState, EmptyState, PageContainer, Button } from "@/components";
 import { useClients, useEquipments, useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
 
@@ -32,6 +32,13 @@ export default function ClientsScreen() {
           Empresas atendidas pela DHE
         </Text>
 
+        <Button
+          title="Novo cliente"
+          onPress={() => router.push("/client/new")}
+          icon={<Plus size={18} color={colors.bg} />}
+          className="mb-4"
+        />
+
         <View className="relative mb-5">
           <Input
             placeholder="Pesquisar cliente..."
@@ -51,7 +58,7 @@ export default function ClientsScreen() {
         {filtered?.length === 0 ? (
           <EmptyState
             title="Nenhum cliente encontrado"
-            description="Tente outro termo de busca."
+            description="Tente outro termo de busca ou cadastre um novo cliente."
           />
         ) : (
           filtered?.map((client) => {

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, BarChart3, Users, User, ClipboardList } from "lucide-react-native";
+import { Home, Users, BarChart3, User, ClipboardList, Settings2 } from "lucide-react-native";
 import { useAuthStore } from "@/store";
 import { isAdmin } from "@/utils/roles";
 import { colors } from "@/theme";
@@ -57,6 +57,14 @@ export default function TabsLayout() {
           title: "Clientes",
           href: admin ? undefined : null,
           tabBarIcon: ({ color, size }) => <Users size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="manage"
+        options={{
+          title: "Gestão",
+          href: admin ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Settings2 size={size} color={color} />,
         }}
       />
       <Tabs.Screen

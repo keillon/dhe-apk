@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ClipboardPlus, History, MapPin, Building2, Calendar } from "lucide-react-native";
+import { ClipboardPlus, History, MapPin, Building2, Calendar, Pencil, Printer, Trash2 } from "lucide-react-native";
 import { Image } from "expo-image";
 import {
   Button,
@@ -13,14 +13,40 @@ import {
   BackHeader,
   PageContainer,
 } from "@/components";
-import { useEquipment } from "@/hooks";
-import { formatDate } from "@/utils";
+import { useEquipment, useDeleteEquipment, useRequireAdmin } from "@/hooks";
+import { feedback } from "@/services/feedback";
+import { formatDate, getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
 
 export default function EquipmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { allowed } = useRequireAdmin();
   const { data: equipment, isLoading, error, refetch } = useEquipment(id);
+  const deleteEquipment = useDeleteEquipment();
+
+  const handleDelete = async () => {
+    if (!equipment) return;
+
+    const confirmed = await feedback.choose(
+      "Excluir equipamento",
+      `Deseja remover ${equipment.nome}? Remova as inspeções antes, se houver.`,
+      [
+        { text: "Cancelar", value: "cancel", style: "cancel" },
+        { text: "Excluir", value: "delete", style: "destructive" },
+      ]
+    );
+
+    if (confirmed !== "delete") return;
+
+    try {
+      await deleteEquipment.mutateAsync(equipment.id);
+      feedback.toast.success("Equipamento removido.");
+      router.replace("/(tabs)");
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao remover equipamento."));
+    }
+  };
 
   if (isLoading) return <Loading fullScreen />;
   if (error || !equipment) {
@@ -126,7 +152,40 @@ export default function EquipmentScreen() {
               fullWidth
               size="lg"
               icon={<History size={20} color={colors.primary} />}
+              className="mb-3"
             />
+
+            {allowed && (
+              <>
+                <Button
+                  title="Imprimir QR Code"
+                  variant="secondary"
+                  onPress={() => router.push(`/qrcodes/print/${equipment.id}`)}
+                  fullWidth
+                  size="lg"
+                  icon={<Printer size={20} color={colors.text} />}
+                  className="mb-3"
+                />
+                <Button
+                  title="Editar equipamento"
+                  variant="outline"
+                  onPress={() => router.push(`/equipment/edit/${equipment.id}`)}
+                  fullWidth
+                  size="lg"
+                  icon={<Pencil size={20} color={colors.primary} />}
+                  className="mb-3"
+                />
+                <Button
+                  title="Excluir equipamento"
+                  variant="outline"
+                  onPress={handleDelete}
+                  loading={deleteEquipment.isPending}
+                  fullWidth
+                  size="lg"
+                  icon={<Trash2 size={20} color={colors.danger} />}
+                />
+              </>
+            )}
           </PageContainer>
         </View>
       </RefreshableScrollView>

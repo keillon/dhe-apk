@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { View, Text, Pressable } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Eye, Pencil } from "lucide-react-native";
+import { Eye, Pencil, Trash2 } from "lucide-react-native";
 import {
   Card,
   Loading,
@@ -14,10 +14,11 @@ import {
   BackHeader,
   PageContainer,
 } from "@/components";
-import { useInspections, useEquipment } from "@/hooks";
+import { useInspections, useEquipment, useDeleteInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
+import { feedback } from "@/services/feedback";
 import type { Inspection, OilContamination } from "@/types";
-import { isAdmin } from "@/utils";
+import { getApiErrorMessage, isAdmin } from "@/utils";
 import { colors } from "@/theme";
 
 type PeriodFilter = "all" | "30d" | "90d";
@@ -76,6 +77,7 @@ export default function HistoryScreen() {
   const admin = isAdmin(user);
   const { data: equipment, refetch: refetchEquipment } = useEquipment(id);
   const { data: inspections, isLoading, error, refetch } = useInspections(id);
+  const deleteInspection = useDeleteInspection();
 
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [contaminationFilter, setContaminationFilter] = useState<ContaminationFilter>("all");
@@ -94,6 +96,27 @@ export default function HistoryScreen() {
 
   const handleRefresh = async () => {
     await Promise.all([refetch(), refetchEquipment()]);
+  };
+
+  const handleDelete = async (inspection: Inspection) => {
+    const confirmed = await feedback.choose(
+      "Excluir inspeção",
+      "Deseja remover esta inspeção permanentemente?",
+      [
+        { text: "Cancelar", value: "cancel", style: "cancel" },
+        { text: "Excluir", value: "delete", style: "destructive" },
+      ]
+    );
+
+    if (confirmed !== "delete") return;
+
+    try {
+      await deleteInspection.mutateAsync(inspection.id);
+      feedback.toast.success("Inspeção removida.");
+      await handleRefresh();
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao remover inspeção."));
+    }
   };
 
   if (isLoading) return <Loading fullScreen />;
@@ -171,13 +194,22 @@ export default function HistoryScreen() {
                       <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
                     </Pressable>
                     {admin && (
-                      <Pressable
-                        onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
-                        className="flex-row items-center rounded-full bg-dhe-primary px-3 py-1.5"
-                      >
-                        <Pencil size={14} color={colors.bg} />
-                        <Text className="ml-1 text-xs font-bold text-dhe-bg">Editar</Text>
-                      </Pressable>
+                      <>
+                        <Pressable
+                          onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
+                          className="flex-row items-center rounded-full bg-dhe-primary px-3 py-1.5"
+                        >
+                          <Pencil size={14} color={colors.bg} />
+                          <Text className="ml-1 text-xs font-bold text-dhe-bg">Editar</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleDelete(inspection)}
+                          className="flex-row items-center rounded-full bg-dhe-danger px-3 py-1.5"
+                        >
+                          <Trash2 size={14} color={colors.bg} />
+                          <Text className="ml-1 text-xs font-bold text-dhe-bg">Excluir</Text>
+                        </Pressable>
+                      </>
                     )}
                   </View>
                 </View>

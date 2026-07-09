@@ -315,3 +315,43 @@ inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
     res.status(500).json({ error: "Erro ao atualizar inspeção" });
   }
 });
+
+inspectionsRouter.delete("/:id", adminMiddleware, async (req, res) => {
+  const inspectionId = String(req.params.id);
+
+  try {
+    const existing = await prisma.inspecao.findUnique({
+      where: { id: inspectionId },
+      include: { assinatura: true },
+    });
+
+    if (!existing) {
+      res.status(404).json({ error: "Inspeção não encontrada" });
+      return;
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.historico.deleteMany({ where: { inspecaoId: inspectionId } });
+      await tx.foto.deleteMany({ where: { inspecaoId: inspectionId } });
+      if (existing.assinatura) {
+        await tx.assinatura.delete({ where: { inspecaoId: inspectionId } });
+      }
+      await tx.inspecao.delete({ where: { id: inspectionId } });
+
+      const lastInspection = await tx.inspecao.findFirst({
+        where: { equipamentoId: existing.equipamentoId },
+        orderBy: { createdAt: "desc" },
+      });
+
+      await tx.equipamento.update({
+        where: { id: existing.equipamentoId },
+        data: { ultimaInspecao: lastInspection?.createdAt ?? null },
+      });
+    });
+
+    res.json({ message: "Inspeção removida com sucesso" });
+  } catch (error) {
+    console.error("Erro ao remover inspeção:", error);
+    res.status(500).json({ error: "Erro ao remover inspeção" });
+  }
+});

@@ -1,6 +1,6 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
-import { Printer, Share2, QrCode } from "lucide-react-native";
+import { Printer, Share2, QrCode, Plus } from "lucide-react-native";
 import { BackHeader, Button, Card, EmptyState, ErrorState, Loading, Screen } from "@/components";
 import { useEquipments, useRequireAdmin } from "@/hooks";
 import { buildBulkQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
@@ -31,6 +31,13 @@ export default function QrCodesScreen() {
       subtitle="Gere e imprima QR Codes dos equipamentos cadastrados."
     >
       <BackHeader />
+
+      <Button
+        title="Novo equipamento"
+        onPress={() => router.push("/equipment/new")}
+        icon={<Plus size={18} color={colors.bg} />}
+        className="mb-4"
+      />
 
       <Card className="mb-6 border-dhe-primary/40 bg-dhe-elevated">
         <Text className="text-base font-bold text-dhe-text">Como funciona</Text>

@@ -123,6 +123,35 @@ export interface CreateUserInput {
   role?: UserRole;
 }
 
+export interface UpdateUserInput {
+  nome?: string;
+  cargo?: string;
+  empresa?: string;
+  role?: UserRole;
+  password?: string;
+}
+
+export interface ClientInput {
+  nome: string;
+  empresa: string;
+  email?: string;
+  telefone?: string;
+}
+
+export interface EquipmentInput {
+  cliente_id: string;
+  nome: string;
+  patrimonio: string;
+  marca: string;
+  modelo: string;
+  numero_serie: string;
+  ano: number;
+  localizacao: string;
+  status: EquipmentStatus;
+  proxima_manutencao?: string;
+  foto_url?: string;
+}
+
 export interface UpdateInspectionInput {
   nivel_oleo: number;
   contaminacao_oleo: OilContamination;
