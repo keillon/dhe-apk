@@ -1,0 +1,56 @@
+# Stack ISOLADA da DHE — não interfere nos outros projetos da VPS.
+# Cria banco PostgreSQL próprio (volume dhe_postgres_data) e API dedicada.
+
+services:
+  dhe-postgres:
+    image: postgres:16-alpine
+    container_name: dhe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dhe_hidraulicos
+      POSTGRES_USER: dhe_app
+      POSTGRES_PASSWORD: ${DHE_DB_PASSWORD}
+    volumes:
+      - dhe_postgres_data:/var/lib/postgresql/data
+    networks:
+      - dhe-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dhe_app -d dhe_hidraulicos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Porta NÃO exposta no host — acesso apenas interno
+
+  dhe-api:
+    build: .
+    image: dhe-api:1.0.0
+    container_name: dhe-api
+    restart: unless-stopped
+    depends_on:
+      dhe-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dhe_app:${DHE_DB_PASSWORD}@dhe-postgres:5432/dhe_hidraulicos?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 4002
+      NODE_ENV: production
+    networks:
+      - dhe-internal
+      - traefik-public
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dhe-api.rule=Host(`${DHE_API_HOST}`)"
+      - "traefik.http.routers.dhe-api.entrypoints=websecure"
+      - "traefik.http.routers.dhe-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.dhe-api.loadbalancer.server.port=4002"
+
+volumes:
+  dhe_postgres_data:
+    name: dhe_postgres_data
+
+networks:
+  dhe-internal:
+    name: dhe-internal
+    driver: bridge
+  traefik-public:
+    external: true

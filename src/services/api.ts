@@ -1,4 +1,4 @@
-import { isSupabaseConfigured, supabase } from "./supabase";
+import { http, isApiConfigured, saveToken, clearToken } from "./http";
 import { demoData } from "./demo-data";
 import type {
   ChecklistItem,
@@ -11,151 +11,121 @@ import type {
   User,
 } from "@/types";
 
+interface LoginResponse {
+  token: string;
+  user: User;
+}
+
 export const api = {
   async login(email: string, password: string): Promise<User> {
-    if (!isSupabaseConfigured) {
+    if (!isApiConfigured) {
       return demoData.login(email, password);
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    const { data } = await http.post<LoginResponse>("/auth/login", {
+      email,
+      password,
+    });
 
-    const { data: userData, error: userError } = await supabase
-      .from("usuarios")
-      .select("*")
-      .eq("email", email)
-      .single();
-
-    if (userError) throw userError;
-    return userData as User;
+    await saveToken(data.token);
+    return data.user;
   },
 
   async logout(): Promise<void> {
-    if (isSupabaseConfigured) {
-      await supabase.auth.signOut();
+    await clearToken();
+  },
+
+  async restoreSession(): Promise<User | null> {
+    if (!isApiConfigured) return null;
+
+    try {
+      const { data } = await http.get<User>("/auth/me");
+      return data;
+    } catch {
+      await clearToken();
+      return null;
     }
   },
 
   async resetPassword(email: string): Promise<void> {
-    if (!isSupabaseConfigured) {
+    if (!isApiConfigured) {
       await new Promise((r) => setTimeout(r, 800));
       return;
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) throw error;
+
+    await http.post("/auth/forgot-password", { email });
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
-    if (!isSupabaseConfigured) return demoData.getDashboardStats();
+    if (!isApiConfigured) return demoData.getDashboardStats();
 
-    const [equipments, inspections, pending] = await Promise.all([
-      supabase.from("equipamentos").select("id", { count: "exact", head: true }),
-      supabase.from("inspecoes").select("id", { count: "exact", head: true }),
-      supabase
-        .from("equipamentos")
-        .select("id", { count: "exact", head: true })
-        .lt("proxima_manutencao", new Date().toISOString()),
-    ]);
-
-    const today = new Date().toISOString().split("T")[0];
-    const { count: todayCount } = await supabase
-      .from("inspecoes")
-      .select("id", { count: "exact", head: true })
-      .gte("created_at", `${today}T00:00:00`);
-
-    const { count: upcomingCount } = await supabase
-      .from("equipamentos")
-      .select("id", { count: "exact", head: true })
-      .gt("proxima_manutencao", new Date().toISOString())
-      .lt("proxima_manutencao", new Date(Date.now() + 30 * 86400000).toISOString());
-
-    return {
-      equipamentos_cadastrados: equipments.count ?? 0,
-      inspecoes_realizadas: inspections.count ?? 0,
-      pendencias: pending.count ?? 0,
-      proximas_manutencoes: upcomingCount ?? 0,
-      inspecoes_hoje: todayCount ?? 0,
-    };
+    const { data } = await http.get<DashboardStats>("/dashboard/stats");
+    return data;
   },
 
   async getEquipments(): Promise<Equipment[]> {
-    if (!isSupabaseConfigured) return demoData.getEquipments();
+    if (!isApiConfigured) return demoData.getEquipments();
 
-    const { data, error } = await supabase
-      .from("equipamentos")
-      .select("*, cliente:clientes(*)")
-      .order("nome");
-
-    if (error) throw error;
-    return data as Equipment[];
+    const { data } = await http.get<Equipment[]>("/equipments");
+    return data;
   },
 
   async getEquipmentByQrCode(qrCode: string): Promise<Equipment | null> {
-    if (!isSupabaseConfigured) return demoData.getEquipmentByQrCode(qrCode);
+    if (!isApiConfigured) return demoData.getEquipmentByQrCode(qrCode);
 
-    const { data, error } = await supabase
-      .from("equipamentos")
-      .select("*, cliente:clientes(*)")
-      .eq("qr_code", qrCode)
-      .single();
-
-    if (error) return null;
-    return data as Equipment;
+    try {
+      const { data } = await http.get<Equipment>(`/equipments/qr/${encodeURIComponent(qrCode)}`);
+      return data;
+    } catch {
+      return null;
+    }
   },
 
   async getEquipmentById(id: string): Promise<Equipment | null> {
-    if (!isSupabaseConfigured) return demoData.getEquipmentById(id);
+    if (!isApiConfigured) return demoData.getEquipmentById(id);
 
-    const { data, error } = await supabase
-      .from("equipamentos")
-      .select("*, cliente:clientes(*)")
-      .eq("id", id)
-      .single();
-
-    if (error) return null;
-    return data as Equipment;
+    try {
+      const { data } = await http.get<Equipment>(`/equipments/${id}`);
+      return data;
+    } catch {
+      return null;
+    }
   },
 
   async getClients(): Promise<Client[]> {
-    if (!isSupabaseConfigured) return demoData.getClients();
+    if (!isApiConfigured) return demoData.getClients();
 
-    const { data, error } = await supabase.from("clientes").select("*").order("nome");
-    if (error) throw error;
-    return data as Client[];
+    const { data } = await http.get<Client[]>("/clients");
+    return data;
   },
 
   async getClientById(id: string): Promise<Client | null> {
-    if (!isSupabaseConfigured) return demoData.getClientById(id);
+    if (!isApiConfigured) return demoData.getClientById(id);
 
-    const { data, error } = await supabase.from("clientes").select("*").eq("id", id).single();
-    if (error) return null;
-    return data as Client;
+    try {
+      const { data } = await http.get<Client>(`/clients/${id}`);
+      return data;
+    } catch {
+      return null;
+    }
   },
 
   async getInspectionsByEquipment(equipmentId: string): Promise<Inspection[]> {
-    if (!isSupabaseConfigured) return demoData.getInspectionsByEquipment(equipmentId);
+    if (!isApiConfigured) return demoData.getInspectionsByEquipment(equipmentId);
 
-    const { data, error } = await supabase
-      .from("inspecoes")
-      .select("*, tecnico:usuarios(*), fotos(*)")
-      .eq("equipamento_id", equipmentId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data as Inspection[];
+    const { data } = await http.get<Inspection[]>(`/inspections/equipment/${equipmentId}`);
+    return data;
   },
 
   async getInspectionById(id: string): Promise<Inspection | null> {
-    if (!isSupabaseConfigured) return demoData.getInspectionById(id);
+    if (!isApiConfigured) return demoData.getInspectionById(id);
 
-    const { data, error } = await supabase
-      .from("inspecoes")
-      .select("*, tecnico:usuarios(*), fotos(*)")
-      .eq("id", id)
-      .single();
-
-    if (error) return null;
-    return data as Inspection;
+    try {
+      const { data } = await http.get<Inspection>(`/inspections/${id}`);
+      return data;
+    } catch {
+      return null;
+    }
   },
 
   async createInspection(data: {
@@ -167,35 +137,22 @@ export const api = {
     complemento?: string;
     checklist: ChecklistItem;
   }): Promise<Inspection> {
-    if (!isSupabaseConfigured) return demoData.createInspection(data);
+    if (!isApiConfigured) return demoData.createInspection(data);
 
-    const { data: inspection, error } = await supabase
-      .from("inspecoes")
-      .insert(data)
-      .select("*, tecnico:usuarios(*)")
-      .single();
-
-    if (error) throw error;
-    return inspection as Inspection;
+    const { data: inspection } = await http.post<Inspection>("/inspections", data);
+    return inspection;
   },
 
   async getNotifications(userId: string): Promise<Notification[]> {
-    if (!isSupabaseConfigured) return demoData.getNotifications();
+    if (!isApiConfigured) return demoData.getNotifications();
 
-    const { data, error } = await supabase
-      .from("notificacoes")
-      .select("*")
-      .eq("usuario_id", userId)
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return data as Notification[];
+    const { data } = await http.get<Notification[]>("/notifications");
+    return data;
   },
 
   async markNotificationRead(id: string): Promise<void> {
-    if (!isSupabaseConfigured) return demoData.markNotificationRead(id);
+    if (!isApiConfigured) return demoData.markNotificationRead(id);
 
-    const { error } = await supabase.from("notificacoes").update({ lida: true }).eq("id", id);
-    if (error) throw error;
+    await http.patch(`/notifications/${id}/read`);
   },
 };

@@ -1,71 +1,67 @@
 # DHE Hidráulicos — App de Inspeções
 
-Aplicativo profissional para técnicos da **DHE Componentes Hidráulicos** registrarem inspeções e manutenções em equipamentos hidráulicos.
+Aplicativo profissional para técnicos da **DHE Componentes Hidráulicos**.
 
-Inspirado na identidade visual do site [dhepr.com.br](https://www.dhepr.com.br/).
+## Arquitetura
 
-## Tecnologias
+```
+dhe-app/
+├── app/              # App mobile (Expo/React Native)
+├── src/              # Código do app
+└── server/           # API REST + Prisma + PostgreSQL
+```
 
-- React Native + Expo SDK 57
-- TypeScript + Expo Router
-- NativeWind (Tailwind CSS)
-- TanStack React Query + Zustand
-- React Hook Form + Zod
-- Supabase / PostgreSQL
-- MMKV (persistência offline)
+- **Mobile**: Expo + React Native + NativeWind
+- **Backend**: Express + Prisma ORM + PostgreSQL
+- **Banco**: PostgreSQL isolado (`dhe_hidraulicos`) — não interfere em outros projetos
 
-## Início rápido
+## App mobile
 
 ```bash
 npm install
+cp .env.example .env   # EXPO_PUBLIC_API_URL
 npm start
 ```
 
-### Login demo
+**Demo local** (sem API): deixe `EXPO_PUBLIC_API_URL` vazio ou com placeholder.
 
-- **Email:** `tecnico@dhepr.com.br`
-- **Senha:** `123456`
+- Email: `tecnico@dhepr.com.br`
+- Senha: `123456`
 
-### QR Codes demo
+## API + Banco (VPS)
 
-- `DHE-0001` — Prensa Hidráulica 500T
-- `DHE-0002` — Injetora Hidráulica
-- `DHE-0003` — Guindaste Hidráulico
+Veja [server/DEPLOY.md](server/DEPLOY.md) para deploy seguro na VPS.
 
-## Supabase
+```bash
+cd server
+npm install
+cp .env.example .env
+npm run db:migrate:dev
+npm run db:seed
+npm run dev
+```
 
-1. Crie um projeto no [Supabase](https://supabase.com)
-2. Execute `supabase/migrations/001_initial.sql`
-3. Copie `.env.example` para `.env` e preencha as credenciais
+### Deploy Docker (recomendado)
+
+Stack isolada com PostgreSQL próprio — **não mexe nos outros bancos/containers**.
+
+```bash
+cd server
+docker compose up -d --build
+```
 
 ## Build APK
 
 ```bash
-npm install -g eas-cli
-eas login
 npm run build:apk
-```
-
-## Estrutura
-
-```
-app/           → Telas (Expo Router)
-src/
-  components/  → Componentes reutilizáveis
-  hooks/       → React Query hooks
-  services/    → API, Supabase, storage
-  store/       → Zustand (auth, tema)
-  theme/       → Cores e tipografia DHE
-  types/       → TypeScript types
-  utils/       → Helpers
-supabase/      → Migrations SQL
 ```
 
 ## Identidade visual DHE
 
-| Cor | Hex | Uso |
-|-----|-----|-----|
-| Azul primário | `#0073FF` | Botões, destaques |
-| Azul escuro | `#001423` | Header, fundo escuro |
-| Azul claro | `#7CBFE0` | Textos secundários |
-| Cinza azulado | `#5396B7` | Labels, muted |
+Cores extraídas de [dhepr.com.br](https://www.dhepr.com.br/):
+
+| Cor | Hex |
+|-----|-----|
+| Azul primário | `#0073FF` |
+| Azul escuro | `#001423` |
+| Azul claro | `#7CBFE0` |

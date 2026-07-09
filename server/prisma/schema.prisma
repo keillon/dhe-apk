@@ -1,0 +1,171 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum EquipmentStatus {
+  operando
+  parado
+  manutencao
+}
+
+enum OilContamination {
+  baixa
+  media
+  alta
+}
+
+enum NotificationType {
+  inspecao_pendente
+  manutencao_vencida
+  oleo_contaminado
+}
+
+enum PhotoType {
+  antes
+  depois
+}
+
+model Usuario {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  senhaHash  String   @map("senha_hash")
+  nome       String
+  cargo      String   @default("Técnico")
+  empresa    String   @default("DHE Componentes Hidráulicos")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  inspecoes      Inspecao[]
+  historicos     Historico[]
+  notificacoes   Notificacao[]
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id        String   @id @default(cuid())
+  nome      String
+  empresa   String
+  email     String?
+  telefone  String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  equipamentos Equipamento[]
+
+  @@map("clientes")
+}
+
+model Equipamento {
+  id                String          @id @default(cuid())
+  qrCode            String          @unique @map("qr_code")
+  clienteId         String          @map("cliente_id")
+  empresa           String
+  nome              String
+  patrimonio        String
+  marca             String
+  modelo            String
+  numeroSerie       String          @map("numero_serie")
+  ano               Int
+  localizacao       String
+  fotoUrl           String?         @map("foto_url")
+  status            EquipmentStatus @default(operando)
+  ultimaInspecao    DateTime?       @map("ultima_inspecao")
+  proximaManutencao DateTime?       @map("proxima_manutencao")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt @map("updated_at")
+
+  cliente       Cliente       @relation(fields: [clienteId], references: [id])
+  inspecoes     Inspecao[]
+  historicos    Historico[]
+  notificacoes  Notificacao[]
+
+  @@index([clienteId])
+  @@index([status])
+  @@map("equipamentos")
+}
+
+model Inspecao {
+  id                 String           @id @default(cuid())
+  equipamentoId      String           @map("equipamento_id")
+  tecnicoId          String           @map("tecnico_id")
+  nivelOleo          Int              @map("nivel_oleo")
+  contaminacaoOleo   OilContamination @map("contaminacao_oleo")
+  dataUltimaLimpeza  DateTime?        @map("data_ultima_limpeza") @db.Date
+  complemento        String?
+  checklist          Json             @default("{}")
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  equipamento Equipamento @relation(fields: [equipamentoId], references: [id])
+  tecnico     Usuario     @relation(fields: [tecnicoId], references: [id])
+  fotos       Foto[]
+  assinatura  Assinatura?
+  historico   Historico?
+
+  @@index([equipamentoId])
+  @@index([tecnicoId])
+  @@index([createdAt(sort: Desc)])
+  @@map("inspecoes")
+}
+
+model Historico {
+  id            String   @id @default(cuid())
+  inspecaoId    String   @unique @map("inspecao_id")
+  equipamentoId String   @map("equipamento_id")
+  tecnicoId     String   @map("tecnico_id")
+  dados         Json
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  inspecao    Inspecao    @relation(fields: [inspecaoId], references: [id])
+  equipamento Equipamento @relation(fields: [equipamentoId], references: [id])
+  tecnico     Usuario     @relation(fields: [tecnicoId], references: [id])
+
+  @@index([equipamentoId])
+  @@map("historico")
+}
+
+model Foto {
+  id         String    @id @default(cuid())
+  inspecaoId String    @map("inspecao_id")
+  url        String
+  tipo       PhotoType
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  inspecao Inspecao @relation(fields: [inspecaoId], references: [id])
+
+  @@map("fotos")
+}
+
+model Assinatura {
+  id         String   @id @default(cuid())
+  inspecaoId String   @unique @map("inspecao_id")
+  url        String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  inspecao Inspecao @relation(fields: [inspecaoId], references: [id])
+
+  @@map("assinaturas")
+}
+
+model Notificacao {
+  id            String           @id @default(cuid())
+  usuarioId     String           @map("usuario_id")
+  equipamentoId String?          @map("equipamento_id")
+  tipo          NotificationType
+  titulo        String
+  mensagem      String
+  lida          Boolean          @default(false)
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id])
+  equipamento Equipamento? @relation(fields: [equipamentoId], references: [id])
+
+  @@index([usuarioId])
+  @@index([lida])
+  @@map("notificacoes")
+}

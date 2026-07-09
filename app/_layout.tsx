@@ -5,6 +5,7 @@ import { StatusBar } from "expo-status-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
+import { api } from "@/services/api";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -16,13 +17,26 @@ const queryClient = new QueryClient({
 });
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isLoading, setLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, setUser, setLoading } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    setLoading(false);
-  }, [setLoading]);
+    let mounted = true;
+
+    const restore = async () => {
+      const user = await api.restoreSession();
+      if (!mounted) return;
+      if (user) setUser(user);
+      else setLoading(false);
+    };
+
+    restore();
+
+    return () => {
+      mounted = false;
+    };
+  }, [setUser, setLoading]);
 
   useEffect(() => {
     if (isLoading) return;
