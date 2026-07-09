@@ -13,11 +13,14 @@ import {
 import { Card, Button } from "@/components";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
+import { getConnectionInfo } from "@/services/http";
 import { colors } from "@/theme";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
   const router = useRouter();
+
+  const connection = getConnectionInfo();
 
   const handleLogout = () => {
     Alert.alert("Sair", "Deseja realmente sair do aplicativo?", [
@@ -55,6 +58,20 @@ export default function ProfileScreen() {
           </View>
           <Text className="text-xl font-bold text-dhe-text">{user?.nome}</Text>
           <Text className="mt-1 text-sm text-dhe-textSecondary">{user?.cargo}</Text>
+        </Card>
+
+        <Card className="mb-6 border-dhe-primary/30">
+          <Text className="text-xs font-semibold uppercase text-dhe-textMuted">
+            Conexão
+          </Text>
+          <Text className="mt-1 text-base font-bold text-dhe-text">
+            {connection.mode === "api" ? "API em produção" : "Modo demonstração (local)"}
+          </Text>
+          <Text className="mt-1 text-sm text-dhe-textSecondary">
+            {connection.mode === "api"
+              ? connection.url
+              : "Dados salvos só neste aparelho. Configure EXPO_PUBLIC_API_URL para usar o banco."}
+          </Text>
         </Card>
 
         {infoItems.map((item) => (

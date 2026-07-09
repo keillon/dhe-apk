@@ -1,0 +1,13 @@
+# Desenvolvimento local — expõe portas para testar API e banco no PC/celular.
+# Uso: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+
+services:
+  dhe-postgres:
+    ports:
+      - "5433:5432"
+
+  dhe-api:
+    ports:
+      - "4002:4002"
+    environment:
+      NODE_ENV: development

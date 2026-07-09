@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
@@ -7,7 +7,7 @@ import * as Haptics from "expo-haptics";
 import { Button, Card, Input, Loading } from "@/components";
 import { useCreateInspection, useEquipment } from "@/hooks";
 import { useAuthStore } from "@/store";
-import { CHECKLIST_LABELS, DEFAULT_CHECKLIST } from "@/utils";
+import { CHECKLIST_LABELS, DEFAULT_CHECKLIST, getApiErrorMessage } from "@/utils";
 import type { ChecklistItem, OilContamination } from "@/types";
 import { colors } from "@/theme";
 
@@ -50,8 +50,12 @@ export default function NewInspectionScreen() {
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace(`/equipment/${equipmentId}`);
-    } catch {
+    } catch (error) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert(
+        "Erro ao salvar",
+        getApiErrorMessage(error, "Não foi possível salvar a inspeção. Tente novamente.")
+      );
     }
   };
 

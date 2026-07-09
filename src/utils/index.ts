@@ -3,6 +3,9 @@ import { ptBR } from "date-fns/locale";
 import type { EquipmentStatus, OilContamination } from "@/types";
 import { colors } from "@/theme";
 
+export { generateId } from "./id";
+export { getApiErrorMessage } from "./api-error";
+
 export function formatDate(date: string | undefined): string {
   if (!date) return "—";
   return format(parseISO(date), "dd/MM/yyyy", { locale: ptBR });

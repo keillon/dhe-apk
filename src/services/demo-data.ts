@@ -8,6 +8,7 @@ import type {
   OilContamination,
   User,
 } from "@/types";
+import { generateId } from "@/utils/id";
 
 const DEMO_USER: User = {
   id: "33333333-3333-3333-3333-333333333333",
@@ -227,7 +228,7 @@ export const demoData = {
   }): Promise<Inspection> {
     await delay(600);
     const inspection: Inspection = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       ...data,
       created_at: new Date().toISOString(),
       tecnico: DEMO_USER,

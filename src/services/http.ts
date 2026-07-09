@@ -6,6 +6,13 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 export const isApiConfigured =
   API_URL.length > 0 && !API_URL.includes("seudominio");
 
+export function getConnectionInfo() {
+  return {
+    mode: isApiConfigured ? ("api" as const) : ("demo" as const),
+    url: isApiConfigured ? API_URL : null,
+  };
+}
+
 const TOKEN_KEY = "dhe_auth_token";
 
 export const http = axios.create({

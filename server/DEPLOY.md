@@ -39,8 +39,21 @@ docker compose exec dhe-api npx tsx prisma/seed.ts
 ### 6. Verificar
 
 ```bash
-curl https://api-dhe.seudominio.com.br/health
+curl https://SEU_DOMINIO/health
+# Deve retornar: {"status":"ok","database":"connected",...}
+
+npm run test:db
 ```
+
+**Importante:** o domínio em `DHE_API_HOST` precisa existir no DNS (registro A apontando para o IP da VPS). Sem isso o app não consegue conectar.
+
+No app mobile, configure na raiz do projeto:
+
+```
+EXPO_PUBLIC_API_URL=https://SEU_DOMINIO
+```
+
+Depois reinicie o Expo (`npm run start:clean`).
 
 ---
 
