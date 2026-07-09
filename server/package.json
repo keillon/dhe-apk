@@ -11,6 +11,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "db:vps:up": "docker compose -f docker-compose.vps.yml up -d --build --wait",
+    "db:vps:start": "sh scripts/vps-up.sh",
     "db:vps:traefik": "docker compose -f docker-compose.vps-traefik.yml up -d --build",
     "db:vps:seed": "docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts",
     "db:vps:migrate": "docker compose -f docker-compose.vps.yml exec dhe-api npx prisma migrate deploy",
