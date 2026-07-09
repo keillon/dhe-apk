@@ -5,6 +5,8 @@ import { colors } from "@/theme";
 
 export { generateId } from "./id";
 export { getApiErrorMessage } from "./api-error";
+export { maskDateInput, isValidDateBR, dateBRToISO } from "./masks";
+export type { LocalPhoto } from "./images";
 
 export function formatDate(date: string | undefined): string {
   if (!date) return "—";

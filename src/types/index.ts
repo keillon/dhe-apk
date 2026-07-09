@@ -82,6 +82,23 @@ export interface InspectionPhoto {
   created_at: string;
 }
 
+export interface CreateInspectionPhotoInput {
+  tipo: "antes" | "depois";
+  url: string;
+}
+
+export interface CreateInspectionInput {
+  equipamento_id: string;
+  tecnico_id: string;
+  nivel_oleo: number;
+  contaminacao_oleo: OilContamination;
+  data_ultima_limpeza?: string;
+  complemento?: string;
+  checklist: ChecklistItem;
+  fotos?: CreateInspectionPhotoInput[];
+  assinatura_url?: string;
+}
+
 export interface Notification {
   id: string;
   usuario_id: string;

@@ -4,11 +4,26 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, Save } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { Button, Card, Input, Loading } from "@/components";
+import {
+  Button,
+  Card,
+  DateInput,
+  Input,
+  Loading,
+  OilLevelSlider,
+  PhotoPickerSection,
+  SignaturePad,
+} from "@/components";
 import { useCreateInspection, useEquipment } from "@/hooks";
 import { useAuthStore } from "@/store";
-import { CHECKLIST_LABELS, DEFAULT_CHECKLIST, getApiErrorMessage } from "@/utils";
+import {
+  CHECKLIST_LABELS,
+  DEFAULT_CHECKLIST,
+  getApiErrorMessage,
+  isValidDateBR,
+} from "@/utils";
 import type { ChecklistItem, OilContamination } from "@/types";
+import type { LocalPhoto } from "@/utils/images";
 import { colors } from "@/theme";
 
 const CONTAMINATION_OPTIONS: { value: OilContamination; label: string; color: string }[] = [
@@ -27,8 +42,12 @@ export default function NewInspectionScreen() {
   const [nivelOleo, setNivelOleo] = useState(75);
   const [contaminacao, setContaminacao] = useState<OilContamination>("baixa");
   const [dataLimpeza, setDataLimpeza] = useState("");
+  const [dataLimpezaError, setDataLimpezaError] = useState("");
   const [complemento, setComplemento] = useState("");
   const [checklist, setChecklist] = useState<ChecklistItem>({ ...DEFAULT_CHECKLIST });
+  const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>([]);
+  const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>([]);
+  const [assinatura, setAssinatura] = useState<string | null>(null);
 
   const toggleChecklist = (key: keyof ChecklistItem) => {
     setChecklist((prev: ChecklistItem) => ({ ...prev, [key]: !prev[key] }));
@@ -36,6 +55,17 @@ export default function NewInspectionScreen() {
 
   const handleSave = async () => {
     if (!user || !equipmentId) return;
+
+    if (dataLimpeza && !isValidDateBR(dataLimpeza)) {
+      setDataLimpezaError("Data inválida. Use o formato DD/MM/AAAA.");
+      return;
+    }
+    setDataLimpezaError("");
+
+    const fotos = [
+      ...fotosAntes.map((f) => ({ tipo: "antes" as const, url: f.dataUrl })),
+      ...fotosDepois.map((f) => ({ tipo: "depois" as const, url: f.dataUrl })),
+    ];
 
     try {
       await createInspection.mutateAsync({
@@ -46,6 +76,8 @@ export default function NewInspectionScreen() {
         data_ultima_limpeza: dataLimpeza || undefined,
         complemento: complemento || undefined,
         checklist,
+        fotos: fotos.length > 0 ? fotos : undefined,
+        assinatura_url: assinatura ?? undefined,
       });
 
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -73,34 +105,7 @@ export default function NewInspectionScreen() {
         <Text className="mb-6 text-sm text-dhe-textSecondary">{equipment.nome}</Text>
 
         <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-text">
-            Nível do óleo: {nivelOleo}%
-          </Text>
-          <View className="flex-row gap-2">
-            {[0, 25, 50, 75, 100].map((val) => (
-              <Pressable
-                key={val}
-                onPress={() => setNivelOleo(val)}
-                className={`flex-1 items-center rounded-xl py-3 ${
-                  nivelOleo === val ? "bg-dhe-primary" : "bg-dhe-elevated"
-                }`}
-              >
-                <Text
-                  className={`text-sm font-semibold ${
-                    nivelOleo === val ? "text-dhe-bg" : "text-dhe-textSecondary"
-                  }`}
-                >
-                  {val}%
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <View className="mt-4 h-3 overflow-hidden rounded-full bg-dhe-elevated">
-            <View
-              className="h-full rounded-full bg-dhe-primary"
-              style={{ width: `${nivelOleo}%` }}
-            />
-          </View>
+          <OilLevelSlider value={nivelOleo} onChange={setNivelOleo} />
         </Card>
 
         <Card className="mb-4">
@@ -131,11 +136,14 @@ export default function NewInspectionScreen() {
           </View>
         </Card>
 
-        <Input
+        <DateInput
           label="Data da última limpeza do reservatório"
           value={dataLimpeza}
-          onChangeText={setDataLimpeza}
-          placeholder="DD/MM/AAAA"
+          onChangeText={(text) => {
+            setDataLimpeza(text);
+            if (dataLimpezaError) setDataLimpezaError("");
+          }}
+          error={dataLimpezaError}
         />
 
         <Input
@@ -168,6 +176,19 @@ export default function NewInspectionScreen() {
               <Text className="text-base text-dhe-text">{CHECKLIST_LABELS[key]}</Text>
             </Pressable>
           ))}
+        </Card>
+
+        <Card className="mb-4">
+          <PhotoPickerSection
+            fotosAntes={fotosAntes}
+            fotosDepois={fotosDepois}
+            onChangeAntes={setFotosAntes}
+            onChangeDepois={setFotosDepois}
+          />
+        </Card>
+
+        <Card className="mb-4">
+          <SignaturePad value={assinatura} onChange={setAssinatura} />
         </Card>
 
         <Button

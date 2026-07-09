@@ -18,6 +18,11 @@ const checklistSchema = z.object({
   acoplamentos: z.boolean(),
 });
 
+const fotoSchema = z.object({
+  tipo: z.enum(["antes", "depois"]),
+  url: z.string().min(1),
+});
+
 const createInspectionSchema = z.object({
   equipamento_id: z.string().min(1),
   tecnico_id: z.string().min(1),
@@ -26,6 +31,8 @@ const createInspectionSchema = z.object({
   data_ultima_limpeza: z.string().optional(),
   complemento: z.string().optional(),
   checklist: checklistSchema,
+  fotos: z.array(fotoSchema).max(10).optional(),
+  assinatura_url: z.string().optional(),
 });
 
 export const inspectionsRouter = Router();
@@ -105,8 +112,26 @@ inspectionsRouter.post("/", async (req, res) => {
           complemento: data.complemento,
           checklist: data.checklist,
         },
-        include: { tecnico: true, fotos: true, assinatura: true },
       });
+
+      if (data.fotos?.length) {
+        await tx.foto.createMany({
+          data: data.fotos.map((foto) => ({
+            inspecaoId: created.id,
+            url: foto.url,
+            tipo: foto.tipo,
+          })),
+        });
+      }
+
+      if (data.assinatura_url) {
+        await tx.assinatura.create({
+          data: {
+            inspecaoId: created.id,
+            url: data.assinatura_url,
+          },
+        });
+      }
 
       await tx.historico.create({
         data: {
@@ -119,6 +144,8 @@ inspectionsRouter.post("/", async (req, res) => {
             data_ultima_limpeza: created.dataUltimaLimpeza,
             complemento: created.complemento,
             checklist: created.checklist,
+            fotos_count: data.fotos?.length ?? 0,
+            tem_assinatura: !!data.assinatura_url,
             created_at: created.createdAt,
           },
         },
@@ -129,7 +156,10 @@ inspectionsRouter.post("/", async (req, res) => {
         data: { ultimaInspecao: created.createdAt },
       });
 
-      return created;
+      return tx.inspecao.findUniqueOrThrow({
+        where: { id: created.id },
+        include: { tecnico: true, fotos: true, assinatura: true },
+      });
     });
 
     res.status(201).json(mapInspection(inspection));

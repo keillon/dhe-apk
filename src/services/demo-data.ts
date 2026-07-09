@@ -1,11 +1,11 @@
 import type {
-  ChecklistItem,
+  CreateInspectionInput,
   Client,
   DashboardStats,
   Equipment,
   Inspection,
+  InspectionPhoto,
   Notification,
-  OilContamination,
   User,
 } from "@/types";
 import { generateId } from "@/utils/id";
@@ -217,23 +217,34 @@ export const demoData = {
     return demoInspections.find((i) => i.id === id) ?? null;
   },
 
-  async createInspection(data: {
-    equipamento_id: string;
-    tecnico_id: string;
-    nivel_oleo: number;
-    contaminacao_oleo: OilContamination;
-    data_ultima_limpeza?: string;
-    complemento?: string;
-    checklist: ChecklistItem;
-  }): Promise<Inspection> {
+  async createInspection(data: CreateInspectionInput): Promise<Inspection> {
     await delay(600);
+
+    const fotos: InspectionPhoto[] =
+      data.fotos?.map((foto, index) => ({
+        id: `foto-${generateId()}-${index}`,
+        inspecao_id: "",
+        url: foto.url,
+        tipo: foto.tipo,
+        created_at: new Date().toISOString(),
+      })) ?? [];
+
     const inspection: Inspection = {
       id: generateId(),
-      ...data,
+      equipamento_id: data.equipamento_id,
+      tecnico_id: data.tecnico_id,
+      nivel_oleo: data.nivel_oleo,
+      contaminacao_oleo: data.contaminacao_oleo,
+      data_ultima_limpeza: data.data_ultima_limpeza,
+      complemento: data.complemento,
+      checklist: data.checklist,
+      assinatura_url: data.assinatura_url,
       created_at: new Date().toISOString(),
       tecnico: DEMO_USER,
-      fotos: [],
+      fotos: fotos.map((f) => ({ ...f, inspecao_id: "" })),
     };
+
+    inspection.fotos = fotos.map((f) => ({ ...f, inspecao_id: inspection.id }));
     demoInspections = [inspection, ...demoInspections];
 
     const eq = DEMO_EQUIPMENTS.find((e) => e.id === data.equipamento_id);

@@ -3,9 +3,10 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Pressable } from "react-native";
 import { ArrowLeft } from "lucide-react-native";
-import { Card, Loading, ErrorState } from "@/components";
+import { Card, InspectionGallery, Loading, ErrorState } from "@/components";
 import { useInspection } from "@/hooks";
 import {
+  formatDate,
   formatDateTime,
   getContaminationColor,
   getContaminationLabel,
@@ -40,6 +41,12 @@ export default function InspectionDetailScreen() {
             <Text className="text-sm text-dhe-textMuted">Nível do óleo</Text>
             <Text className="text-sm font-bold text-dhe-primary">{inspection.nivel_oleo}%</Text>
           </View>
+          <View className="mb-3 h-2 overflow-hidden rounded-full bg-dhe-elevated">
+            <View
+              className="h-full rounded-full bg-dhe-primary"
+              style={{ width: `${inspection.nivel_oleo}%` }}
+            />
+          </View>
           <View className="mb-3 flex-row justify-between">
             <Text className="text-sm text-dhe-textMuted">Contaminação</Text>
             <Text
@@ -53,7 +60,7 @@ export default function InspectionDetailScreen() {
             <View className="flex-row justify-between">
               <Text className="text-sm text-dhe-textMuted">Última limpeza</Text>
               <Text className="text-sm font-medium text-dhe-text">
-                {inspection.data_ultima_limpeza}
+                {formatDate(inspection.data_ultima_limpeza)}
               </Text>
             </View>
           )}
@@ -66,7 +73,7 @@ export default function InspectionDetailScreen() {
           </Card>
         )}
 
-        <Card className="mb-8">
+        <Card className="mb-4">
           <Text className="mb-3 text-sm font-bold text-dhe-text">Checklist</Text>
           {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key: keyof ChecklistItem) => (
             <View key={key} className="mb-2 flex-row items-center">
@@ -75,6 +82,16 @@ export default function InspectionDetailScreen() {
             </View>
           ))}
         </Card>
+
+        {(inspection.fotos?.length || inspection.assinatura_url) && (
+          <Card className="mb-8">
+            <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos e assinatura</Text>
+            <InspectionGallery
+              fotos={inspection.fotos}
+              assinaturaUrl={inspection.assinatura_url}
+            />
+          </Card>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

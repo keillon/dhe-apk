@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
-import type { ChecklistItem, OilContamination } from "@/types";
+import type { CreateInspectionInput } from "@/types";
 
 export function useDashboardStats() {
   return useQuery({
@@ -67,15 +67,7 @@ export function useCreateInspection() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: {
-      equipamento_id: string;
-      tecnico_id: string;
-      nivel_oleo: number;
-      contaminacao_oleo: OilContamination;
-      data_ultima_limpeza?: string;
-      complemento?: string;
-      checklist: ChecklistItem;
-    }) => api.createInspection(data),
+    mutationFn: (data: CreateInspectionInput) => api.createInspection(data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["inspections", variables.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["equipment", variables.equipamento_id] });

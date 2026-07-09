@@ -1,13 +1,12 @@
 import { http, isApiConfigured, saveToken, clearToken } from "./http";
 import { demoData } from "./demo-data";
 import type {
-  ChecklistItem,
   Client,
+  CreateInspectionInput,
   DashboardStats,
   Equipment,
   Inspection,
   Notification,
-  OilContamination,
   User,
 } from "@/types";
 
@@ -128,15 +127,7 @@ export const api = {
     }
   },
 
-  async createInspection(data: {
-    equipamento_id: string;
-    tecnico_id: string;
-    nivel_oleo: number;
-    contaminacao_oleo: OilContamination;
-    data_ultima_limpeza?: string;
-    complemento?: string;
-    checklist: ChecklistItem;
-  }): Promise<Inspection> {
+  async createInspection(data: CreateInspectionInput): Promise<Inspection> {
     if (!isApiConfigured) return demoData.createInspection(data);
 
     const { data: inspection } = await http.post<Inspection>("/inspections", data);
