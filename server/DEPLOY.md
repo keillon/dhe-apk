@@ -8,14 +8,23 @@
 | 80 | `301 Moved Permanently` (Traefik → HTTPS) |
 | **8090** | Use esta |
 
-### Subir na VPS
+### `.env` correto na VPS
 
 ```bash
-cd /var/www/dhe-apk/server
-git pull
-chmod +x scripts/vps-up.sh
-./scripts/vps-up.sh
+cp .env.vps.example .env
+nano .env   # só mude JWT_SECRET se quiser
 ```
+
+```env
+DHE_DB_PASSWORD=dhe-apk
+JWT_SECRET=uma_senha_jwt_longa_e_aleatoria
+PORT=4002
+NODE_ENV=production
+```
+
+**Não altere `DHE_DB_PASSWORD`** depois que o banco já foi criado — o volume guarda a senha antiga.
+
+**Não coloque** `EXPO_PUBLIC_API_URL` no `server/.env`.
 
 O script usa `--wait` e só testa o health **depois** da API ficar pronta.
 

@@ -25,5 +25,5 @@ ss -tlnp | grep 8090 || true
 
 echo ""
 echo "=== IP público (teste do seu PC) ==="
-PUBLIC_IP=$(curl -fsS ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+PUBLIC_IP=$(curl -4 -fsS ifconfig.me 2>/dev/null || echo "195.35.40.86")
 echo "curl http://${PUBLIC_IP}:8090/health"
