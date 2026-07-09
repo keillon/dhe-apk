@@ -57,3 +57,12 @@ app.use(
 app.listen(port, "0.0.0.0", () => {
   console.log(`DHE API rodando na porta ${port}`);
 });
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error);
+  process.exit(1);
+});
