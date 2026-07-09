@@ -343,7 +343,12 @@ export const demoData = {
 
   async updateProfile(data: UpdateProfileInput): Promise<User> {
     await delay(400);
-    demoSessionUser = { ...demoSessionUser, ...data };
+    const next: User = { ...demoSessionUser };
+
+    if (data.nome) next.nome = data.nome;
+    if (data.foto_url) next.foto_url = data.foto_url;
+
+    demoSessionUser = next;
     return { ...demoSessionUser };
   },
 

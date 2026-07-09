@@ -16,6 +16,45 @@ function guessMimeType(uri: string, mimeType?: string | null): string {
   return "image/jpeg";
 }
 
+const PROFILE_IMAGE_QUALITY = 0.4;
+
+export async function pickProfileImage(source: "camera" | "gallery"): Promise<LocalPhoto | null> {
+  if (source === "camera") {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      await feedback.alert("Permissão necessária", "Permita o acesso à câmera para tirar uma foto.");
+      return null;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: PROFILE_IMAGE_QUALITY,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets[0]) return null;
+    return assetToLocalPhoto(result.assets[0]);
+  }
+
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    await feedback.alert("Permissão necessária", "Permita o acesso à galeria para escolher uma foto.");
+    return null;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    allowsEditing: true,
+    aspect: [1, 1],
+    quality: PROFILE_IMAGE_QUALITY,
+    base64: true,
+  });
+
+  if (result.canceled || !result.assets[0]) return null;
+  return assetToLocalPhoto(result.assets[0]);
+}
+
 export async function assetToLocalPhoto(
   asset: ImagePicker.ImagePickerAsset
 ): Promise<LocalPhoto> {

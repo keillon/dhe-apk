@@ -2,15 +2,13 @@ import { useState, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Save } from "lucide-react-native";
-import {
-  Button,
-  Card,
-  DateInput,
-  Input,
-  OilLevelSlider,
-  PhotoPickerSection,
-  SignaturePad,
-} from "@/components";
+import { Button } from "./Button";
+import { Card } from "./Card";
+import { DateInput } from "./DateInput";
+import { Input } from "./Input";
+import { OilLevelSlider } from "./OilLevelSlider";
+import { PhotoPickerSection } from "./PhotoPickerSection";
+import { SignaturePad } from "./SignaturePad";
 import { useCreateInspection, useUpdateInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";

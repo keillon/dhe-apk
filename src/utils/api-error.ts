@@ -3,6 +3,9 @@ import axios from "axios";
 export function getApiErrorMessage(error: unknown, fallback = "Erro desconhecido."): string {
   if (axios.isAxiosError(error)) {
     if (!error.response) {
+      if (error.code === "ECONNABORTED") {
+        return "A operação demorou demais. Verifique sua conexão e tente novamente.";
+      }
       return "Sem conexão. Verifique sua internet e tente novamente.";
     }
 
@@ -14,6 +17,10 @@ export function getApiErrorMessage(error: unknown, fallback = "Erro desconhecido
       if ("message" in data && typeof data.message === "string") {
         return data.message;
       }
+    }
+
+    if (error.response.status === 413) {
+      return "Arquivo muito grande. Tente uma imagem menor.";
     }
 
     return "Não foi possível concluir a operação. Tente novamente.";

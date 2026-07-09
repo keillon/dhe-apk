@@ -14,7 +14,7 @@ export {
   type InspectionFormErrors,
 } from "./inspection-validation";
 export type { LocalPhoto } from "./images";
-export { getPhotoPreviewUri } from "./images";
+export { getPhotoPreviewUri, pickProfileImage } from "./images";
 export { resolveMediaUrl } from "./media-url";
 export { isAdmin, getRoleLabel } from "./roles";
 

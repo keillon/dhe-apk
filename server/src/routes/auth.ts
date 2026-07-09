@@ -103,21 +103,27 @@ authRouter.patch("/profile", authMiddleware, async (req, res) => {
   }
 
   const data = parsed.data;
-  let fotoUrl: string | undefined;
 
-  if (data.foto_url) {
-    fotoUrl = await persistImageData(data.foto_url, `users/${req.auth!.userId}`);
+  try {
+    let fotoUrl: string | undefined;
+
+    if (data.foto_url) {
+      fotoUrl = await persistImageData(data.foto_url, `users/${req.auth!.userId}`);
+    }
+
+    const user = await prisma.usuario.update({
+      where: { id: req.auth!.userId },
+      data: {
+        ...(data.nome ? { nome: data.nome } : {}),
+        ...(fotoUrl ? { fotoUrl } : {}),
+      },
+    });
+
+    res.json(mapUser(user));
+  } catch (error) {
+    console.error("Erro ao atualizar perfil:", error);
+    res.status(500).json({ error: "Erro ao atualizar perfil" });
   }
-
-  const user = await prisma.usuario.update({
-    where: { id: req.auth!.userId },
-    data: {
-      ...(data.nome ? { nome: data.nome } : {}),
-      ...(fotoUrl ? { fotoUrl } : {}),
-    },
-  });
-
-  res.json(mapUser(user));
 });
 
 authRouter.patch("/password", authMiddleware, async (req, res) => {

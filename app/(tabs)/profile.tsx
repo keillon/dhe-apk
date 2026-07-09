@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as ImagePicker from "expo-image-picker";
 import {
   User,
   Briefcase,
@@ -18,8 +17,7 @@ import { Card, Button, Input, DisplayImage, PageContainer } from "@/components";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
-import { getApiErrorMessage, isAdmin, getRoleLabel, resolveMediaUrl } from "@/utils";
-import { assetToLocalPhoto } from "@/utils/images";
+import { getApiErrorMessage, isAdmin, getRoleLabel, resolveMediaUrl, pickProfileImage } from "@/utils";
 import { colors } from "@/theme";
 
 export default function ProfileScreen() {
@@ -36,25 +34,21 @@ export default function ProfileScreen() {
   }, [user?.nome]);
 
   const handlePickPhoto = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      await feedback.alert("Permissão necessária", "Permita o acesso à galeria para escolher uma foto.");
+    const source = await feedback.choose("Foto de perfil", "Como deseja adicionar sua foto?", [
+      { text: "Galeria", value: "gallery", style: "default" },
+      { text: "Câmera", value: "camera", style: "primary" },
+    ]);
+
+    if (source !== "gallery" && source !== "camera") return;
+
+    const photo = await pickProfileImage(source);
+    if (!photo?.dataUrl.startsWith("data:")) {
+      feedback.toast.error("Não foi possível processar a imagem. Tente outra foto.");
       return;
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-      base64: true,
-    });
-
-    if (result.canceled || !result.assets[0]) return;
-
     setSaving(true);
     try {
-      const photo = await assetToLocalPhoto(result.assets[0]);
       const updated = await api.updateProfile({ foto_url: photo.dataUrl });
       setUser(updated);
       feedback.toast.success("Foto atualizada!");

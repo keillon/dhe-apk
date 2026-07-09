@@ -169,7 +169,9 @@ export const api = {
       return user;
     }
 
-    const { data: user } = await http.patch<User>("/auth/profile", data);
+    const { data: user } = await http.patch<User>("/auth/profile", data, {
+      timeout: 60000,
+    });
     return user;
   },
 
