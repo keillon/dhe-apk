@@ -65,12 +65,12 @@ export default function ProfileScreen() {
             Conexão
           </Text>
           <Text className="mt-1 text-base font-bold text-dhe-text">
-            {connection.mode === "api" ? "API em produção" : "Modo demonstração (local)"}
+            {connection.mode === "api" ? "Conectado ao banco VPS" : "Modo demonstração (local)"}
           </Text>
           <Text className="mt-1 text-sm text-dhe-textSecondary">
             {connection.mode === "api"
               ? connection.url
-              : "Dados salvos só neste aparelho. Configure EXPO_PUBLIC_API_URL para usar o banco."}
+              : "Sem servidor. Crie .env na raiz com EXPO_PUBLIC_API_URL=http://IP_VPS:4002"}
           </Text>
         </Card>
 

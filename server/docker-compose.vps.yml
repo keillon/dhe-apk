@@ -1,0 +1,50 @@
+# Stack DHE na VPS — acesso por IP, sem domínio/Traefik.
+# Uso na VPS:
+#   docker compose -f docker-compose.vps.yml up -d --build
+#   docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
+
+services:
+  dhe-postgres:
+    image: postgres:16-alpine
+    container_name: dhe-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dhe_hidraulicos
+      POSTGRES_USER: dhe_app
+      POSTGRES_PASSWORD: ${DHE_DB_PASSWORD}
+    volumes:
+      - dhe_postgres_data:/var/lib/postgresql/data
+    networks:
+      - dhe-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dhe_app -d dhe_hidraulicos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  dhe-api:
+    build: .
+    image: dhe-api:1.0.0
+    container_name: dhe-api
+    restart: unless-stopped
+    depends_on:
+      dhe-postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://dhe_app:${DHE_DB_PASSWORD}@dhe-postgres:5432/dhe_hidraulicos?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: 4002
+      NODE_ENV: production
+    ports:
+      - "4002:4002"
+    networks:
+      - dhe-internal
+
+volumes:
+  dhe_postgres_data:
+    name: dhe_postgres_data
+
+networks:
+  dhe-internal:
+    name: dhe-internal
+    driver: bridge

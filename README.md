@@ -8,46 +8,43 @@ Aplicativo profissional para técnicos da **DHE Componentes Hidráulicos**.
 dhe-app/
 ├── app/              # App mobile (Expo/React Native)
 ├── src/              # Código do app
-└── server/           # API REST + Prisma + PostgreSQL
+└── server/           # API REST + Prisma + PostgreSQL (VPS)
 ```
 
 - **Mobile**: Expo + React Native + NativeWind
-- **Backend**: Express + Prisma ORM + PostgreSQL
-- **Banco**: PostgreSQL isolado (`dhe_hidraulicos`) — não interfere em outros projetos
+- **Backend**: Express + Prisma ORM + PostgreSQL na VPS
+- **Banco**: PostgreSQL isolado (`dhe_hidraulicos`)
 
 ## App mobile
 
 ```bash
 npm install
-cp .env.example .env   # EXPO_PUBLIC_API_URL
-npm start
+cp .env.example .env   # EXPO_PUBLIC_API_URL=http://IP_VPS:4002
+npm run start:clean
 ```
 
-**Demo local** (sem API): deixe `EXPO_PUBLIC_API_URL` vazio ou com placeholder.
+No **Perfil** do app deve aparecer **"Conectado ao banco VPS"**.
 
 - Email: `tecnico@dhepr.com.br`
 - Senha: `123456`
 
-## API + Banco (VPS)
+## API + Banco na VPS (sem domínio)
 
-Veja [server/DEPLOY.md](server/DEPLOY.md) para deploy seguro na VPS.
+Veja [server/DEPLOY.md](server/DEPLOY.md) — usa o **IP da VPS** na porta **4002**.
 
 ```bash
+# Na VPS
 cd server
-npm install
-cp .env.example .env
-npm run db:migrate:dev
-npm run db:seed
-npm run dev
+docker compose -f docker-compose.vps.yml up -d --build
+docker compose -f docker-compose.vps.yml exec dhe-api npx prisma migrate deploy
+docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
+curl http://localhost:4002/health
 ```
 
-### Deploy Docker (recomendado)
+No PC (raiz do app):
 
-Stack isolada com PostgreSQL próprio — **não mexe nos outros bancos/containers**.
-
-```bash
-cd server
-docker compose up -d --build
+```env
+EXPO_PUBLIC_API_URL=http://195.35.40.86:4002
 ```
 
 ## Build APK

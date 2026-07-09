@@ -1,81 +1,99 @@
-# Deploy DHE na VPS (stack isolada)
+# Deploy DHE na VPS (banco PostgreSQL isolado)
 
-## Opção recomendada: PostgreSQL isolado em Docker
+## Setup por IP — sem site/domínio (recomendado agora)
 
-Esta opção **não mexe** nos bancos dos outros projetos (lpfenix, brprixx, fenixlog, chat-interno).
-
-### 1. Copiar para a VPS
+### 1. Na VPS — subir API + banco
 
 ```bash
-scp -r server/ root@srv754793:/var/www/dhe-app/server/
-```
-
-### 2. Configurar variáveis
-
-```bash
-cd /var/www/dhe-app/server
+cd /var/www/dhe-app/server   # ou onde clonou o repo
+git pull
 cp .env.example .env
-nano .env   # defina DHE_DB_PASSWORD, JWT_SECRET, DHE_API_HOST
+nano .env   # DHE_DB_PASSWORD e JWT_SECRET
 ```
 
-### 3. Rede Traefik (se ainda não existir)
+Edite o `.env` da VPS:
+
+```env
+DHE_DB_PASSWORD=sua_senha_forte
+JWT_SECRET=seu_jwt_longo_e_aleatorio
+PORT=4002
+NODE_ENV=production
+DATABASE_URL=postgresql://dhe_app:sua_senha_forte@dhe-postgres:5432/dhe_hidraulicos?schema=public
+```
+
+Suba com o compose **sem Traefik** (expõe porta 4002 no IP):
 
 ```bash
-docker network create traefik-public 2>/dev/null || true
+docker compose -f docker-compose.vps.yml up -d --build
+docker compose -f docker-compose.vps.yml exec dhe-api npx prisma migrate deploy
+docker compose -f docker-compose.vps.yml exec dhe-api npx tsx prisma/seed.ts
 ```
 
-### 4. Subir stack DHE
+### 2. Liberar porta no firewall da VPS
 
 ```bash
-docker compose up -d --build
+ufw allow 4002/tcp
+# ou no painel do provedor, abra a porta 4002 TCP
 ```
 
-### 5. Rodar seed (dados demo)
+### 3. Testar na VPS
 
 ```bash
-docker compose exec dhe-api npx tsx prisma/seed.ts
+curl http://localhost:4002/health
+# Esperado: {"status":"ok","database":"connected",...}
 ```
 
-### 6. Verificar
+### 4. No PC — configurar o app
+
+Na **raiz** do projeto (não em `server/`), crie `.env`:
+
+```env
+EXPO_PUBLIC_API_URL=http://195.35.40.86:4002
+```
+
+Troque `195.35.40.86` pelo IP real da VPS.
+
+Reinicie o Expo:
 
 ```bash
-curl https://SEU_DOMINIO/health
-# Deve retornar: {"status":"ok","database":"connected",...}
-
-npm run test:db
+npm run start:clean
 ```
 
-**Importante:** o domínio em `DHE_API_HOST` precisa existir no DNS (registro A apontando para o IP da VPS). Sem isso o app não consegue conectar.
+No app → **Perfil** deve mostrar **"Conectado ao banco VPS"** com o IP.
 
-No app mobile, configure na raiz do projeto:
+### 5. Credenciais (após seed)
 
+- Email: `tecnico@dhepr.com.br`
+- Senha: `123456`
+
+---
+
+## Opção futura: com domínio + Traefik
+
+Quando tiver site/domínio, use `docker-compose.yml` (com Traefik) e:
+
+```env
+EXPO_PUBLIC_API_URL=https://api-dhe.seudominio.com.br
 ```
-EXPO_PUBLIC_API_URL=https://SEU_DOMINIO
-```
-
-Depois reinicie o Expo (`npm run start:clean`).
 
 ---
 
 ## Opção alternativa: PostgreSQL já instalado no host
 
-Use **somente** se quiser reutilizar o Postgres da VPS.
-
 ```bash
 DHE_DB_PASSWORD='senha_forte' ./scripts/create-dhe-database-only.sh
 ```
 
-Depois ajuste o `.env`:
+Depois no `.env`:
 
 ```
 DATABASE_URL=postgresql://dhe_app:SENHA@localhost:5432/dhe_hidraulicos?schema=public
 ```
 
-E rode migrations:
-
 ```bash
 npm run db:migrate
 npm run db:seed
+npm run dev
 ```
 
 ---
@@ -89,7 +107,11 @@ npm run db:seed
 | Volume `dhe_postgres_data` isolado | Não compartilha dados com outros apps |
 | Container `dhe-postgres` separado | Não reinicia outros containers |
 
-## Credenciais demo (após seed)
+## Troubleshooting
 
-- Email: `tecnico@dhepr.com.br`
-- Senha: `123456`
+| Problema | Solução |
+|----------|---------|
+| App mostra "Modo demonstração" | `EXPO_PUBLIC_API_URL` está vazio ou no lugar errado — deve ficar na **raiz** do app |
+| Login falha / timeout | Porta 4002 fechada no firewall ou containers parados |
+| `database: disconnected` no health | Postgres não subiu — `docker compose -f docker-compose.vps.yml logs dhe-postgres` |
+| Inspeção não salva | Faça logout e login de novo (token antigo do modo demo) |
