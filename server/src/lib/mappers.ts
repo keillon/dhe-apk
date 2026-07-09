@@ -33,7 +33,7 @@ export function mapUser(user: {
     nome: user.nome,
     cargo: user.cargo,
     empresa: user.empresa,
-    role: user.role,
+    role: user.role ?? "tecnico",
     foto_url: user.fotoUrl ?? undefined,
     created_at: user.createdAt.toISOString(),
   };

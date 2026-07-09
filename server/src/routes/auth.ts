@@ -46,7 +46,8 @@ authRouter.post("/login", async (req, res) => {
   }
 
   const { email, password } = parsed.data;
-  const user = await prisma.usuario.findUnique({ where: { email } });
+  const normalizedEmail = email.trim().toLowerCase();
+  const user = await prisma.usuario.findUnique({ where: { email: normalizedEmail } });
 
   if (!user) {
     res.status(401).json({ error: "Credenciais inválidas" });

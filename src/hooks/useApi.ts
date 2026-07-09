@@ -48,6 +48,14 @@ export function useInspections(equipmentId: string) {
   });
 }
 
+export function useMyInspections() {
+  return useQuery({
+    queryKey: ["my-inspections"],
+    queryFn: () => api.getMyInspections(),
+    staleTime: 0,
+  });
+}
+
 export function useInspection(id: string) {
   return useQuery({
     queryKey: ["inspection", id],
@@ -71,6 +79,7 @@ export function useCreateInspection() {
     mutationFn: (data: CreateInspectionInput) => api.createInspection(data),
     onSuccess: (inspection, variables) => {
       queryClient.invalidateQueries({ queryKey: ["inspections", variables.equipamento_id] });
+      queryClient.invalidateQueries({ queryKey: ["my-inspections"] });
       queryClient.invalidateQueries({ queryKey: ["inspection", inspection.id] });
       queryClient.invalidateQueries({ queryKey: ["equipment", variables.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
@@ -87,6 +96,7 @@ export function useUpdateInspection() {
       api.updateInspection(id, data),
     onSuccess: (inspection) => {
       queryClient.invalidateQueries({ queryKey: ["inspections", inspection.equipamento_id] });
+      queryClient.invalidateQueries({ queryKey: ["my-inspections"] });
       queryClient.invalidateQueries({ queryKey: ["inspection", inspection.id] });
       queryClient.invalidateQueries({ queryKey: ["equipment", inspection.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });

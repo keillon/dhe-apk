@@ -166,16 +166,27 @@ const DEMO_NOTIFICATIONS: Notification[] = [
 ];
 
 export const demoData = {
-  async login(email: string, _password: string): Promise<User> {
+  async login(email: string, password: string): Promise<User> {
     await delay(800);
-    if (email === "admin@dhepr.com.br") {
-      demoSessionUser = { ...DEMO_ADMIN, email };
+    const normalized = email.trim().toLowerCase();
+
+    if (normalized === "admin@dhepr.com.br") {
+      if (password !== "123456") throw new Error("Credenciais inválidas");
+      demoSessionUser = { ...DEMO_ADMIN, email: normalized };
       return demoSessionUser;
     }
-    if (email === "tecnico@dhepr.com.br" || email.includes("@")) {
-      demoSessionUser = { ...DEMO_USER, email };
+
+    if (normalized === "tecnico@dhepr.com.br") {
+      if (password !== "123456") throw new Error("Credenciais inválidas");
+      demoSessionUser = { ...DEMO_USER, email: normalized };
       return demoSessionUser;
     }
+
+    if (normalized.includes("@")) {
+      demoSessionUser = { ...DEMO_USER, email: normalized };
+      return demoSessionUser;
+    }
+
     throw new Error("Credenciais inválidas");
   },
 
@@ -231,6 +242,17 @@ export const demoData = {
     await delay(400);
     return demoInspections
       .filter((i) => i.equipamento_id === equipmentId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  },
+
+  async getMyInspections(): Promise<Inspection[]> {
+    await delay(400);
+    return demoInspections
+      .filter((i) => i.tecnico_id === demoSessionUser.id)
+      .map((inspection) => {
+        const equipment = DEMO_EQUIPMENTS.find((e) => e.id === inspection.equipamento_id);
+        return equipment ? { ...inspection, equipamento: equipment } : inspection;
+      })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 

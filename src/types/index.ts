@@ -76,6 +76,7 @@ export interface Inspection {
   created_at: string;
   tecnico?: User;
   fotos?: InspectionPhoto[];
+  equipamento?: Equipment;
 }
 
 export interface InspectionPhoto {

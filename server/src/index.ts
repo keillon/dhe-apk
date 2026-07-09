@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { prisma } from "./lib/prisma";
+import { ensureDefaultUsers } from "./lib/ensure-users";
 import { getUploadRoot } from "./lib/media-storage";
 import { authRouter } from "./routes/auth";
 import { dashboardRouter } from "./routes/dashboard";
@@ -56,7 +57,14 @@ app.use(
   }
 );
 
-app.listen(port, "0.0.0.0", () => {
+app.listen(port, "0.0.0.0", async () => {
+  try {
+    await ensureDefaultUsers();
+    console.log("Usuários padrão verificados (admin e técnico).");
+  } catch (error) {
+    console.error("Erro ao garantir usuários padrão:", error);
+  }
+
   console.log(`DHE API rodando na porta ${port}`);
 });
 

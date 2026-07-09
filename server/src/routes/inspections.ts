@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
-import { mapInspection } from "../lib/mappers";
+import { mapInspection, mapEquipment } from "../lib/mappers";
 import { parseOptionalDate } from "../lib/parse-date";
 import { persistInspectionMedia } from "../lib/media-storage";
 import { authMiddleware } from "../middleware/auth";
@@ -74,6 +74,31 @@ async function saveInspectionMedia(
 export const inspectionsRouter = Router();
 
 inspectionsRouter.use(authMiddleware);
+
+inspectionsRouter.get("/me", async (req, res) => {
+  try {
+    const inspections = await prisma.inspecao.findMany({
+      where: { tecnicoId: req.auth!.userId },
+      include: {
+        tecnico: true,
+        fotos: true,
+        assinatura: true,
+        equipamento: { include: { cliente: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(
+      inspections.map((inspection) => ({
+        ...mapInspection(inspection),
+        equipamento: mapEquipment(inspection.equipamento),
+      }))
+    );
+  } catch (error) {
+    console.error("Erro ao listar minhas inspeções:", error);
+    res.status(500).json({ error: "Erro ao buscar suas inspeções" });
+  }
+});
 
 inspectionsRouter.get("/equipment/:equipmentId", async (req, res) => {
   try {

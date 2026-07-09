@@ -133,6 +133,13 @@ export const api = {
     return data;
   },
 
+  async getMyInspections(): Promise<Inspection[]> {
+    if (!isApiConfigured) return demoData.getMyInspections();
+
+    const { data } = await http.get<Inspection[]>("/inspections/me");
+    return data;
+  },
+
   async getInspectionById(id: string): Promise<Inspection | null> {
     if (!isApiConfigured) return demoData.getInspectionById(id);
 

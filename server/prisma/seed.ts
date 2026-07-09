@@ -8,7 +8,7 @@ async function main() {
 
   await prisma.usuario.upsert({
     where: { email: "admin@dhepr.com.br" },
-    update: { role: "admin" },
+    update: { role: "admin", senhaHash },
     create: {
       email: "admin@dhepr.com.br",
       senhaHash,
@@ -21,7 +21,7 @@ async function main() {
 
   const tecnico = await prisma.usuario.upsert({
     where: { email: "tecnico@dhepr.com.br" },
-    update: { role: "tecnico" },
+    update: { role: "tecnico", senhaHash },
     create: {
       email: "tecnico@dhepr.com.br",
       senhaHash,

@@ -22,7 +22,7 @@ import {
   RefreshableScrollView,
   PageContainer,
 } from "@/components";
-import { useDashboardStats, useEquipments, useNetworkStatus } from "@/hooks";
+import { useDashboardStats, useEquipments, useMyInspections, useNetworkStatus } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { getGreeting, isAdmin } from "@/utils";
 import { colors } from "@/theme";
@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const { isOffline } = useNetworkStatus();
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: equipments, refetch: refetchEquipments } = useEquipments();
+  const { data: myInspections, refetch: refetchMyInspections } = useMyInspections();
 
   const pendingEquipments = equipments?.filter(
     (e) => e.proxima_manutencao && new Date(e.proxima_manutencao) < new Date()
@@ -50,7 +51,11 @@ export default function HomeScreen() {
         className="flex-1"
         showsVerticalScrollIndicator={false}
         onRefresh={async () => {
-          if (admin) await Promise.all([refetch(), refetchEquipments()]);
+          if (admin) {
+            await Promise.all([refetch(), refetchEquipments()]);
+          } else {
+            await refetchMyInspections();
+          }
         }}
       >
         <View className="bg-dhe-surface px-5 pb-8 pt-4">
@@ -80,7 +85,7 @@ export default function HomeScreen() {
             <Text className="mt-1 text-sm text-dhe-textSecondary">
               {admin
                 ? "Painel de gestão DHE"
-                : "Escaneie o QR do equipamento para iniciar"}
+                : "Escaneie QR Codes e acompanhe suas inspeções"}
             </Text>
           </PageContainer>
         </View>
@@ -123,6 +128,37 @@ export default function HomeScreen() {
                   size="lg"
                   icon={<Printer size={22} color={colors.text} />}
                   className="mb-3"
+                />
+              </>
+            )}
+
+            {!admin && (
+              <>
+                <View className="mb-6 flex-row gap-3">
+                  <StatCard
+                    icon={ClipboardCheck}
+                    label="Minhas inspeções"
+                    value={myInspections?.length ?? 0}
+                    color={colors.primary}
+                  />
+                  <StatCard
+                    icon={Wrench}
+                    label="Equipamentos"
+                    value={
+                      new Set((myInspections ?? []).map((i) => i.equipamento_id)).size
+                    }
+                    color={colors.success}
+                  />
+                </View>
+
+                <Button
+                  title="Ver minha atividade"
+                  onPress={() => router.push("/(tabs)/activity")}
+                  variant="secondary"
+                  fullWidth
+                  size="lg"
+                  icon={<History size={22} color={colors.text} />}
+                  className="mb-4"
                 />
               </>
             )}
