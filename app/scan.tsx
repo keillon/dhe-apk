@@ -51,23 +51,23 @@ export default function ScanScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-dhe-dark px-6">
-        <QrCode size={64} color={colors.light} />
-        <Text className="mt-4 text-center text-lg text-white">
+      <SafeAreaView className="flex-1 items-center justify-center bg-dhe-bg px-5">
+        <QrCode size={64} color={colors.primary} />
+        <Text className="mt-4 text-center text-lg text-dhe-text">
           Precisamos de acesso à câmera para escanear QR Codes
         </Text>
         <Pressable
           onPress={requestPermission}
           className="mt-6 rounded-2xl bg-dhe-primary px-8 py-4"
         >
-          <Text className="font-semibold text-white">Permitir câmera</Text>
+          <Text className="font-semibold text-dhe-bg">Permitir câmera</Text>
         </Pressable>
       </SafeAreaView>
     );
   }
 
   return (
-    <View className="flex-1 bg-dhe-dark">
+    <View className="flex-1 bg-dhe-bg">
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
@@ -76,38 +76,38 @@ export default function ScanScreen() {
       />
 
       <SafeAreaView className="flex-1">
-        <View className="flex-row items-center justify-between px-4 pt-2">
-          <Text className="text-lg font-bold text-white">Escanear QR Code</Text>
+        <View className="flex-row items-center justify-between px-5 pt-2">
+          <Text className="text-lg font-bold text-dhe-text">Escanear QR Code</Text>
           <Pressable
             onPress={() => router.back()}
-            className="rounded-full bg-black/40 p-2"
+            className="rounded-full bg-dhe-overlay p-2"
           >
-            <X size={24} color="#fff" />
+            <X size={24} color={colors.text} />
           </Pressable>
         </View>
 
         <View className="flex-1 items-center justify-center">
           <View className="h-64 w-64 rounded-3xl border-2 border-dhe-primary">
-            <View className="absolute -left-0.5 -top-0.5 h-8 w-8 border-l-4 border-t-4 border-dhe-primary rounded-tl-lg" />
-            <View className="absolute -right-0.5 -top-0.5 h-8 w-8 border-r-4 border-t-4 border-dhe-primary rounded-tr-lg" />
-            <View className="absolute -bottom-0.5 -left-0.5 h-8 w-8 border-b-4 border-l-4 border-dhe-primary rounded-bl-lg" />
-            <View className="absolute -bottom-0.5 -right-0.5 h-8 w-8 border-b-4 border-r-4 border-dhe-primary rounded-br-lg" />
+            <View className="absolute -left-0.5 -top-0.5 h-8 w-8 rounded-tl-lg border-l-4 border-t-4 border-dhe-primary" />
+            <View className="absolute -right-0.5 -top-0.5 h-8 w-8 rounded-tr-lg border-r-4 border-t-4 border-dhe-primary" />
+            <View className="absolute -bottom-0.5 -left-0.5 h-8 w-8 rounded-bl-lg border-b-4 border-l-4 border-dhe-primary" />
+            <View className="absolute -bottom-0.5 -right-0.5 h-8 w-8 rounded-br-lg border-b-4 border-r-4 border-dhe-primary" />
           </View>
-          <Text className="mt-6 text-center text-sm text-dhe-light">
+          <Text className="mt-6 text-center text-sm text-dhe-text">
             Aponte para o QR Code do equipamento
           </Text>
-          <Text className="mt-1 text-center text-xs text-dhe-muted">
+          <Text className="mt-1 text-center text-xs text-dhe-textSecondary">
             O QR Code contém apenas o ID — os dados vêm do banco
           </Text>
         </View>
 
         {(loading || error) && (
-          <View className="mx-4 mb-8 rounded-2xl bg-black/70 p-4">
+          <View className="mx-5 mb-8 rounded-2xl bg-dhe-overlay p-4">
             {loading && (
-              <Text className="text-center text-white">Buscando equipamento...</Text>
+              <Text className="text-center text-dhe-text">Buscando equipamento...</Text>
             )}
             {error && (
-              <Text className="text-center text-red-400">{error}</Text>
+              <Text className="text-center text-dhe-danger">{error}</Text>
             )}
           </View>
         )}

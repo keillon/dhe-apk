@@ -58,18 +58,18 @@ export default function NewInspectionScreen() {
   if (!equipment) return <Loading fullScreen />;
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center pt-2">
-          <ArrowLeft size={20} color={colors.dark} />
-          <Text className="ml-2 text-dhe-dark">Voltar</Text>
+          <ArrowLeft size={20} color={colors.text} />
+          <Text className="ml-2 text-dhe-text">Voltar</Text>
         </Pressable>
 
-        <Text className="mb-1 text-2xl font-bold text-dhe-dark">Nova Inspeção</Text>
-        <Text className="mb-6 text-sm text-dhe-muted">{equipment.nome}</Text>
+        <Text className="mb-1 text-2xl font-bold text-dhe-text">Nova Inspeção</Text>
+        <Text className="mb-6 text-sm text-dhe-textSecondary">{equipment.nome}</Text>
 
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-bold text-dhe-dark">
+          <Text className="mb-3 text-sm font-bold text-dhe-text">
             Nível do óleo: {nivelOleo}%
           </Text>
           <View className="flex-row gap-2">
@@ -78,12 +78,12 @@ export default function NewInspectionScreen() {
                 key={val}
                 onPress={() => setNivelOleo(val)}
                 className={`flex-1 items-center rounded-xl py-3 ${
-                  nivelOleo === val ? "bg-dhe-primary" : "bg-dhe-surface"
+                  nivelOleo === val ? "bg-dhe-primary" : "bg-dhe-elevated"
                 }`}
               >
                 <Text
                   className={`text-sm font-semibold ${
-                    nivelOleo === val ? "text-white" : "text-dhe-muted"
+                    nivelOleo === val ? "text-dhe-bg" : "text-dhe-textSecondary"
                   }`}
                 >
                   {val}%
@@ -91,7 +91,7 @@ export default function NewInspectionScreen() {
               </Pressable>
             ))}
           </View>
-          <View className="mt-3 h-3 overflow-hidden rounded-full bg-dhe-border">
+          <View className="mt-4 h-3 overflow-hidden rounded-full bg-dhe-elevated">
             <View
               className="h-full rounded-full bg-dhe-primary"
               style={{ width: `${nivelOleo}%` }}
@@ -100,7 +100,7 @@ export default function NewInspectionScreen() {
         </Card>
 
         <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-dark">Contaminação do óleo</Text>
+          <Text className="mb-3 text-sm font-bold text-dhe-text">Contaminação do óleo</Text>
           <View className="flex-row gap-2">
             {CONTAMINATION_OPTIONS.map((opt) => (
               <Pressable
@@ -109,7 +109,7 @@ export default function NewInspectionScreen() {
                 className="flex-1 items-center rounded-xl py-3"
                 style={{
                   backgroundColor:
-                    contaminacao === opt.value ? `${opt.color}20` : colors.surface,
+                    contaminacao === opt.value ? `${opt.color}20` : colors.elevated,
                   borderWidth: contaminacao === opt.value ? 2 : 0,
                   borderColor: opt.color,
                 }}
@@ -117,7 +117,7 @@ export default function NewInspectionScreen() {
                 <Text
                   className="text-sm font-semibold"
                   style={{
-                    color: contaminacao === opt.value ? opt.color : colors.muted,
+                    color: contaminacao === opt.value ? opt.color : colors.textMuted,
                   }}
                 >
                   {opt.label}
@@ -145,23 +145,23 @@ export default function NewInspectionScreen() {
         />
 
         <Card className="mb-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-dark">Checklist</Text>
+          <Text className="mb-3 text-sm font-bold text-dhe-text">Checklist</Text>
           {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key: keyof ChecklistItem) => (
             <Pressable
               key={key}
               onPress={() => toggleChecklist(key)}
-              className="mb-2 flex-row items-center rounded-xl bg-dhe-surface px-4 py-3"
+              className="mb-2 flex-row items-center rounded-xl bg-dhe-elevated px-4 py-3"
             >
               <View
                 className={`mr-3 h-6 w-6 items-center justify-center rounded-md border-2 ${
                   checklist[key]
                     ? "border-dhe-primary bg-dhe-primary"
-                    : "border-dhe-border bg-white"
+                    : "border-dhe-border bg-dhe-card"
                 }`}
               >
-                {checklist[key] && <Text className="text-xs font-bold text-white">✓</Text>}
+                {checklist[key] && <Text className="text-xs font-bold text-dhe-bg">✓</Text>}
               </View>
-              <Text className="text-base text-dhe-dark">{CHECKLIST_LABELS[key]}</Text>
+              <Text className="text-base text-dhe-text">{CHECKLIST_LABELS[key]}</Text>
             </Pressable>
           ))}
         </Card>
@@ -172,7 +172,7 @@ export default function NewInspectionScreen() {
           loading={createInspection.isPending}
           fullWidth
           size="lg"
-          icon={<Save size={20} color="#fff" />}
+          icon={<Save size={20} color={colors.bg} />}
           className="mb-8"
         />
       </ScrollView>

@@ -8,17 +8,17 @@ interface StatCardProps {
   color?: string;
 }
 
-export function StatCard({ icon: Icon, label, value, color = "#0073FF" }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, color = "#3D9EFF" }: StatCardProps) {
   return (
-    <View className="flex-1 rounded-2xl bg-white p-4 shadow-dhe dark:bg-dhe-dark">
+    <View className="flex-1 rounded-2xl border border-dhe-border bg-dhe-card p-5">
       <View
-        className="mb-3 h-10 w-10 items-center justify-center rounded-xl"
-        style={{ backgroundColor: `${color}15` }}
+        className="mb-4 h-11 w-11 items-center justify-center rounded-xl"
+        style={{ backgroundColor: `${color}25` }}
       >
-        <Icon size={20} color={color} />
+        <Icon size={22} color={color} />
       </View>
-      <Text className="text-2xl font-bold text-dhe-dark dark:text-white">{value}</Text>
-      <Text className="mt-1 text-xs text-dhe-muted">{label}</Text>
+      <Text className="text-3xl font-bold text-dhe-text">{value}</Text>
+      <Text className="mt-1 text-sm font-medium text-dhe-textSecondary">{label}</Text>
     </View>
   );
 }

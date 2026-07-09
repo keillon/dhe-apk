@@ -36,17 +36,17 @@ export default function NotificationsScreen() {
   if (error) return <ErrorState onRetry={refetch} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <View className="px-6 pt-2">
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <View className="px-5 pt-2">
         <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center">
-          <ArrowLeft size={20} color={colors.dark} />
-          <Text className="ml-2 text-dhe-dark">Voltar</Text>
+          <ArrowLeft size={20} color={colors.text} />
+          <Text className="ml-2 text-dhe-text">Voltar</Text>
         </Pressable>
 
-        <Text className="mb-4 text-2xl font-bold text-dhe-dark">Notificações</Text>
+        <Text className="mb-5 text-2xl font-bold text-dhe-text">Notificações</Text>
       </View>
 
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         {notifications?.length === 0 ? (
           <EmptyState
             title="Nenhuma notificação"
@@ -65,15 +65,15 @@ export default function NotificationsScreen() {
                 >
                   <View className="flex-row items-start">
                     <View
-                      className="mr-3 h-10 w-10 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: `${color}15` }}
+                      className="mr-4 h-10 w-10 items-center justify-center rounded-xl"
+                      style={{ backgroundColor: `${color}20` }}
                     >
                       <Icon size={18} color={color} />
                     </View>
                     <View className="flex-1">
-                      <Text className="font-semibold text-dhe-dark">{notif.titulo}</Text>
-                      <Text className="mt-1 text-sm text-dhe-muted">{notif.mensagem}</Text>
-                      <Text className="mt-2 text-xs text-dhe-muted">
+                      <Text className="font-semibold text-dhe-text">{notif.titulo}</Text>
+                      <Text className="mt-1 text-sm text-dhe-textSecondary">{notif.mensagem}</Text>
+                      <Text className="mt-2 text-xs text-dhe-textMuted">
                         {formatRelative(notif.created_at)}
                       </Text>
                     </View>

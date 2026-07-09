@@ -9,7 +9,7 @@ export function Loading({ fullScreen = false }: { fullScreen?: boolean }) {
   );
 
   if (fullScreen) {
-    return <View className="flex-1 items-center justify-center bg-dhe-surface">{content}</View>;
+    return <View className="flex-1 items-center justify-center bg-dhe-bg">{content}</View>;
   }
   return content;
 }

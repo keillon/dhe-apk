@@ -73,6 +73,8 @@ export default function RootLayout() {
             <Stack.Screen name="equipment/history/[id]" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="client/[id]" />
+            <Stack.Screen name="qrcodes/index" />
+            <Stack.Screen name="qrcodes/print/[id]" />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

@@ -1,25 +1,20 @@
 export const colors = {
-  primary: "#0073FF",
-  primaryDark: "#0056CC",
-  dark: "#001423",
-  light: "#7CBFE0",
-  lightMuted: "#5396B7",
-  muted: "#5396B7",
+  primary: "#3D9EFF",
+  primaryDark: "#0073FF",
+  bg: "#000A14",
+  surface: "#001423",
+  card: "#0C2540",
+  elevated: "#103050",
+  border: "#1E4A73",
+  borderLight: "#2D6A9F",
+  text: "#FFFFFF",
+  textSecondary: "#A8CCE8",
+  textMuted: "#6B9ABF",
+  success: "#22C55E",
+  warning: "#FBBF24",
+  danger: "#F87171",
   white: "#FFFFFF",
-  surface: "#F5F9FC",
-  surfaceDark: "#0A1F33",
-  card: "#FFFFFF",
-  cardDark: "#0D2840",
-  border: "#E2EEF5",
-  borderDark: "#1A3A5C",
-  text: "#001423",
-  textSecondary: "#5396B7",
-  textLight: "#7CBFE0",
-  textDark: "#F5F9FC",
-  success: "#10B981",
-  warning: "#F59E0B",
-  danger: "#EF4444",
-  overlay: "rgba(0, 20, 35, 0.6)",
+  overlay: "rgba(0, 10, 20, 0.85)",
 } as const;
 
 export const spacing = {
@@ -29,6 +24,7 @@ export const spacing = {
   lg: 24,
   xl: 32,
   xxl: 48,
+  screen: 20,
 } as const;
 
 export const radius = {
@@ -40,36 +36,18 @@ export const radius = {
   full: 9999,
 } as const;
 
-export const shadows = {
-  sm: {
-    shadowColor: "#0073FF",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  md: {
-    shadowColor: "#001423",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  lg: {
-    shadowColor: "#001423",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 8,
-  },
+export const layout = {
+  screenPadding: "px-5",
+  sectionGap: "mb-6",
+  cardPadding: "p-5",
 } as const;
 
 export const typography = {
   h1: { fontSize: 28, fontWeight: "700" as const, lineHeight: 34 },
   h2: { fontSize: 22, fontWeight: "700" as const, lineHeight: 28 },
   h3: { fontSize: 18, fontWeight: "600" as const, lineHeight: 24 },
-  body: { fontSize: 16, fontWeight: "400" as const, lineHeight: 22 },
-  bodyBold: { fontSize: 16, fontWeight: "600" as const, lineHeight: 22 },
-  caption: { fontSize: 13, fontWeight: "400" as const, lineHeight: 18 },
-  label: { fontSize: 14, fontWeight: "500" as const, lineHeight: 18 },
+  body: { fontSize: 16, fontWeight: "400" as const, lineHeight: 24 },
+  bodyBold: { fontSize: 16, fontWeight: "600" as const, lineHeight: 24 },
+  caption: { fontSize: 14, fontWeight: "400" as const, lineHeight: 20 },
+  label: { fontSize: 14, fontWeight: "600" as const, lineHeight: 18 },
 } as const;

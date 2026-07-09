@@ -25,10 +25,10 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
-        <Text className="mb-1 text-2xl font-bold text-dhe-dark">Dashboard</Text>
-        <Text className="mb-6 text-sm text-dhe-muted">
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <ScrollView className="flex-1 px-5 pb-8 pt-4" showsVerticalScrollIndicator={false}>
+        <Text className="mb-1 text-2xl font-bold text-dhe-text">Dashboard</Text>
+        <Text className="mb-6 text-sm text-dhe-textSecondary">
           Visão geral das operações DHE
         </Text>
 
@@ -57,14 +57,14 @@ export default function DashboardScreen() {
             icon={Calendar}
             label="Próx. manutenções"
             value={stats?.proximas_manutencoes ?? 0}
-            color={colors.light}
+            color={colors.textSecondary}
           />
         </View>
 
         <Card className="mb-6">
           <View className="mb-4 flex-row items-center">
             <TrendingUp size={20} color={colors.primary} />
-            <Text className="ml-2 text-lg font-bold text-dhe-dark">
+            <Text className="ml-3 text-lg font-bold text-dhe-text">
               Status dos equipamentos
             </Text>
           </View>
@@ -74,12 +74,12 @@ export default function DashboardScreen() {
             { label: "Parado", count: statusCounts.parado, color: colors.warning },
             { label: "Manutenção", count: statusCounts.manutencao, color: colors.danger },
           ].map((item) => (
-            <View key={item.label} className="mb-3">
-              <View className="mb-1 flex-row justify-between">
-                <Text className="text-sm text-dhe-dark">{item.label}</Text>
-                <Text className="text-sm font-bold text-dhe-dark">{item.count}</Text>
+            <View key={item.label} className="mb-4">
+              <View className="mb-2 flex-row justify-between">
+                <Text className="text-sm text-dhe-text">{item.label}</Text>
+                <Text className="text-sm font-bold text-dhe-text">{item.count}</Text>
               </View>
-              <View className="h-3 overflow-hidden rounded-full bg-dhe-border">
+              <View className="h-3 overflow-hidden rounded-full bg-dhe-elevated">
                 <View
                   className="h-full rounded-full"
                   style={{
@@ -93,10 +93,10 @@ export default function DashboardScreen() {
         </Card>
 
         <Card>
-          <Text className="mb-2 text-lg font-bold text-dhe-dark">
+          <Text className="mb-3 text-lg font-bold text-dhe-text">
             Resultados DHE
           </Text>
-          <Text className="text-sm leading-5 text-dhe-muted">
+          <Text className="text-sm leading-6 text-dhe-textSecondary">
             Nossos clientes passaram de uma média de 18 quebras por ano para 2,
             em apenas 1 ano — redução de 89% nos custos com quebra de máquinas.
           </Text>

@@ -13,14 +13,14 @@ export function ErrorState({
   onRetry,
 }: ErrorStateProps) {
   return (
-    <View className="flex-1 items-center justify-center px-8 py-16">
-      <View className="mb-4 rounded-full bg-red-50 p-6">
+    <View className="flex-1 items-center justify-center bg-dhe-bg px-6 py-16">
+      <View className="mb-5 rounded-full border border-dhe-danger/30 bg-dhe-card p-6">
         <AlertCircle size={48} color={colors.danger} />
       </View>
-      <Text className="mb-2 text-center text-lg font-semibold text-dhe-dark dark:text-white">
-        Algo deu errado
+      <Text className="mb-2 text-center text-xl font-bold text-dhe-text">Algo deu errado</Text>
+      <Text className="mb-6 text-center text-base leading-6 text-dhe-textSecondary">
+        {message}
       </Text>
-      <Text className="mb-6 text-center text-base text-dhe-muted">{message}</Text>
       {onRetry && <Button title="Tentar novamente" onPress={onRetry} variant="outline" />}
     </View>
   );

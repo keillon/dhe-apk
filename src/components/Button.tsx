@@ -1,5 +1,4 @@
 import { ActivityIndicator, Pressable, Text, type PressableProps } from "react-native";
-import { colors } from "@/theme";
 
 type ButtonVariant = "primary" | "secondary" | "outline" | "danger" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
@@ -13,16 +12,16 @@ interface ButtonProps extends PressableProps {
   fullWidth?: boolean;
 }
 
-const variantStyles: Record<ButtonVariant, { bg: string; text: string; border?: string }> = {
-  primary: { bg: "bg-dhe-primary", text: "text-white" },
-  secondary: { bg: "bg-dhe-dark", text: "text-white" },
+const variantStyles: Record<ButtonVariant, { bg: string; text: string }> = {
+  primary: { bg: "bg-dhe-primary", text: "text-dhe-bg" },
+  secondary: { bg: "bg-dhe-elevated border border-dhe-borderLight", text: "text-dhe-text" },
   outline: { bg: "bg-transparent border-2 border-dhe-primary", text: "text-dhe-primary" },
-  danger: { bg: "bg-red-500", text: "text-white" },
+  danger: { bg: "bg-dhe-danger", text: "text-dhe-bg" },
   ghost: { bg: "bg-transparent", text: "text-dhe-primary" },
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: "px-4 py-2.5",
+  sm: "px-4 py-3",
   md: "px-6 py-4",
   lg: "px-8 py-5",
 };
@@ -55,11 +54,13 @@ export function Button({
       {...props}
     >
       {loading ? (
-        <ActivityIndicator color={variant === "outline" ? colors.primary : "#fff"} />
+        <ActivityIndicator color={variant === "primary" ? "#000A14" : "#FFFFFF"} />
       ) : (
         <>
           {icon}
-          <Text className={`font-semibold ${v.text} ${textSizes[size]} ${icon ? "ml-2" : ""}`}>
+          <Text
+            className={`font-bold ${v.text} ${textSizes[size]} ${icon ? "ml-2" : ""}`}
+          >
             {title}
           </Text>
         </>

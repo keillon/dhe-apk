@@ -17,15 +17,15 @@ export default function EquipmentScreen() {
   if (error || !equipment) return <ErrorState onRetry={refetch} message="Equipamento não encontrado." />;
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View className="bg-dhe-dark px-4 pb-6 pt-2">
+        <View className="bg-dhe-surface px-5 pb-6 pt-2">
           <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center">
-            <ArrowLeft size={20} color="#fff" />
-            <Text className="ml-2 text-white">Voltar</Text>
+            <ArrowLeft size={20} color={colors.text} />
+            <Text className="ml-2 text-dhe-text">Voltar</Text>
           </Pressable>
 
-          <View className="h-48 items-center justify-center rounded-2xl bg-white/10">
+          <View className="h-48 items-center justify-center rounded-2xl bg-dhe-elevated">
             {equipment.foto_url ? (
               <Image
                 source={{ uri: equipment.foto_url }}
@@ -35,41 +35,41 @@ export default function EquipmentScreen() {
             ) : (
               <View className="items-center">
                 <Text className="text-6xl">⚙️</Text>
-                <Text className="mt-2 text-sm text-dhe-light">{equipment.qr_code}</Text>
+                <Text className="mt-2 text-sm text-dhe-textSecondary">{equipment.qr_code}</Text>
               </View>
             )}
           </View>
         </View>
 
-        <View className="px-6 -mt-4">
+        <View className="-mt-4 px-5 pb-8">
           <Card className="mb-4">
-            <View className="mb-2 flex-row items-start justify-between">
-              <Text className="flex-1 text-xl font-bold text-dhe-dark">
+            <View className="mb-3 flex-row items-start justify-between">
+              <Text className="flex-1 pr-3 text-xl font-bold text-dhe-text">
                 {equipment.nome}
               </Text>
               <StatusBadge status={equipment.status} />
             </View>
 
-            <View className="mt-3 gap-2">
+            <View className="mt-2 gap-3">
               <View className="flex-row items-center">
-                <Building2 size={16} color={colors.muted} />
-                <Text className="ml-2 text-sm text-dhe-muted">
+                <Building2 size={16} color={colors.textMuted} />
+                <Text className="ml-3 text-sm text-dhe-textSecondary">
                   {equipment.cliente?.empresa ?? equipment.empresa}
                 </Text>
               </View>
               <View className="flex-row items-center">
-                <MapPin size={16} color={colors.muted} />
-                <Text className="ml-2 text-sm text-dhe-muted">{equipment.localizacao}</Text>
+                <MapPin size={16} color={colors.textMuted} />
+                <Text className="ml-3 text-sm text-dhe-textSecondary">{equipment.localizacao}</Text>
               </View>
               <View className="flex-row items-center">
-                <Calendar size={16} color={colors.muted} />
-                <Text className="ml-2 text-sm text-dhe-muted">
+                <Calendar size={16} color={colors.textMuted} />
+                <Text className="ml-3 text-sm text-dhe-textSecondary">
                   Última inspeção: {formatDate(equipment.ultima_inspecao)}
                 </Text>
               </View>
               <View className="flex-row items-center">
                 <Calendar size={16} color={colors.primary} />
-                <Text className="ml-2 text-sm font-medium text-dhe-primary">
+                <Text className="ml-3 text-sm font-medium text-dhe-primary">
                   Próxima manutenção: {formatDate(equipment.proxima_manutencao)}
                 </Text>
               </View>
@@ -77,7 +77,7 @@ export default function EquipmentScreen() {
           </Card>
 
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-bold text-dhe-dark">Detalhes</Text>
+            <Text className="mb-4 text-sm font-bold text-dhe-text">Detalhes</Text>
             {[
               ["Patrimônio", equipment.patrimonio],
               ["Marca", equipment.marca],
@@ -86,9 +86,9 @@ export default function EquipmentScreen() {
               ["Ano", String(equipment.ano)],
               ["QR Code", equipment.qr_code],
             ].map(([label, value]) => (
-              <View key={label} className="mb-2 flex-row justify-between border-b border-dhe-border py-2">
-                <Text className="text-sm text-dhe-muted">{label}</Text>
-                <Text className="text-sm font-medium text-dhe-dark">{value}</Text>
+              <View key={label} className="mb-2 flex-row justify-between border-b border-dhe-border py-3">
+                <Text className="text-sm text-dhe-textMuted">{label}</Text>
+                <Text className="text-sm font-medium text-dhe-text">{value}</Text>
               </View>
             ))}
           </Card>
@@ -103,7 +103,7 @@ export default function EquipmentScreen() {
             }
             fullWidth
             size="lg"
-            icon={<ClipboardPlus size={20} color="#fff" />}
+            icon={<ClipboardPlus size={20} color={colors.bg} />}
             className="mb-3"
           />
 

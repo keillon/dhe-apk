@@ -1,5 +1,5 @@
 import { Alert, Pressable, ScrollView, Text, View } from "react-native";
-import { useRouter } from "expo-router";
+import { useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
   User,
@@ -7,18 +7,16 @@ import {
   Building2,
   Lock,
   LogOut,
-  Moon,
-  Sun,
   Mail,
+  QrCode,
 } from "lucide-react-native";
 import { Card, Button } from "@/components";
-import { useAuthStore, useThemeStore } from "@/store";
+import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { colors } from "@/theme";
 
 export default function ProfileScreen() {
   const { user, logout } = useAuthStore();
-  const { isDark, toggleTheme } = useThemeStore();
   const router = useRouter();
 
   const handleLogout = () => {
@@ -44,47 +42,41 @@ export default function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <ScrollView className="flex-1 px-6 pt-4" showsVerticalScrollIndicator={false}>
-        <Text className="mb-1 text-2xl font-bold text-dhe-dark">Perfil</Text>
-        <Text className="mb-6 text-sm text-dhe-muted">Suas informações</Text>
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <ScrollView className="flex-1 px-5 pb-8 pt-4" showsVerticalScrollIndicator={false}>
+        <Text className="mb-1 text-2xl font-bold text-dhe-text">Perfil</Text>
+        <Text className="mb-6 text-sm text-dhe-textSecondary">Suas informações</Text>
 
         <Card className="mb-6 items-center py-6">
-          <View className="mb-3 h-20 w-20 items-center justify-center rounded-full bg-dhe-primary">
-            <Text className="text-3xl font-bold text-white">
+          <View className="mb-4 h-20 w-20 items-center justify-center rounded-full bg-dhe-primary">
+            <Text className="text-3xl font-bold text-dhe-bg">
               {user?.nome?.charAt(0) ?? "T"}
             </Text>
           </View>
-          <Text className="text-xl font-bold text-dhe-dark">{user?.nome}</Text>
-          <Text className="text-sm text-dhe-muted">{user?.cargo}</Text>
+          <Text className="text-xl font-bold text-dhe-text">{user?.nome}</Text>
+          <Text className="mt-1 text-sm text-dhe-textSecondary">{user?.cargo}</Text>
         </Card>
 
         {infoItems.map((item) => (
           <Card key={item.label} className="mb-3 flex-row items-center">
-            <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-dhe-surface">
+            <View className="mr-4 h-10 w-10 items-center justify-center rounded-xl bg-dhe-elevated">
               <item.icon size={18} color={colors.primary} />
             </View>
             <View className="flex-1">
-              <Text className="text-xs text-dhe-muted">{item.label}</Text>
-              <Text className="text-base font-medium text-dhe-dark">{item.value}</Text>
+              <Text className="text-xs text-dhe-textMuted">{item.label}</Text>
+              <Text className="text-base font-medium text-dhe-text">{item.value}</Text>
             </View>
           </Card>
         ))}
 
-        <Pressable onPress={toggleTheme}>
-          <Card className="mb-3 flex-row items-center">
-            <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-dhe-surface">
-              {isDark ? (
-                <Sun size={18} color={colors.warning} />
-              ) : (
-                <Moon size={18} color={colors.dark} />
-              )}
-            </View>
-            <Text className="flex-1 text-base font-medium text-dhe-dark">
-              {isDark ? "Modo claro" : "Modo escuro"}
-            </Text>
-          </Card>
-        </Pressable>
+        <Button
+          title="Gerar QR Codes para impressão"
+          variant="secondary"
+          fullWidth
+          className="mb-3"
+          icon={<QrCode size={18} color={colors.text} />}
+          onPress={() => router.push("/qrcodes" as Href)}
+        />
 
         <Button
           title="Alterar senha"
@@ -103,9 +95,9 @@ export default function ProfileScreen() {
           onPress={handleLogout}
         />
 
-        <View className="mt-8 items-center pb-8">
-          <Text className="text-xs text-dhe-muted">DHE Componentes Hidráulicos</Text>
-          <Text className="text-xs text-dhe-muted">(41) 99947-0057 • dhe@dhepr.com.br</Text>
+        <View className="mt-8 items-center pb-4">
+          <Text className="text-xs text-dhe-textMuted">DHE Componentes Hidráulicos</Text>
+          <Text className="mt-1 text-xs text-dhe-textMuted">(41) 99947-0057 • dhe@dhepr.com.br</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

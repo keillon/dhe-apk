@@ -23,14 +23,14 @@ export default function ClientsScreen() {
   if (error) return <ErrorState onRetry={refetch} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <View className="px-6 pt-4">
-        <Text className="mb-1 text-2xl font-bold text-dhe-dark">Clientes</Text>
-        <Text className="mb-4 text-sm text-dhe-muted">
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <View className="px-5 pt-4">
+        <Text className="mb-1 text-2xl font-bold text-dhe-text">Clientes</Text>
+        <Text className="mb-5 text-sm text-dhe-textSecondary">
           Empresas atendidas pela DHE
         </Text>
 
-        <View className="relative mb-4">
+        <View className="relative mb-5">
           <Input
             placeholder="Pesquisar cliente..."
             value={search}
@@ -39,13 +39,13 @@ export default function ClientsScreen() {
           />
           <Search
             size={18}
-            color={colors.muted}
+            color={colors.textMuted}
             style={{ position: "absolute", right: 16, top: 16 }}
           />
         </View>
       </View>
 
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         {filtered?.length === 0 ? (
           <EmptyState
             title="Nenhum cliente encontrado"
@@ -62,16 +62,16 @@ export default function ClientsScreen() {
                 onPress={() => router.push(`/client/${client.id}`)}
               >
                 <Card className="mb-3 flex-row items-center">
-                  <View className="mr-3 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/10">
+                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
                     <Building2 size={22} color={colors.primary} />
                   </View>
                   <View className="flex-1">
-                    <Text className="font-semibold text-dhe-dark">{client.empresa}</Text>
-                    <Text className="text-xs text-dhe-muted">
+                    <Text className="font-semibold text-dhe-text">{client.empresa}</Text>
+                    <Text className="mt-1 text-xs text-dhe-textSecondary">
                       {client.nome} • {eqCount} equipamento(s)
                     </Text>
                   </View>
-                  <ChevronRight size={18} color={colors.muted} />
+                  <ChevronRight size={18} color={colors.textMuted} />
                 </Card>
               </Pressable>
             );

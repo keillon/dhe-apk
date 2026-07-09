@@ -21,20 +21,20 @@ export default function HistoryScreen() {
   if (error) return <ErrorState onRetry={refetch} />;
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-surface" edges={["top"]}>
-      <View className="px-6 pt-2">
+    <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
+      <View className="px-5 pt-2">
         <Pressable onPress={() => router.back()} className="mb-4 flex-row items-center">
-          <ArrowLeft size={20} color={colors.dark} />
-          <Text className="ml-2 text-dhe-dark">Voltar</Text>
+          <ArrowLeft size={20} color={colors.text} />
+          <Text className="ml-2 text-dhe-text">Voltar</Text>
         </Pressable>
 
-        <Text className="mb-1 text-2xl font-bold text-dhe-dark">Histórico</Text>
-        <Text className="mb-4 text-sm text-dhe-muted">
+        <Text className="mb-1 text-2xl font-bold text-dhe-text">Histórico</Text>
+        <Text className="mb-5 text-sm text-dhe-textSecondary">
           {equipment?.nome ?? "Equipamento"}
         </Text>
       </View>
 
-      <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
+      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         {inspections?.length === 0 ? (
           <EmptyState
             title="Nenhuma inspeção registrada"
@@ -48,16 +48,16 @@ export default function HistoryScreen() {
             >
               <Card className="mb-3">
                 <View className="mb-2 flex-row items-center justify-between">
-                  <Text className="text-sm font-semibold text-dhe-dark">
+                  <Text className="text-sm font-semibold text-dhe-text">
                     {formatDateTime(inspection.created_at)}
                   </Text>
-                  <ChevronRight size={16} color={colors.muted} />
+                  <ChevronRight size={16} color={colors.textMuted} />
                 </View>
-                <Text className="mb-2 text-xs text-dhe-muted">
+                <Text className="mb-2 text-xs text-dhe-textSecondary">
                   Técnico: {inspection.tecnico?.nome ?? "—"}
                 </Text>
                 <View className="flex-row gap-4">
-                  <Text className="text-xs text-dhe-muted">
+                  <Text className="text-xs text-dhe-textSecondary">
                     Óleo: {inspection.nivel_oleo}%
                   </Text>
                   <Text
@@ -68,7 +68,7 @@ export default function HistoryScreen() {
                   </Text>
                 </View>
                 {inspection.complemento && (
-                  <Text className="mt-2 text-xs text-dhe-muted" numberOfLines={2}>
+                  <Text className="mt-2 text-xs text-dhe-textMuted" numberOfLines={2}>
                     {inspection.complemento}
                   </Text>
                 )}

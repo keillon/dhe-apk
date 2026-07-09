@@ -18,7 +18,7 @@ export function Skeleton({ width = "100%", height = 20, className, rounded = tru
 
 export function CardSkeleton() {
   return (
-    <View className="mb-4 rounded-2xl bg-white p-4 shadow-dhe">
+    <View className="mb-4 rounded-2xl border border-dhe-border bg-dhe-card p-5">
       <Skeleton height={24} width="60%" className="mb-3" />
       <Skeleton height={16} width="40%" className="mb-2" />
       <Skeleton height={16} width="80%" />

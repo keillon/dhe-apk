@@ -45,28 +45,28 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-dark">
+    <SafeAreaView className="flex-1 bg-dhe-bg">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
         <ScrollView
-          contentContainerClassName="flex-grow justify-center px-6 py-8"
+          contentContainerClassName="flex-grow justify-center px-5 py-8"
           keyboardShouldPersistTaps="handled"
         >
           <View className="mb-10 items-center">
             <DheLogo variant="white" size="lg" />
-            <Text className="mt-4 text-center text-sm text-dhe-light">
+            <Text className="mt-4 text-center text-sm text-dhe-textSecondary">
               Manutenção Hidráulica Preditiva
             </Text>
-            <Text className="mt-1 text-center text-xs text-dhe-muted">
+            <Text className="mt-1 text-center text-xs text-dhe-textMuted">
               Há 19 anos entregando excelência industrial
             </Text>
           </View>
 
-          <View className="rounded-3xl bg-white p-6 shadow-dhe-lg">
-            <Text className="mb-1 text-2xl font-bold text-dhe-dark">Entrar</Text>
-            <Text className="mb-6 text-sm text-dhe-muted">
+          <View className="rounded-3xl border border-dhe-border bg-dhe-card p-6">
+            <Text className="mb-1 text-2xl font-bold text-dhe-text">Entrar</Text>
+            <Text className="mb-6 text-sm text-dhe-textSecondary">
               Acesse com suas credenciais DHE
             </Text>
 
@@ -92,15 +92,15 @@ export default function LoginScreen() {
                 onPress={() => setShowPassword(!showPassword)}
               >
                 {showPassword ? (
-                  <EyeOff size={20} color={colors.muted} />
+                  <EyeOff size={20} color={colors.textMuted} />
                 ) : (
-                  <Eye size={20} color={colors.muted} />
+                  <Eye size={20} color={colors.textMuted} />
                 )}
               </Pressable>
             </View>
 
             {error ? (
-              <Text className="mb-4 text-center text-sm text-red-500">{error}</Text>
+              <Text className="mb-4 text-center text-sm text-dhe-danger">{error}</Text>
             ) : null}
 
             <Button
@@ -109,7 +109,7 @@ export default function LoginScreen() {
               loading={loading}
               fullWidth
               size="lg"
-              icon={<Lock size={18} color="#fff" />}
+              icon={<Lock size={18} color={colors.bg} />}
             />
 
             <Link href="/(auth)/forgot-password" asChild>
@@ -122,10 +122,10 @@ export default function LoginScreen() {
           </View>
 
           <View className="mt-8 items-center">
-            <Text className="text-xs text-dhe-muted">
+            <Text className="text-xs text-dhe-textMuted">
               DHE Componentes Hidráulicos Ltda.
             </Text>
-            <Text className="text-xs text-dhe-muted">CNPJ: 08.776.928/0001-74</Text>
+            <Text className="mt-1 text-xs text-dhe-textMuted">CNPJ: 08.776.928/0001-74</Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
