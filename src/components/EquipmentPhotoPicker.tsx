@@ -1,6 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 import { Camera, ImageIcon, Trash2 } from "lucide-react-native";
-import { DisplayImage, Button } from "@/components";
+import { Button } from "./Button";
+import { DisplayImage } from "./DisplayImage";
 import { feedback } from "@/services/feedback";
 import { getPhotoPreviewUri, pickEquipmentImage, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";

@@ -90,7 +90,7 @@ export default function EditUserScreen() {
     try {
       await deleteUser.mutateAsync(user.id);
       feedback.toast.success("Usuário removido.");
-      router.replace("/admin/users/index" as Href);
+      router.replace("/admin/users" as Href);
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao remover usuário."));
     }
@@ -107,7 +107,7 @@ export default function EditUserScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         <PageContainer>
-          <BackHeader fallback={"/admin/users/index" as Href} />
+          <BackHeader fallback={"/admin/users" as Href} />
 
           <Text className="mb-1 text-2xl font-bold text-dhe-text">Editar usuário</Text>
           <Text className="mb-6 text-sm text-dhe-textSecondary">{user.email}</Text>

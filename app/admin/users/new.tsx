@@ -41,7 +41,7 @@ export default function NewUserScreen() {
         role,
       });
       feedback.toast.success("Usuário criado com sucesso.");
-      router.replace("/admin/users/index" as Href);
+      router.replace("/admin/users" as Href);
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao criar usuário."));
     }
@@ -53,7 +53,7 @@ export default function NewUserScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
         <PageContainer>
-          <BackHeader fallback={"/admin/users/index" as Href} />
+          <BackHeader fallback={"/admin/users" as Href} />
 
           <Text className="mb-6 text-2xl font-bold text-dhe-text">Novo usuário</Text>
 

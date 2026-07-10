@@ -106,9 +106,7 @@ export default function RootLayout() {
             <Stack.Screen name="client/edit/[id]" />
             <Stack.Screen name="equipment/new" />
             <Stack.Screen name="equipment/edit/[id]" />
-            <Stack.Screen name="admin/users/index" />
-            <Stack.Screen name="admin/users/new" />
-            <Stack.Screen name="admin/users/edit/[id]" />
+            <Stack.Screen name="admin" />
             <Stack.Screen name="qrcodes/index" />
             <Stack.Screen name="qrcodes/print/[id]" />
             <Stack.Screen name="profile/change-password" />

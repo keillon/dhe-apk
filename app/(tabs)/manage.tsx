@@ -18,7 +18,7 @@ const ACTIONS = [
     title: "Usuários",
     description: "Criar, editar e remover técnicos e admins",
     icon: Users,
-    href: "/admin/users/index",
+    href: "/admin/users",
   },
   {
     title: "Novo usuário",
