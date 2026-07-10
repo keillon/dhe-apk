@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { View, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { useVideoPlayer, VideoView } from "expo-video";
@@ -15,12 +14,6 @@ export function MediaVideoPlayer({ uri }: MediaVideoPlayerProps) {
   const player = useVideoPlayer(source || null, (instance) => {
     instance.loop = false;
   });
-
-  useEffect(() => {
-    return () => {
-      player.pause();
-    };
-  }, [player]);
 
   if (!source) return null;
 
