@@ -1,6 +1,7 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
+import { Platform } from "react-native";
 import type { Equipment } from "@/types";
 
 function escapeHtml(text: string): string {
@@ -113,19 +114,32 @@ export async function printQrPdf(html: string): Promise<void> {
   await Print.printAsync({ html });
 }
 
+async function buildShareablePdfUri(html: string, filename: string): Promise<string> {
+  const { uri, base64 } = await Print.printToFileAsync({ html, base64: true });
+
+  if (Platform.OS === "android" && base64) {
+    const safeName = filename.replace(/[^a-zA-Z0-9-_]/g, "_");
+    const destination = `${FileSystem.cacheDirectory}${safeName}-${Date.now()}.pdf`;
+
+    await FileSystem.writeAsStringAsync(destination, base64, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+
+    return destination;
+  }
+
+  return uri;
+}
+
 export async function shareQrPdf(html: string, filename: string): Promise<void> {
-  const { uri } = await Print.printToFileAsync({ html });
-  const safeName = filename.replace(/[^a-zA-Z0-9-_]/g, "_");
-  const destination = `${FileSystem.cacheDirectory}${safeName}.pdf`;
-
-  await FileSystem.copyAsync({ from: uri, to: destination });
-
   const isAvailable = await Sharing.isAvailableAsync();
   if (!isAvailable) {
     throw new Error("Compartilhamento não disponível neste dispositivo.");
   }
 
-  await Sharing.shareAsync(destination, {
+  const shareUri = await buildShareablePdfUri(html, filename);
+
+  await Sharing.shareAsync(shareUri, {
     mimeType: "application/pdf",
     dialogTitle: filename,
     UTI: "com.adobe.pdf",
