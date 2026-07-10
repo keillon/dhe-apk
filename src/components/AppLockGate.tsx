@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  AppState,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -33,10 +32,17 @@ export function AppLockGate({ children }: AppLockGateProps) {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [unlocking, setUnlocking] = useState(false);
-  const appState = useRef(AppState.currentState);
+  const sessionUnlockedRef = useRef(false);
 
   const settings = getAppLockSettings();
   const showLock = locked && settings.enabled;
+
+  const markSessionUnlocked = useCallback(() => {
+    sessionUnlockedRef.current = true;
+    setLocked(false);
+    setPin("");
+    setError("");
+  }, []);
 
   const tryBiometricUnlock = useCallback(async () => {
     const current = getAppLockSettings();
@@ -45,49 +51,30 @@ export function AppLockGate({ children }: AppLockGateProps) {
     try {
       const success = await authenticateWithBiometric();
       if (success) {
-        setLocked(false);
-        setPin("");
-        setError("");
+        markSessionUnlocked();
       }
       return success;
     } finally {
       setUnlocking(false);
     }
-  }, []);
+  }, [markSessionUnlocked]);
 
-  const lockIfNeeded = useCallback(() => {
+  useEffect(() => {
     if (!isAuthenticated) {
+      sessionUnlockedRef.current = false;
       setLocked(false);
       return;
     }
+
     const current = getAppLockSettings();
-    if (current.enabled) {
-      setLocked(true);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated) {
+    if (!current.enabled || sessionUnlockedRef.current) {
       setLocked(false);
       return;
     }
-    lockIfNeeded();
+
+    setLocked(true);
     void tryBiometricUnlock();
-  }, [isAuthenticated, lockIfNeeded, tryBiometricUnlock]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener("change", (nextState) => {
-      if (
-        appState.current.match(/active/) &&
-        nextState.match(/inactive|background/)
-      ) {
-        lockIfNeeded();
-      }
-      appState.current = nextState;
-    });
-
-    return () => subscription.remove();
-  }, [lockIfNeeded]);
+  }, [isAuthenticated, tryBiometricUnlock]);
 
   const handlePinUnlock = async () => {
     if (pin.length < 4) {
@@ -103,8 +90,7 @@ export function AppLockGate({ children }: AppLockGateProps) {
         setError("PIN incorreto.");
         return;
       }
-      setLocked(false);
-      setPin("");
+      markSessionUnlocked();
     } finally {
       setUnlocking(false);
     }
@@ -134,32 +120,32 @@ export function AppLockGate({ children }: AppLockGateProps) {
 
                 <Text style={styles.title}>App bloqueado</Text>
                 <Text style={styles.subtitle}>
-                  Confirme sua identidade para continuar usando o DHE.
+                  Confirme sua identidade para entrar nesta sessão.
                 </Text>
 
                 <View style={styles.form}>
                   <Card>
                     <Input
-                    label="PIN"
-                    value={pin}
-                    onChangeText={(value) => {
-                      setPin(value);
-                      if (error) setError("");
-                    }}
-                    keyboardType="number-pad"
-                    secureTextEntry
-                    maxLength={8}
-                    placeholder="••••"
-                    className="mb-0"
+                      label="PIN"
+                      value={pin}
+                      onChangeText={(value) => {
+                        setPin(value);
+                        if (error) setError("");
+                      }}
+                      keyboardType="number-pad"
+                      secureTextEntry
+                      maxLength={8}
+                      placeholder="••••"
+                      className="mb-0"
                     />
 
                     {error ? <Text style={styles.error}>{error}</Text> : null}
 
                     <Button
-                    title="Desbloquear"
-                    onPress={() => void handlePinUnlock()}
-                    loading={unlocking}
-                    fullWidth
+                      title="Desbloquear"
+                      onPress={() => void handlePinUnlock()}
+                      loading={unlocking}
+                      fullWidth
                       className="mt-4"
                     />
 

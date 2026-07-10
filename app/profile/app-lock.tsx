@@ -90,9 +90,10 @@ export default function AppLockScreen() {
             <BackHeader fallback="/(tabs)/profile" />
 
             <Text className="mb-1 text-2xl font-bold text-dhe-text">Bloqueio do app</Text>
-            <Text className="mb-6 text-sm text-dhe-textSecondary">
-              Proteja o aplicativo com PIN ou biometria
-            </Text>
+          <Text className="mb-6 text-sm text-dhe-textSecondary">
+            Exige PIN ou biometria uma vez ao entrar. Depois de desbloquear, você permanece
+            conectado até sair da conta.
+          </Text>
 
             <Card className="mb-4">
               <View className="flex-row items-center justify-between py-2">
