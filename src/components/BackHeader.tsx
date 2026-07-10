@@ -7,10 +7,12 @@ import type { Href } from "expo-router";
 interface BackHeaderProps {
   title?: string;
   fallback?: Href;
+  onBack?: () => void;
 }
 
-export function BackHeader({ title, fallback }: BackHeaderProps) {
-  const goBack = useSafeBack(fallback);
+export function BackHeader({ title, fallback, onBack }: BackHeaderProps) {
+  const defaultGoBack = useSafeBack(fallback);
+  const goBack = onBack ?? defaultGoBack;
 
   return (
     <Pressable

@@ -145,7 +145,7 @@ export default function EquipmentScreen() {
             <Button
               title="Nova Inspeção"
               onPress={() =>
-                router.push({
+                router.replace({
                   pathname: "/inspection/new",
                   params: { equipmentId: equipment.id },
                 })

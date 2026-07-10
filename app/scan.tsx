@@ -7,7 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { router, useRouter } from "expo-router";
+import { router, useFocusEffect, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, Keyboard, QrCode, X, Zap, ZapOff } from "lucide-react-native";
@@ -27,7 +27,7 @@ function normalizeQrCode(value: string): string {
 function openEquipmentScreen(equipmentId: string) {
   logger.info("Scan", `Abrindo equipamento ${equipmentId}`);
 
-  router.push({
+  router.replace({
     pathname: "/equipment/[id]",
     params: { id: equipmentId },
   });
@@ -41,9 +41,31 @@ export default function ScanScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true);
   const screenRouter = useRouter();
   const lookupInFlight = useRef(false);
+  const hasNavigatedRef = useRef(false);
   const lastScanRef = useRef<{ code: string; at: number } | null>(null);
+
+  const stopCamera = useCallback(() => {
+    setTorchEnabled(false);
+    setCameraActive(false);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      hasNavigatedRef.current = false;
+      setCameraActive(true);
+      setTorchEnabled(false);
+      setError("");
+      lastScanRef.current = null;
+
+      return () => {
+        setTorchEnabled(false);
+        setCameraActive(false);
+      };
+    }, [])
+  );
 
   useEffect(() => {
     logger.info("Scan", `Tela aberta (modo: ${mode})`);
@@ -64,7 +86,7 @@ export default function ScanScreen() {
       return;
     }
 
-    if (lookupInFlight.current) return;
+    if (lookupInFlight.current || hasNavigatedRef.current) return;
 
     lookupInFlight.current = true;
     setLoading(true);
@@ -90,6 +112,8 @@ export default function ScanScreen() {
           feedback.toast.success(`Equipamento ${result.equipment.nome} encontrado.`);
         }
 
+        hasNavigatedRef.current = true;
+        stopCamera();
         openEquipmentScreen(result.equipment.id);
         return;
       }
@@ -123,11 +147,11 @@ export default function ScanScreen() {
       setLoading(false);
       lookupInFlight.current = false;
     }
-  }, []);
+  }, [stopCamera]);
 
   const handleBarCodeScanned = useCallback(
     ({ data }: { data: string }) => {
-      if (mode !== "camera" || loading) return;
+      if (mode !== "camera" || loading || !cameraActive || hasNavigatedRef.current) return;
 
       const code = normalizeQrCode(data);
       const now = Date.now();
@@ -141,8 +165,13 @@ export default function ScanScreen() {
       logger.info("Scan", "QR lido na câmera interna", code);
       void lookupEquipment(code, "camera");
     },
-    [loading, lookupEquipment, mode]
+    [cameraActive, loading, lookupEquipment, mode]
   );
+
+  const handleClose = () => {
+    stopCamera();
+    screenRouter.back();
+  };
 
   const handleManualSubmit = () => {
     void lookupEquipment(manualCode, "manual");
@@ -150,7 +179,9 @@ export default function ScanScreen() {
 
   const switchMode = (next: ScanMode) => {
     if (next === "manual") {
-      setTorchEnabled(false);
+      stopCamera();
+    } else {
+      setCameraActive(true);
     }
 
     setMode(next);
@@ -171,7 +202,7 @@ export default function ScanScreen() {
           <View className="flex-row items-center justify-between px-5 pt-2">
             <Text className="text-lg font-bold text-dhe-text">Digitar código</Text>
             <Pressable
-              onPress={() => screenRouter.back()}
+              onPress={handleClose}
               className="rounded-full bg-dhe-overlay p-2"
             >
               <X size={24} color={colors.text} />
@@ -258,8 +289,8 @@ export default function ScanScreen() {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
-        active
-        enableTorch={torchEnabled}
+        active={cameraActive}
+        enableTorch={torchEnabled && cameraActive}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
         onCameraReady={() => {
           setCameraReady(true);
@@ -269,7 +300,7 @@ export default function ScanScreen() {
           logger.error("Scan", "Erro ao iniciar câmera", event.message);
           setError("Não foi possível iniciar a câmera.");
         }}
-        onBarcodeScanned={handleBarCodeScanned}
+        onBarcodeScanned={cameraActive && !hasNavigatedRef.current ? handleBarCodeScanned : undefined}
       />
 
       <SafeAreaView className="flex-1" pointerEvents="box-none">
@@ -290,7 +321,7 @@ export default function ScanScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => screenRouter.back()}
+              onPress={handleClose}
               className="rounded-full bg-dhe-overlay p-2"
             >
               <X size={24} color={colors.text} />
