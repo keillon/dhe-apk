@@ -12,6 +12,7 @@ import { FeedbackHost, OfflineSyncHost } from "@/components";
 import { bootstrapLogging } from "@/utils/logger";
 import { colors } from "@/theme";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
+import { hydrateStorage } from "@/services/storage";
 
 bootstrapLogging();
 
@@ -33,6 +34,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     let mounted = true;
 
     const restore = async () => {
+      await hydrateStorage();
       const user = await api.restoreSession();
       if (!mounted) return;
       if (user) {

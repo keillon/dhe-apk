@@ -11,6 +11,11 @@ echo "=== Logs recentes ==="
 docker compose -f docker-compose.vps.yml logs dhe-api --tail 15
 
 echo ""
+echo "=== Migrations ==="
+echo "As migrations rodam no startup do container (docker-entrypoint.sh)."
+echo "Para forçar manualmente: sh scripts/vps-migrate.sh"
+
+echo ""
 echo "=== Teste local ==="
 curl -fsS http://127.0.0.1:8090/health && echo "" || {
   echo "Falhou. Aguardando mais 15s..."

@@ -14,7 +14,7 @@ if [ -z "$JWT_SECRET" ]; then
 fi
 
 echo "[dhe-api] Aplicando migrations..."
-if ! npx prisma migrate deploy; then
+if ! ./node_modules/.bin/prisma migrate deploy; then
   echo "[dhe-api] ERRO: migrate falhou. Verifique DHE_DB_PASSWORD no .env (deve ser: dhe-apk)"
   exit 1
 fi

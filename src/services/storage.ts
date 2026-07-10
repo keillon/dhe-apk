@@ -1,7 +1,7 @@
-import { MMKV } from "react-native-mmkv";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { PendingSyncItem } from "@/types";
 
-export const storage = new MMKV({ id: "dhe-app-storage" });
+const STORAGE_PREFIX = "dhe:";
 
 const KEYS = {
   pendingSync: "pending_sync",
@@ -10,8 +10,48 @@ const KEYS = {
   offlineMode: "offline_mode",
 } as const;
 
+const memory = new Map<string, string>();
+
+let hydrated = false;
+let hydratePromise: Promise<void> | null = null;
+
+function persist(key: string, value: string): void {
+  memory.set(key, value);
+  void AsyncStorage.setItem(`${STORAGE_PREFIX}${key}`, value);
+}
+
+function remove(key: string): void {
+  memory.delete(key);
+  void AsyncStorage.removeItem(`${STORAGE_PREFIX}${key}`);
+}
+
+export async function hydrateStorage(): Promise<void> {
+  if (hydrated) return;
+  if (hydratePromise) return hydratePromise;
+
+  hydratePromise = (async () => {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const appKeys = allKeys.filter((key) => key.startsWith(STORAGE_PREFIX));
+
+    if (appKeys.length === 0) {
+      hydrated = true;
+      return;
+    }
+
+    const entries = await AsyncStorage.multiGet(appKeys);
+    for (const [fullKey, value] of entries) {
+      if (value == null) continue;
+      memory.set(fullKey.slice(STORAGE_PREFIX.length), value);
+    }
+
+    hydrated = true;
+  })();
+
+  return hydratePromise;
+}
+
 export function getPendingSync(): PendingSyncItem[] {
-  const raw = storage.getString(KEYS.pendingSync);
+  const raw = memory.get(KEYS.pendingSync);
   if (!raw) return [];
   try {
     return JSON.parse(raw) as PendingSyncItem[];
@@ -23,19 +63,19 @@ export function getPendingSync(): PendingSyncItem[] {
 export function addPendingSync(item: PendingSyncItem): void {
   const items = getPendingSync();
   items.push(item);
-  storage.set(KEYS.pendingSync, JSON.stringify(items));
+  persist(KEYS.pendingSync, JSON.stringify(items));
 }
 
 export function clearPendingSync(): void {
-  storage.delete(KEYS.pendingSync);
+  remove(KEYS.pendingSync);
 }
 
 export function setCachedData<T>(key: string, data: T): void {
-  storage.set(key, JSON.stringify(data));
+  persist(key, JSON.stringify(data));
 }
 
 export function getCachedData<T>(key: string): T | null {
-  const raw = storage.getString(key);
+  const raw = memory.get(key);
   if (!raw) return null;
   try {
     return JSON.parse(raw) as T;
@@ -45,11 +85,15 @@ export function getCachedData<T>(key: string): T | null {
 }
 
 export function setOfflineMode(offline: boolean): void {
-  storage.set(KEYS.offlineMode, offline);
+  persist(KEYS.offlineMode, offline ? "1" : "0");
 }
 
 export function isOfflineMode(): boolean {
-  return storage.getBoolean(KEYS.offlineMode) ?? false;
+  return memory.get(KEYS.offlineMode) === "1";
+}
+
+export function setStorageValue(key: string, value: string): void {
+  persist(key, value);
 }
 
 export { KEYS as StorageKeys };

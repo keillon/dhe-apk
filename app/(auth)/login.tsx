@@ -13,6 +13,7 @@ import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { DheLogo, Button, Input, PageContainer } from "@/components";
 import { api } from "@/services/api";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
+import { hydrateStorage } from "@/services/storage";
 import { useAuthStore } from "@/store";
 import { getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
@@ -36,6 +37,7 @@ export default function LoginScreen() {
     setError("");
 
     try {
+      await hydrateStorage();
       const user = await api.login(email, password);
       setUser(user);
       void prefetchEquipmentCache(() => api.getEquipments());

@@ -1,10 +1,10 @@
 import type { CreateInspectionInput, PendingSyncItem } from "@/types";
 import { api } from "./api";
 import { isNetworkError } from "./http";
-import { getPendingSync, storage, StorageKeys } from "./storage";
+import { getPendingSync, setStorageValue, StorageKeys } from "./storage";
 
 function savePendingItems(items: PendingSyncItem[]): void {
-  storage.set(StorageKeys.pendingSync, JSON.stringify(items));
+  setStorageValue(StorageKeys.pendingSync, JSON.stringify(items));
 }
 
 export function generateClientRequestId(): string {

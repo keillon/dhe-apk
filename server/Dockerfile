@@ -8,7 +8,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci
 
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 
 COPY tsconfig.json ./
 COPY src ./src
@@ -25,7 +25,7 @@ COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate
 
 COPY --from=builder /app/dist ./dist
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
