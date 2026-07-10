@@ -13,15 +13,17 @@ import {
   BackHeader,
   PageContainer,
 } from "@/components";
-import { useEquipment, useDeleteEquipment, useRequireAdmin } from "@/hooks";
+import { useEquipment, useDeleteEquipment } from "@/hooks";
+import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
-import { formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
+import { formatDate, getApiErrorMessage, isAdmin, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";
 
 export default function EquipmentScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { allowed } = useRequireAdmin();
+  const { user } = useAuthStore();
+  const admin = isAdmin(user);
   const { data: equipment, isLoading, error, refetch } = useEquipment(id);
   const deleteEquipment = useDeleteEquipment();
 
@@ -155,7 +157,7 @@ export default function EquipmentScreen() {
               className="mb-3"
             />
 
-            {allowed && (
+            {admin && (
               <>
                 <Button
                   title="Imprimir QR Code"
