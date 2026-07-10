@@ -80,7 +80,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <OfflineSyncHost />
-      {children}
+      <View style={{ flex: 1 }}>{children}</View>
     </View>
   );
 }
@@ -92,7 +92,6 @@ export default function RootLayout() {
         <AuthGuard>
           <StatusBar style="light" />
           <FeedbackHost />
-          <OfflineSyncHost />
           <Stack
             screenOptions={{
               headerShown: false,
