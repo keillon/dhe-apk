@@ -2,11 +2,14 @@ import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { feedback } from "@/services/feedback";
 import type { MediaKind } from "./media";
+import { createLocalVideoFromUri } from "./video";
 
 export interface LocalPhoto {
   uri: string;
   dataUrl: string;
   kind: MediaKind;
+  thumbnailUri?: string;
+  withAudio?: boolean;
 }
 
 const MAX_MEDIA_PER_TYPE = 5;
@@ -213,27 +216,23 @@ export async function pickFromCamera(
 }
 
 export function getPhotoPreviewUri(photo: LocalPhoto): string {
+  if (photo.kind === "video" && photo.thumbnailUri) {
+    return photo.thumbnailUri;
+  }
+
   return photo.uri.startsWith("file:") || photo.uri.startsWith("content:")
     ? photo.uri
     : photo.dataUrl;
 }
 
+export function getVideoPlaybackUri(photo: LocalPhoto): string {
+  return photo.uri.startsWith("file:") || photo.uri.startsWith("content:")
+    ? photo.uri
+    : photo.dataUrl || photo.uri;
+}
+
 async function assetToLocalVideo(asset: ImagePicker.ImagePickerAsset): Promise<LocalPhoto> {
-  const info = await FileSystem.getInfoAsync(asset.uri);
-  if (info.exists && "size" in info && info.size && info.size > MAX_VIDEO_BYTES) {
-    throw new Error("VIDEO_TOO_LARGE");
-  }
-
-  const mime = asset.mimeType ?? "video/mp4";
-  const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-
-  return {
-    uri: asset.uri,
-    dataUrl: `data:${mime};base64,${base64}`,
-    kind: "video",
-  };
+  return createLocalVideoFromUri(asset.uri, true);
 }
 
 export async function pickVideoFromGallery(
@@ -256,6 +255,7 @@ export async function pickVideoFromGallery(
     allowsMultipleSelection: false,
     videoMaxDuration: MAX_VIDEO_DURATION_SEC,
     videoQuality: VIDEO_QUALITY,
+    videoExportPreset: ImagePicker.VideoExportPreset.MediumQuality,
   });
 
   if (result.canceled || !result.assets[0]) return null;
@@ -275,40 +275,9 @@ export async function pickVideoFromGallery(
   }
 }
 
-export async function recordVideoFromCamera(
-  currentCount: number,
-  max = MAX_MEDIA_PER_TYPE
-): Promise<LocalPhoto | null> {
-  if (currentCount >= max) {
-    await feedback.alert("Limite atingido", `Máximo de ${max} itens por categoria.`);
-    return null;
-  }
-
-  const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  if (status !== "granted") {
-    await feedback.alert("Permissão necessária", "Permita o acesso à câmera para gravar vídeos.");
-    return null;
-  }
-
-  const result = await ImagePicker.launchCameraAsync({
-    mediaTypes: ["videos"],
-    videoMaxDuration: MAX_VIDEO_DURATION_SEC,
-    videoQuality: VIDEO_QUALITY,
-  });
-
-  if (result.canceled || !result.assets[0]) return null;
-
-  try {
-    return await assetToLocalVideo(result.assets[0]);
-  } catch (error) {
-    if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
-      await feedback.alert(
-        "Vídeo muito grande",
-        "Grave um vídeo mais curto. O limite é cerca de 20 MB após compressão."
-      );
-      return null;
-    }
-    await feedback.alert("Erro", "Não foi possível processar o vídeo gravado.");
-    return null;
-  }
+export async function handleVideoTooLargeError(): Promise<void> {
+  await feedback.alert(
+    "Vídeo muito grande",
+    "Escolha um vídeo mais curto. O limite é cerca de 20 MB."
+  );
 }

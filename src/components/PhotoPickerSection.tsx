@@ -1,19 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
-import { Camera, ImagePlus, Play, Video, X, ZoomIn } from "lucide-react-native";
+import { Camera, ImagePlus, Video, X, ZoomIn } from "lucide-react-native";
 import { feedback } from "@/services/feedback";
 import { DisplayImage } from "./DisplayImage";
 import { MediaPreviewModal } from "./MediaPreviewModal";
+import { VideoRecordModal } from "./VideoRecordModal";
+import { VideoThumbnail } from "./VideoThumbnail";
 import { colors } from "@/theme";
 import {
   pickFromGallery,
   captureMultipleFromCamera,
   getPhotoPreviewUri,
+  getVideoPlaybackUri,
   pickVideoFromGallery,
-  recordVideoFromCamera,
   type LocalPhoto,
 } from "@/utils/images";
 import { localPhotosToPreviewItems } from "@/utils/media";
+import {
+  askVideoAudioPreference,
+  createLocalVideoFromUri,
+  getLocalMediaThumbUri,
+} from "@/utils/video";
 
 interface PhotoPickerSectionProps {
   fotosAntes: LocalPhoto[];
@@ -43,10 +50,15 @@ function PhotoGrid({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [capturing, setCapturing] = useState(false);
-  const [recordingVideo, setRecordingVideo] = useState(false);
+  const [recordWithAudio, setRecordWithAudio] = useState(true);
+  const [showVideoRecorder, setShowVideoRecorder] = useState(false);
 
   const previewItems = localPhotosToPreviewItems(
-    photos.map((photo) => ({ uri: getPhotoPreviewUri(photo), kind: photo.kind }))
+    photos.map((photo) => ({
+      uri: photo.kind === "video" ? getVideoPlaybackUri(photo) : getPhotoPreviewUri(photo),
+      kind: photo.kind,
+      thumbnailUri: photo.thumbnailUri,
+    }))
   );
 
   const addFromGallery = async () => {
@@ -75,14 +87,26 @@ function PhotoGrid({
   };
 
   const addVideoFromCamera = async () => {
-    if (recordingVideo) return;
-    setRecordingVideo(true);
+    const withAudio = await askVideoAudioPreference();
+    if (withAudio === null) return;
 
+    setRecordWithAudio(withAudio);
+    setShowVideoRecorder(true);
+  };
+
+  const handleVideoRecorded = async (uri: string) => {
     try {
-      const video = await recordVideoFromCamera(photos.length);
-      if (video) onChange([...photos, video]);
-    } finally {
-      setRecordingVideo(false);
+      const video = await createLocalVideoFromUri(uri, recordWithAudio);
+      onChange([...photos, video]);
+    } catch (error) {
+      if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
+        await feedback.alert(
+          "Vídeo muito grande",
+          "Grave um vídeo mais curto. O limite é cerca de 20 MB."
+        );
+        return;
+      }
+      await feedback.alert("Erro", "Não foi possível processar o vídeo gravado.");
     }
   };
 
@@ -122,18 +146,7 @@ function PhotoGrid({
             style={{ marginRight: 8 }}
           >
             {photo.kind === "video" ? (
-              <View
-                style={{
-                  width: THUMB_SIZE,
-                  height: THUMB_SIZE,
-                  borderRadius: 12,
-                  backgroundColor: colors.elevated,
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Play size={30} color={colors.primary} fill={colors.primary} />
-              </View>
+              <VideoThumbnail uri={getLocalMediaThumbUri(photo)} size={THUMB_SIZE} />
             ) : (
               <DisplayImage
                 uri={getPhotoPreviewUri(photo)}
@@ -177,6 +190,21 @@ function PhotoGrid({
                 <ZoomIn size={10} color="#fff" />
               )}
             </View>
+            {photo.kind === "video" && photo.withAudio === false ? (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 4,
+                  left: 4,
+                  backgroundColor: "rgba(0,0,0,0.55)",
+                  borderRadius: 6,
+                  paddingHorizontal: 4,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={{ color: "#fff", fontSize: 8, fontWeight: "700" }}>MUDO</Text>
+              </View>
+            ) : null}
           </Pressable>
         ))}
 
@@ -230,15 +258,13 @@ function PhotoGrid({
       <View className="mt-2 flex-row gap-2">
         <Pressable
           onPress={addVideoFromCamera}
-          disabled={recordingVideo || atLimit}
+          disabled={atLimit}
           className={`flex-1 flex-row items-center justify-center rounded-xl py-3 ${
-            recordingVideo || atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
+            atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
           }`}
         >
           <Video size={16} color={colors.primary} />
-          <Text className="ml-2 text-sm font-semibold text-dhe-primary">
-            {recordingVideo ? "Abrindo..." : "Gravar vídeo"}
-          </Text>
+          <Text className="ml-2 text-sm font-semibold text-dhe-primary">Gravar vídeo</Text>
         </Pressable>
         <Pressable
           onPress={addVideoFromGallery}
@@ -258,6 +284,13 @@ function PhotoGrid({
         initialIndex={previewIndex}
         onClose={() => setPreviewVisible(false)}
       />
+
+      <VideoRecordModal
+        visible={showVideoRecorder}
+        withAudio={recordWithAudio}
+        onClose={() => setShowVideoRecorder(false)}
+        onRecorded={(uri) => void handleVideoRecorded(uri)}
+      />
     </View>
   );
 }
@@ -274,7 +307,7 @@ export function PhotoPickerSection({
     <View>
       <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos e vídeos *</Text>
       <Text className="mb-3 text-xs text-dhe-textMuted">
-        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois.
+        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois. Ao gravar, escolha com ou sem áudio.
       </Text>
       <PhotoGrid
         title="Antes"

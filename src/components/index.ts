@@ -19,6 +19,8 @@ export { DisplayImage } from "./DisplayImage";
 export { MediaPreviewModal } from "./MediaPreviewModal";
 export { ZoomableImage } from "./ZoomableImage";
 export { MediaVideoPlayer } from "./MediaVideoPlayer";
+export { VideoThumbnail } from "./VideoThumbnail";
+export { VideoRecordModal } from "./VideoRecordModal";
 export { RefreshableScrollView } from "./RefreshableScrollView";
 export { Loading } from "./Loading";
 export { Skeleton, CardSkeleton } from "./Skeleton";

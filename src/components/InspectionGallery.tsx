@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { View, Text, Pressable } from "react-native";
-import { PenLine, Play } from "lucide-react-native";
+import { PenLine } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
 import { DisplayImage } from "./DisplayImage";
 import { MediaPreviewModal } from "./MediaPreviewModal";
+import { VideoThumbnail } from "./VideoThumbnail";
 import { resolveMediaUrl } from "@/utils/media-url";
 import { inferMediaKind, type MediaPreviewItem } from "@/utils/media";
+import { generateVideoThumbnail } from "@/utils/video";
 import { colors } from "@/theme";
 
 const THUMB_SIZE = 88;
@@ -13,6 +15,22 @@ const THUMB_SIZE = 88;
 interface InspectionGalleryProps {
   fotos?: InspectionPhoto[];
   assinaturaUrl?: string;
+}
+
+function RemoteVideoThumb({ uri, size }: { uri: string; size: number }) {
+  const [thumbnailUri, setThumbnailUri] = useState<string | undefined>();
+
+  useEffect(() => {
+    let active = true;
+    void generateVideoThumbnail(uri).then((thumb) => {
+      if (active && thumb) setThumbnailUri(thumb);
+    });
+    return () => {
+      active = false;
+    };
+  }, [uri]);
+
+  return <VideoThumbnail uri={thumbnailUri ?? uri} size={size} />;
 }
 
 function MediaThumb({
@@ -29,18 +47,7 @@ function MediaThumb({
   return (
     <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
       {kind === "video" ? (
-        <View
-          style={{
-            width: THUMB_SIZE,
-            height: THUMB_SIZE,
-            borderRadius: 12,
-            backgroundColor: colors.elevated,
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <Play size={28} color={colors.primary} fill={colors.primary} />
-        </View>
+        <RemoteVideoThumb uri={resolved} size={THUMB_SIZE} />
       ) : (
         <DisplayImage
           uri={resolved}

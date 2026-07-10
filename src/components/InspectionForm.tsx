@@ -25,7 +25,8 @@ import {
   type InspectionFormErrors,
 } from "@/utils";
 import {
-  buildInspectionFotosPayload,
+  buildInspectionFotosPayloadAsync,
+  countPendingVideos,
   inspectionPhotoToLocal,
 } from "@/utils/inspection-media";
 import type { ChecklistItem, Inspection, OilContamination } from "@/types";
@@ -86,6 +87,8 @@ export function InspectionForm({
   const isSubmitting =
     isSaving || (mode === "create" ? createInspection.isPending : updateInspection.isPending);
 
+  const pendingVideoCount = countPendingVideos(fotosAntes, fotosDepois);
+
   const toggleChecklist = (key: keyof ChecklistItem) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
     if (formErrors.checklist) {
@@ -125,13 +128,34 @@ export function InspectionForm({
     setIsSaving(true);
     setFormErrors({});
 
+    const pendingVideos = countPendingVideos(fotosAntes, fotosDepois);
+    if (pendingVideos > 0) {
+      feedback.toast.info(
+        `Preparando ${pendingVideos} vídeo(s) para envio. Isso pode levar alguns segundos.`
+      );
+    }
+
+    let fotosPayload;
+    try {
+      fotosPayload = await buildInspectionFotosPayloadAsync(fotosAntes, fotosDepois);
+    } catch (error) {
+      savingRef.current = false;
+      setIsSaving(false);
+      if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
+        feedback.toast.error("Um dos vídeos excede 20 MB. Grave ou escolha um vídeo mais curto.");
+        return;
+      }
+      feedback.toast.error("Não foi possível preparar as mídias para envio.");
+      return;
+    }
+
     const payload = {
       nivel_oleo: nivelOleo,
       contaminacao_oleo: contaminacao,
       data_ultima_limpeza: dataLimpeza,
       complemento: complemento || undefined,
       checklist,
-      fotos: buildInspectionFotosPayload(fotosAntes, fotosDepois),
+      fotos: fotosPayload,
       assinatura_url: assinatura!,
     };
 
@@ -334,7 +358,9 @@ export function InspectionForm({
         title={
           isSubmitting
             ? mode === "create"
-              ? "Salvando inspeção..."
+              ? pendingVideoCount > 0
+                ? "Preparando vídeos..."
+                : "Salvando inspeção..."
               : "Atualizando inspeção..."
             : mode === "create"
               ? "Salvar inspeção"

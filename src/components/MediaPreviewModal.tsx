@@ -105,9 +105,28 @@ export function MediaPreviewModal({
           />
 
           <View className="absolute bottom-6 left-0 right-0 items-center px-6">
-            <Text className="text-center text-xs text-white/70">
-              Arraste para o lado • Pinça ou toque duplo para zoom em fotos
-            </Text>
+            <View
+              style={{
+                backgroundColor: "rgba(0,0,0,0.82)",
+                borderRadius: 12,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                borderWidth: 1,
+                borderColor: "rgba(255,255,255,0.15)",
+              }}
+            >
+              <Text
+                style={{
+                  textAlign: "center",
+                  fontSize: 12,
+                  fontWeight: "600",
+                  color: "#FFFFFF",
+                  lineHeight: 18,
+                }}
+              >
+                Arraste para o lado • Pinça ou toque duplo para zoom em fotos
+              </Text>
+            </View>
           </View>
         </SafeAreaView>
       </GestureHandlerRootView>

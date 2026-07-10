@@ -4,6 +4,7 @@ export interface MediaPreviewItem {
   id: string;
   uri: string;
   kind: MediaKind;
+  thumbnailUri?: string;
 }
 
 export function inferMediaKind(url: string, mediaKind?: MediaKind): MediaKind {
@@ -21,12 +22,13 @@ export function inferMediaKind(url: string, mediaKind?: MediaKind): MediaKind {
 }
 
 export function localPhotosToPreviewItems(
-  photos: Array<{ uri: string; kind: MediaKind }>,
+  photos: Array<{ uri: string; kind: MediaKind; thumbnailUri?: string }>,
   resolveUri: (uri: string) => string = (uri) => uri
 ): MediaPreviewItem[] {
   return photos.map((photo, index) => ({
     id: `${photo.uri}-${index}`,
     uri: resolveUri(photo.uri),
     kind: photo.kind,
+    thumbnailUri: photo.thumbnailUri ? resolveUri(photo.thumbnailUri) : undefined,
   }));
 }
