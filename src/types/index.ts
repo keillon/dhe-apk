@@ -106,6 +106,7 @@ export interface CreateInspectionInput {
   checklist: ChecklistItem;
   fotos?: CreateInspectionPhotoInput[];
   assinatura_url?: string;
+  client_request_id?: string;
 }
 
 export interface UpdateProfileInput {
@@ -194,6 +195,10 @@ export interface InspectionFilters {
 export interface PendingSyncItem {
   id: string;
   type: "inspection" | "equipment_update";
-  payload: Record<string, unknown>;
+  payload: CreateInspectionInput | Record<string, unknown>;
   created_at: string;
+  status: "pending" | "syncing" | "failed" | "synced";
+  retries: number;
+  last_error?: string;
+  equipment_name?: string;
 }

@@ -9,9 +9,11 @@ import { Input } from "./Input";
 import { OilLevelSlider } from "./OilLevelSlider";
 import { PhotoPickerSection } from "./PhotoPickerSection";
 import { SignaturePad } from "./SignaturePad";
-import { useCreateInspection, useUpdateInspection } from "@/hooks";
+import { useCreateInspection, useNetworkStatus, useUpdateInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
+import { isNetworkError } from "@/services/http";
+import { queuePendingInspection, generateClientRequestId } from "@/services/offline-sync";
 import {
   CHECKLIST_LABELS,
   DEFAULT_CHECKLIST,
@@ -61,6 +63,7 @@ export function InspectionForm({
   onSaved,
 }: InspectionFormProps) {
   const { user } = useAuthStore();
+  const { isOffline } = useNetworkStatus();
   const createInspection = useCreateInspection();
   const updateInspection = useUpdateInspection();
   const savingRef = useRef(false);
@@ -132,14 +135,45 @@ export function InspectionForm({
       assinatura_url: assinatura!,
     };
 
-    try {
-      if (mode === "create") {
-        await createInspection.mutateAsync({
+    const saveOffline = () => {
+      queuePendingInspection(
+        {
           equipamento_id: equipmentId,
           tecnico_id: user.id,
+          client_request_id: generateClientRequestId(),
           ...payload,
-        });
-        feedback.toast.success("Inspeção salva com sucesso!");
+        },
+        equipmentName
+      );
+      feedback.toast.success(
+        "Inspeção salva no dispositivo. Será enviada automaticamente quando houver internet."
+      );
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onSaved();
+    };
+
+    try {
+      if (mode === "create") {
+        if (isOffline) {
+          saveOffline();
+          return;
+        }
+
+        try {
+          await createInspection.mutateAsync({
+            equipamento_id: equipmentId,
+            tecnico_id: user.id,
+            client_request_id: generateClientRequestId(),
+            ...payload,
+          });
+          feedback.toast.success("Inspeção salva com sucesso!");
+        } catch (error) {
+          if (isNetworkError(error)) {
+            saveOffline();
+            return;
+          }
+          throw error;
+        }
       } else if (inspection) {
         await updateInspection.mutateAsync({
           id: inspection.id,

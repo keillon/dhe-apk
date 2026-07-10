@@ -27,6 +27,8 @@ export { ErrorState } from "./ErrorState";
 export { StatCard } from "./StatCard";
 export { StatusBadge } from "./StatusBadge";
 export { OfflineBanner } from "./OfflineBanner";
+export { PendingSyncBanner } from "./PendingSyncBanner";
+export { OfflineSyncHost } from "./OfflineSyncHost";
 export { Screen } from "./Screen";
 export { BackHeader } from "./BackHeader";
 export { InfoRow, InfoRowList } from "./InfoRow";

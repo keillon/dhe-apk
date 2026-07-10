@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
 import { DheLogo, Button, Input, PageContainer } from "@/components";
 import { api } from "@/services/api";
+import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { useAuthStore } from "@/store";
 import { getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
@@ -37,6 +38,7 @@ export default function LoginScreen() {
     try {
       const user = await api.login(email, password);
       setUser(user);
+      void prefetchEquipmentCache(() => api.getEquipments());
       router.replace("/(tabs)");
     } catch (err) {
       setError(getApiErrorMessage(err, "Email ou senha inválidos."));

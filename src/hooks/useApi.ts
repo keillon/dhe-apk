@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { getCachedEquipmentById } from "@/services/equipment-cache";
 import { getRouteParam } from "@/utils/route-params";
 import type {
   ClientInput,
@@ -32,10 +33,12 @@ export function useEquipment(id: string | string[] | undefined) {
     queryKey: ["equipment", equipmentId],
     queryFn: async () => {
       const equipment = await api.getEquipmentById(equipmentId!);
-      if (!equipment) {
-        throw new Error("Equipamento não encontrado.");
-      }
-      return equipment;
+      if (equipment) return equipment;
+
+      const cached = getCachedEquipmentById(equipmentId!);
+      if (cached) return cached;
+
+      throw new Error("Equipamento não encontrado.");
     },
     enabled: !!equipmentId,
   });

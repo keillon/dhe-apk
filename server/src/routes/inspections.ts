@@ -39,6 +39,7 @@ const inspectionPayloadSchema = z.object({
 const createInspectionSchema = inspectionPayloadSchema.extend({
   equipamento_id: z.string().min(1),
   tecnico_id: z.string().min(1),
+  client_request_id: z.string().min(8).optional(),
 });
 
 const updateInspectionSchema = inspectionPayloadSchema;
@@ -210,10 +211,23 @@ inspectionsRouter.post("/", async (req, res) => {
     return;
   }
 
+  if (data.client_request_id) {
+    const existing = await prisma.inspecao.findUnique({
+      where: { clientRequestId: data.client_request_id },
+      include: { tecnico: true, fotos: true, assinatura: true },
+    });
+
+    if (existing) {
+      res.status(200).json(mapInspection(existing));
+      return;
+    }
+  }
+
   try {
     const inspection = await prisma.$transaction(async (tx) => {
       const created = await tx.inspecao.create({
         data: {
+          clientRequestId: data.client_request_id ?? null,
           equipamentoId: data.equipamento_id,
           tecnicoId,
           nivelOleo: data.nivel_oleo,

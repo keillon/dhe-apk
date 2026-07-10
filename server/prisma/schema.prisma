@@ -104,6 +104,7 @@ model Equipamento {
 
 model Inspecao {
   id                 String           @id @default(cuid())
+  clientRequestId    String?          @unique @map("client_request_id")
   equipamentoId      String           @map("equipamento_id")
   tecnicoId          String           @map("tecnico_id")
   nivelOleo          Int              @map("nivel_oleo")

@@ -24,6 +24,6 @@ export {
   useUpdateEquipment,
   useDeleteEquipment,
 } from "./useApi";
-export { useNetworkStatus } from "./useNetworkStatus";
+export { useNetworkStatus, useOfflineSync } from "./useNetworkStatus";
 export { useSafeBack } from "./useSafeBack";
 export { useRequireAdmin } from "./useRequireAdmin";

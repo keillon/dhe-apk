@@ -1,5 +1,12 @@
-import { http, isApiConfigured, saveToken, clearToken, saveDemoUser, getDemoUser, getToken } from "./http";
+import { http, isApiConfigured, saveToken, clearToken, saveDemoUser, getDemoUser, getToken, isNetworkError, isNotFoundError } from "./http";
 import { demoData } from "./demo-data";
+import {
+  cacheEquipments,
+  getCachedEquipmentById,
+  getCachedEquipmentByQr,
+  normalizeEquipmentQr,
+  upsertEquipmentCache,
+} from "./equipment-cache";
 import type {
   ChangePasswordInput,
   Client,
@@ -22,6 +29,12 @@ interface LoginResponse {
   token: string;
   user: User;
 }
+
+export type EquipmentQrLookupResult =
+  | { status: "found"; equipment: Equipment; fromCache: boolean }
+  | { status: "not_found" }
+  | { status: "offline_not_cached" }
+  | { status: "error"; message: string };
 
 export const api = {
   async login(email: string, password: string): Promise<User> {
@@ -87,18 +100,49 @@ export const api = {
     if (!isApiConfigured) return demoData.getEquipments();
 
     const { data } = await http.get<Equipment[]>("/equipments");
+    cacheEquipments(data);
     return data;
   },
 
-  async getEquipmentByQrCode(qrCode: string): Promise<Equipment | null> {
-    if (!isApiConfigured) return demoData.getEquipmentByQrCode(qrCode);
+  async lookupEquipmentByQrCode(qrCode: string): Promise<EquipmentQrLookupResult> {
+    const normalized = normalizeEquipmentQr(qrCode);
+
+    if (!isApiConfigured) {
+      const equipment = await demoData.getEquipmentByQrCode(normalized);
+      return equipment
+        ? { status: "found", equipment, fromCache: false }
+        : { status: "not_found" };
+    }
 
     try {
-      const { data } = await http.get<Equipment>(`/equipments/qr/${encodeURIComponent(qrCode)}`);
-      return data;
-    } catch {
-      return null;
+      const { data } = await http.get<Equipment>(
+        `/equipments/qr/${encodeURIComponent(normalized)}`
+      );
+      upsertEquipmentCache(data);
+      return { status: "found", equipment: data, fromCache: false };
+    } catch (error) {
+      if (isNotFoundError(error)) {
+        return { status: "not_found" };
+      }
+
+      if (isNetworkError(error)) {
+        const cached = getCachedEquipmentByQr(normalized);
+        if (cached) {
+          return { status: "found", equipment: cached, fromCache: true };
+        }
+        return { status: "offline_not_cached" };
+      }
+
+      return {
+        status: "error",
+        message: error instanceof Error ? error.message : "Erro ao buscar equipamento.",
+      };
     }
+  },
+
+  async getEquipmentByQrCode(qrCode: string): Promise<Equipment | null> {
+    const result = await this.lookupEquipmentByQrCode(qrCode);
+    return result.status === "found" ? result.equipment : null;
   },
 
   async getEquipmentById(id: string): Promise<Equipment | null> {
@@ -106,8 +150,12 @@ export const api = {
 
     try {
       const { data } = await http.get<Equipment>(`/equipments/${id}`);
+      upsertEquipmentCache(data);
       return data;
-    } catch {
+    } catch (error) {
+      if (isNetworkError(error)) {
+        return getCachedEquipmentById(id);
+      }
       return null;
     }
   },

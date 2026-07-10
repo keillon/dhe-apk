@@ -8,7 +8,6 @@ import {
   StatCard,
   Loading,
   ErrorState,
-  OfflineBanner,
   RefreshableScrollView,
   PageContainer,
 } from "@/components";
@@ -16,7 +15,6 @@ import {
   useDashboardStats,
   useMyInspections,
   useNotifications,
-  useNetworkStatus,
 } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { getGreeting, isAdmin } from "@/utils";
@@ -26,7 +24,6 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const admin = isAdmin(user);
-  const { isOffline } = useNetworkStatus();
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: myInspections, refetch: refetchMyInspections } = useMyInspections();
   const { data: notifications, refetch: refetchNotifications } = useNotifications(
@@ -40,8 +37,6 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      {isOffline && <OfflineBanner />}
-
       <RefreshableScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-10 pt-4"

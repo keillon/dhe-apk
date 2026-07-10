@@ -8,9 +8,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
-import { FeedbackHost } from "@/components";
+import { FeedbackHost, OfflineSyncHost } from "@/components";
 import { bootstrapLogging } from "@/utils/logger";
 import { colors } from "@/theme";
+import { prefetchEquipmentCache } from "@/services/equipment-cache";
 
 bootstrapLogging();
 
@@ -34,8 +35,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const restore = async () => {
       const user = await api.restoreSession();
       if (!mounted) return;
-      if (user) setUser(user);
-      else setLoading(false);
+      if (user) {
+        setUser(user);
+        void prefetchEquipmentCache(() => api.getEquipments());
+      } else {
+        setLoading(false);
+      }
     };
 
     restore();
@@ -72,7 +77,12 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
+      <OfflineSyncHost />
+      {children}
+    </View>
+  );
 }
 
 export default function RootLayout() {
@@ -82,6 +92,7 @@ export default function RootLayout() {
         <AuthGuard>
           <StatusBar style="light" />
           <FeedbackHost />
+          <OfflineSyncHost />
           <Stack
             screenOptions={{
               headerShown: false,

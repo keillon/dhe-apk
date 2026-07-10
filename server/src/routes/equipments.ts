@@ -61,12 +61,30 @@ equipmentsRouter.get("/", async (_req, res) => {
   }
 });
 
+function normalizeQrCode(value: string): string {
+  return decodeURIComponent(value).trim().toUpperCase();
+}
+
 equipmentsRouter.get("/qr/:qrCode", async (req, res) => {
   try {
-    const equipment = await prisma.equipamento.findUnique({
-      where: { qrCode: req.params.qrCode },
+    const qrCode = normalizeQrCode(req.params.qrCode);
+
+    let equipment = await prisma.equipamento.findUnique({
+      where: { qrCode },
       include: { cliente: true },
     });
+
+    if (!equipment) {
+      equipment = await prisma.equipamento.findFirst({
+        where: {
+          qrCode: {
+            equals: qrCode,
+            mode: "insensitive",
+          },
+        },
+        include: { cliente: true },
+      });
+    }
 
     if (!equipment) {
       res.status(404).json({ error: "Equipamento não encontrado" });

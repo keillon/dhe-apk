@@ -74,21 +74,46 @@ export default function ScanScreen() {
 
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const equipment = await api.getEquipmentByQrCode(code);
+      const result = await api.lookupEquipmentByQrCode(code);
 
-      if (equipment) {
+      if (result.status === "found") {
         logger.info("Scan", "Equipamento encontrado", {
-          id: equipment.id,
-          nome: equipment.nome,
-          qr: equipment.qr_code,
+          id: result.equipment.id,
+          nome: result.equipment.nome,
+          qr: result.equipment.qr_code,
+          fromCache: result.fromCache,
         });
-        feedback.toast.success(`Equipamento ${equipment.nome} encontrado.`);
-        openEquipmentScreen(equipment.id);
+
+        if (result.fromCache) {
+          feedback.toast.info(`Modo offline: ${result.equipment.nome} (cache local).`);
+        } else {
+          feedback.toast.success(`Equipamento ${result.equipment.nome} encontrado.`);
+        }
+
+        openEquipmentScreen(result.equipment.id);
         return;
       }
 
-      logger.warn("Scan", "Equipamento não encontrado", code);
-      setError(`Equipamento "${code}" não encontrado no banco de dados.`);
+      if (result.status === "offline_not_cached") {
+        logger.warn("Scan", "Sem conexão e equipamento não está no cache", code);
+        setError(
+          "Sem internet e este equipamento não foi sincronizado. Abra o app com conexão ao menos uma vez ou digite outro código já visitado."
+        );
+        feedback.toast.error("Equipamento não disponível offline.");
+        return;
+      }
+
+      if (result.status === "error") {
+        logger.error("Scan", "Erro ao buscar equipamento", result.message);
+        setError(result.message);
+        feedback.toast.error("Erro ao buscar equipamento.");
+        return;
+      }
+
+      logger.warn("Scan", "Equipamento não encontrado no servidor", code);
+      setError(
+        `Equipamento "${code}" não está cadastrado. Verifique o código ou cadastre o equipamento no painel admin.`
+      );
       feedback.toast.error(`Código ${code} não encontrado.`);
     } catch (lookupError) {
       logger.error("Scan", "Erro ao buscar equipamento", lookupError);

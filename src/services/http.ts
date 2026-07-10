@@ -7,6 +7,16 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 export const isApiConfigured =
   API_URL.length > 0 && !API_URL.includes("seudominio");
 
+export function isNetworkError(error: unknown): boolean {
+  if (!axios.isAxiosError(error)) return false;
+  if (!error.response) return true;
+  return error.code === "ECONNABORTED" || error.code === "ERR_NETWORK";
+}
+
+export function isNotFoundError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 404;
+}
+
 export function getConnectionInfo() {
   return {
     mode: isApiConfigured ? ("api" as const) : ("demo" as const),
