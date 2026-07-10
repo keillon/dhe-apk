@@ -14,6 +14,7 @@ import { DheLogo, Button, Input, PageContainer } from "@/components";
 import { api } from "@/services/api";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { hydrateStorage } from "@/services/storage";
+import { registerPushForCurrentUser } from "@/services/push-notifications";
 import { useAuthStore } from "@/store";
 import { getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
@@ -40,6 +41,7 @@ export default function LoginScreen() {
       void hydrateStorage().catch(() => {});
       const user = await api.login(email, password);
       setUser(user);
+      void registerPushForCurrentUser((token, platform) => api.registerPushToken(token, platform));
       void prefetchEquipmentCache(() => api.getEquipments());
       router.replace("/(tabs)");
     } catch (err) {

@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { House, Users, BarChart3, User, ClipboardList, Settings2 } from "lucide-react-native";
+import { House, Users, BarChart3, User, ClipboardList, Settings2, Route, CalendarDays } from "lucide-react-native";
 import { useAuthStore } from "@/store";
 import { isAdmin } from "@/utils/roles";
 import { colors } from "@/theme";
@@ -33,6 +33,22 @@ export default function TabsLayout() {
         options={{
           title: "Início",
           tabBarIcon: ({ color, size }) => <House size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="route"
+        options={{
+          title: "Rota",
+          href: admin ? null : undefined,
+          tabBarIcon: ({ color, size }) => <Route size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="calendar"
+        options={{
+          title: "Calendário",
+          href: admin ? undefined : undefined,
+          tabBarIcon: ({ color, size }) => <CalendarDays size={size} color={color} />,
         }}
       />
       <Tabs.Screen

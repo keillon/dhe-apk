@@ -11,6 +11,8 @@ import {
   QrCode,
   Camera,
   Save,
+  History,
+  Shield,
 } from "lucide-react-native";
 import { Card, Button, Input, DisplayImage, PageContainer, InfoRowList } from "@/components";
 import { useAuthStore } from "@/store";
@@ -209,6 +211,24 @@ export default function ProfileScreen() {
             className="mb-3"
             icon={<Lock size={18} color={colors.primary} />}
             onPress={() => router.push("/profile/change-password")}
+          />
+
+          <Button
+            title="Logs de sincronização"
+            variant="outline"
+            fullWidth
+            className="mb-3"
+            icon={<History size={18} color={colors.primary} />}
+            onPress={() => router.push("/profile/sync-logs")}
+          />
+
+          <Button
+            title="Bloqueio do app"
+            variant="outline"
+            fullWidth
+            className="mb-3"
+            icon={<Shield size={18} color={colors.primary} />}
+            onPress={() => router.push("/profile/app-lock")}
           />
 
           <Button

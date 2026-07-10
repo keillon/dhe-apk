@@ -1,10 +1,12 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { mapUser } from "../lib/mappers";
 import { persistImageData } from "../lib/media-storage";
+import { sendPasswordResetEmail } from "../lib/email";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
@@ -15,6 +17,11 @@ const loginSchema = z.object({
 
 const resetSchema = z.object({
   email: z.string().email(),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(10),
+  password: z.string().min(6),
 });
 
 const updateProfileSchema = z.object({
@@ -88,7 +95,67 @@ authRouter.post("/forgot-password", async (req, res) => {
     return;
   }
 
+  const email = parsed.data.email.trim().toLowerCase();
+  const user = await prisma.usuario.findUnique({ where: { email } });
+
+  if (user) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await prisma.passwordResetToken.create({
+      data: {
+        usuarioId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const appUrl = process.env.APP_RESET_URL ?? "dhe://reset-password";
+    const resetUrl = `${appUrl}?token=${rawToken}`;
+    const emailResult = await sendPasswordResetEmail(email, resetUrl);
+
+    res.json({
+      message: "Se o email estiver cadastrado, você receberá instruções em breve.",
+      ...(emailResult.devToken ? { dev_reset_url: emailResult.devToken } : {}),
+    });
+    return;
+  }
+
   res.json({ message: "Se o email estiver cadastrado, você receberá instruções em breve." });
+});
+
+authRouter.post("/reset-password", async (req, res) => {
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Dados inválidos" });
+    return;
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(parsed.data.token).digest("hex");
+  const token = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { usuario: true },
+  });
+
+  if (!token || token.usedAt || token.expiresAt < new Date()) {
+    res.status(400).json({ error: "Token inválido ou expirado" });
+    return;
+  }
+
+  const senhaHash = await bcrypt.hash(parsed.data.password, 10);
+  await prisma.$transaction([
+    prisma.usuario.update({
+      where: { id: token.usuarioId },
+      data: { senhaHash },
+    }),
+    prisma.passwordResetToken.update({
+      where: { id: token.id },
+      data: { usedAt: new Date() },
+    }),
+  ]);
+
+  res.json({ message: "Senha redefinida com sucesso" });
 });
 
 authRouter.get("/me", authMiddleware, async (req, res) => {

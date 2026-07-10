@@ -1,6 +1,7 @@
 import type { CreateInspectionInput, PendingSyncItem } from "@/types";
 import { api } from "./api";
 import { isNetworkError } from "./http";
+import { appendSyncHistory } from "./sync-history";
 import { getPendingSync, setStorageValue, StorageKeys } from "./storage";
 
 function savePendingItems(items: PendingSyncItem[]): void {
@@ -106,6 +107,27 @@ export async function syncPendingInspections(): Promise<SyncPendingResult> {
       }));
       failed += 1;
     }
+  }
+
+  if (synced > 0 || failed > 0) {
+    const type =
+      synced > 0 && failed === 0
+        ? "sync_success"
+        : synced === 0 && failed > 0
+          ? "sync_failed"
+          : "sync_partial";
+
+    appendSyncHistory({
+      type,
+      message:
+        synced > 0 && failed > 0
+          ? `${synced} inspeção(ões) enviada(s), ${failed} falha(s).`
+          : synced > 0
+            ? `${synced} inspeção(ões) sincronizada(s) com sucesso.`
+            : `Falha ao sincronizar ${failed} inspeção(ões).`,
+      synced,
+      failed,
+    });
   }
 
   return { synced, failed, skipped };

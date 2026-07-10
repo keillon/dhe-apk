@@ -12,6 +12,7 @@ import {
   RefreshableScrollView,
   BackHeader,
   PageContainer,
+  AuditLogList,
 } from "@/components";
 import { useEquipment, useDeleteEquipment } from "@/hooks";
 import { useAuthStore } from "@/store";
@@ -114,6 +115,12 @@ export default function EquipmentScreen() {
                 <View className="flex-row items-center">
                   <Calendar size={16} color={colors.textMuted} />
                   <Text className="ml-3 flex-1 text-sm text-dhe-textSecondary">
+                    Próxima manutenção: {formatDate(equipment.proxima_manutencao)}
+                  </Text>
+                </View>
+                <View className="flex-row items-center">
+                  <Calendar size={16} color={colors.textMuted} />
+                  <Text className="ml-3 flex-1 text-sm text-dhe-textSecondary">
                     Última inspeção: {formatDate(equipment.ultima_inspecao)}
                   </Text>
                 </View>
@@ -124,6 +131,7 @@ export default function EquipmentScreen() {
               <Text className="mb-4 text-sm font-bold text-dhe-text">Detalhes</Text>
               {[
                 ["Patrimônio", equipment.patrimonio],
+                ["Tipo", equipment.tipo ?? "—"],
                 ["Marca", equipment.marca],
                 ["Modelo", equipment.modelo],
                 ["Nº Série", equipment.numero_serie],
@@ -194,9 +202,17 @@ export default function EquipmentScreen() {
                   fullWidth
                   size="lg"
                   icon={<Trash2 size={20} color={colors.danger} />}
+                  className="mb-3"
                 />
               </>
             )}
+
+            {admin ? (
+              <Card className="mb-4">
+                <Text className="mb-4 text-sm font-bold text-dhe-text">Histórico de alterações</Text>
+                <AuditLogList entidade="equipamento" entidadeId={equipment.id} />
+              </Card>
+            ) : null}
           </PageContainer>
         </View>
       </RefreshableScrollView>

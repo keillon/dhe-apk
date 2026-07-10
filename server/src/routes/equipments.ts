@@ -5,8 +5,9 @@ import { mapEquipment } from "../lib/mappers";
 import { generateNextQrCode } from "../lib/qr-code";
 import { persistImageData } from "../lib/media-storage";
 import { parseOptionalDate } from "../lib/parse-date";
-import { authMiddleware } from "../middleware/auth";
+import { createAuditLog, pickAuditFields } from "../lib/audit-log";
 import { adminMiddleware } from "../middleware/admin";
+import { authMiddleware } from "../middleware/auth";
 
 const equipmentSchema = z.object({
   cliente_id: z.string().min(1),
@@ -17,6 +18,7 @@ const equipmentSchema = z.object({
   numero_serie: z.string().min(1),
   ano: z.number().int().min(1900).max(2100),
   localizacao: z.string().min(1),
+  tipo: z.string().optional(),
   status: z.enum(["operando", "parado", "manutencao"]).default("operando"),
   proxima_manutencao: z.string().optional(),
   foto_url: z.string().optional(),
@@ -64,6 +66,37 @@ equipmentsRouter.get("/", async (_req, res) => {
 function normalizeQrCode(value: string): string {
   return decodeURIComponent(value).trim().toUpperCase();
 }
+
+equipmentsRouter.get("/search", async (req, res) => {
+  try {
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    if (!query || query.length < 2) {
+      res.status(400).json({ error: "Informe ao menos 2 caracteres para buscar." });
+      return;
+    }
+
+    const equipments = await prisma.equipamento.findMany({
+      where: {
+        OR: [
+          { qrCode: { contains: query, mode: "insensitive" } },
+          { patrimonio: { contains: query, mode: "insensitive" } },
+          { nome: { contains: query, mode: "insensitive" } },
+          { empresa: { contains: query, mode: "insensitive" } },
+          { cliente: { empresa: { contains: query, mode: "insensitive" } } },
+          { cliente: { nome: { contains: query, mode: "insensitive" } } },
+        ],
+      },
+      include: { cliente: true },
+      orderBy: { nome: "asc" },
+      take: 30,
+    });
+
+    res.json(equipments.map(mapEquipment));
+  } catch (error) {
+    console.error("Erro na busca de equipamentos:", error);
+    res.status(500).json({ error: "Erro ao buscar equipamentos" });
+  }
+});
 
 equipmentsRouter.get("/qr/:qrCode", async (req, res) => {
   try {
@@ -151,6 +184,7 @@ equipmentsRouter.post("/", adminMiddleware, async (req, res) => {
         numeroSerie: data.numero_serie,
         ano: data.ano,
         localizacao: data.localizacao,
+        tipo: data.tipo ?? null,
         status: data.status,
         fotoUrl: null,
         proximaManutencao,
@@ -167,6 +201,20 @@ equipmentsRouter.post("/", adminMiddleware, async (req, res) => {
             include: { cliente: true },
           })
         : equipment;
+
+    await createAuditLog({
+      entidade: "equipamento",
+      entidadeId: finalEquipment.id,
+      usuarioId: req.auth!.userId,
+      acao: "create",
+      depois: pickAuditFields(finalEquipment as unknown as Record<string, unknown>, [
+        "nome",
+        "patrimonio",
+        "qrCode",
+        "status",
+        "tipo",
+      ]),
+    });
 
     res.status(201).json(mapEquipment(finalEquipment));
   } catch (error) {
@@ -216,11 +264,33 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
         numeroSerie: data.numero_serie,
         ano: data.ano,
         localizacao: data.localizacao,
+        tipo: data.tipo ?? null,
         status: data.status,
         fotoUrl,
         proximaManutencao,
       },
       include: { cliente: true },
+    });
+
+    await createAuditLog({
+      entidade: "equipamento",
+      entidadeId: equipment.id,
+      usuarioId: req.auth!.userId,
+      acao: "update",
+      antes: pickAuditFields(existing as unknown as Record<string, unknown>, [
+        "nome",
+        "patrimonio",
+        "status",
+        "tipo",
+        "localizacao",
+      ]),
+      depois: pickAuditFields(equipment as unknown as Record<string, unknown>, [
+        "nome",
+        "patrimonio",
+        "status",
+        "tipo",
+        "localizacao",
+      ]),
     });
 
     res.json(mapEquipment(equipment));
@@ -241,6 +311,20 @@ equipmentsRouter.delete("/:id", adminMiddleware, async (req, res) => {
       });
       return;
     }
+
+    const existing = await prisma.equipamento.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Equipamento não encontrado" });
+      return;
+    }
+
+    await createAuditLog({
+      entidade: "equipamento",
+      entidadeId: id,
+      usuarioId: req.auth!.userId,
+      acao: "delete",
+      antes: pickAuditFields(existing as unknown as Record<string, unknown>, ["nome", "patrimonio", "qrCode"]),
+    });
 
     await prisma.equipamento.delete({ where: { id } });
     res.json({ message: "Equipamento removido com sucesso" });

@@ -41,6 +41,7 @@ export interface Equipment {
   numero_serie: string;
   ano: number;
   localizacao: string;
+  tipo?: string;
   foto_url?: string;
   status: EquipmentStatus;
   ultima_inspecao?: string;
@@ -50,17 +51,104 @@ export interface Equipment {
   cliente?: Client;
 }
 
-export interface ChecklistItem {
-  vazamentos: boolean;
-  mangueiras: boolean;
-  cilindros: boolean;
-  motor: boolean;
-  bomba: boolean;
-  pressao: boolean;
-  temperatura: boolean;
-  filtros: boolean;
-  ruidos: boolean;
-  acoplamentos: boolean;
+export type ChecklistItem = Record<string, boolean>;
+
+export interface ChecklistTemplateItem {
+  key: string;
+  label: string;
+  obrigatorio: boolean;
+}
+
+export interface ChecklistTemplate {
+  id: string;
+  tipo: string;
+  nome: string;
+  itens: ChecklistTemplateItem[];
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface DailyRouteItem {
+  id: string;
+  ordem: number;
+  visitado_em?: string;
+  equipamento: Equipment;
+}
+
+export interface DailyRoute {
+  id: string;
+  data: string;
+  status: "planejada" | "em_andamento" | "concluida";
+  itens: DailyRouteItem[];
+}
+
+export interface MaintenanceEvent {
+  id: string;
+  data?: string;
+  equipamento: Equipment;
+  atrasada: boolean;
+}
+
+export interface AuditLogEntry {
+  id: string;
+  entidade: "equipamento" | "cliente";
+  entidade_id: string;
+  acao: string;
+  antes: Record<string, unknown> | null;
+  depois: Record<string, unknown> | null;
+  created_at: string;
+  usuario: {
+    id: string;
+    nome: string;
+    email: string;
+  };
+}
+
+export interface DashboardCharts {
+  inspecoes_por_mes: Array<{ mes: string; total: number }>;
+  equipamentos_por_status: Array<{ status: string; total: number }>;
+  contaminacao_distribuicao: Array<{ nivel: string; total: number }>;
+}
+
+export interface InspectionDraftPhoto {
+  uri: string;
+  dataUrl: string;
+  kind: "image" | "video";
+  thumbnailUri?: string;
+  withAudio?: boolean;
+}
+
+export interface InspectionDraft {
+  id: string;
+  equipmentId: string;
+  equipmentName: string;
+  equipmentTipo?: string;
+  savedAt: string;
+  form: {
+    nivelOleo: number;
+    contaminacao: OilContamination;
+    dataLimpeza: string;
+    complemento: string;
+    checklist: ChecklistItem;
+    fotosAntes: InspectionDraftPhoto[];
+    fotosDepois: InspectionDraftPhoto[];
+    assinatura: string | null;
+  };
+}
+
+export interface SyncHistoryEntry {
+  id: string;
+  type: "sync_success" | "sync_failed" | "sync_partial";
+  message: string;
+  synced?: number;
+  failed?: number;
+  created_at: string;
+}
+
+export interface AppLockSettings {
+  enabled: boolean;
+  useBiometric: boolean;
+  pinHash?: string;
 }
 
 export interface Inspection {

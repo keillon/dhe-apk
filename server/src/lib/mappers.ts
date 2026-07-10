@@ -69,8 +69,9 @@ export function mapEquipment(
     modelo: string;
     numeroSerie: string;
     ano: number;
-    localizacao: string;
-    fotoUrl: string | null;
+  localizacao: string;
+  tipo?: string | null;
+  fotoUrl: string | null;
     status: "operando" | "parado" | "manutencao";
     ultimaInspecao: Date | null;
     proximaManutencao: Date | null;
@@ -98,6 +99,7 @@ export function mapEquipment(
     numero_serie: equipment.numeroSerie,
     ano: equipment.ano,
     localizacao: equipment.localizacao,
+    tipo: equipment.tipo ?? undefined,
     foto_url: equipment.fotoUrl ?? undefined,
     status: equipment.status,
     ultima_inspecao: toIso(equipment.ultimaInspecao),

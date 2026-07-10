@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pencil, Trash2 } from "lucide-react-native";
+import { Pencil, Trash2, Share2 } from "lucide-react-native";
 import {
   Card,
   Loading,
@@ -15,6 +16,7 @@ import { useInspection, useDeleteInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
 import { formatDateTime, getApiErrorMessage, isAdmin } from "@/utils";
+import { shareInspectionPdf } from "@/utils/inspection-report";
 import { colors } from "@/theme";
 
 export default function InspectionDetailScreen() {
@@ -24,6 +26,19 @@ export default function InspectionDetailScreen() {
   const admin = isAdmin(user);
   const { data: inspection, isLoading, error, refetch } = useInspection(id);
   const deleteInspection = useDeleteInspection();
+  const [exporting, setExporting] = useState(false);
+
+  const handleExportPdf = async () => {
+    if (!inspection) return;
+    setExporting(true);
+    try {
+      await shareInspectionPdf(inspection);
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao exportar PDF."));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!inspection) return;
@@ -61,6 +76,16 @@ export default function InspectionDetailScreen() {
           <Text className="mb-6 text-sm text-dhe-textSecondary">
             {formatDateTime(inspection.created_at)} • {inspection.tecnico?.nome}
           </Text>
+
+          <Button
+            title="Exportar PDF"
+            variant="secondary"
+            onPress={() => void handleExportPdf()}
+            loading={exporting}
+            fullWidth
+            className="mb-4"
+            icon={<Share2 size={18} color={colors.text} />}
+          />
 
           {admin && (
             <View className="mb-4 flex-row gap-3">

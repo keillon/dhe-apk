@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { mapClient } from "../lib/mappers";
+import { createAuditLog, pickAuditFields } from "../lib/audit-log";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
@@ -59,6 +60,14 @@ clientsRouter.post("/", adminMiddleware, async (req, res) => {
       },
     });
 
+    await createAuditLog({
+      entidade: "cliente",
+      entidadeId: client.id,
+      usuarioId: req.auth!.userId,
+      acao: "create",
+      depois: pickAuditFields(client as unknown as Record<string, unknown>, ["nome", "empresa", "email"]),
+    });
+
     res.status(201).json(mapClient(client));
   } catch (error) {
     console.error("Erro ao criar cliente:", error);
@@ -97,6 +106,15 @@ clientsRouter.put("/:id", adminMiddleware, async (req, res) => {
       data: { empresa: parsed.data.empresa },
     });
 
+    await createAuditLog({
+      entidade: "cliente",
+      entidadeId: client.id,
+      usuarioId: req.auth!.userId,
+      acao: "update",
+      antes: pickAuditFields(existing as unknown as Record<string, unknown>, ["nome", "empresa", "email"]),
+      depois: pickAuditFields(client as unknown as Record<string, unknown>, ["nome", "empresa", "email"]),
+    });
+
     res.json(mapClient(client));
   } catch (error) {
     console.error("Erro ao atualizar cliente:", error);
@@ -115,6 +133,20 @@ clientsRouter.delete("/:id", adminMiddleware, async (req, res) => {
       });
       return;
     }
+
+    const existing = await prisma.cliente.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: "Cliente não encontrado" });
+      return;
+    }
+
+    await createAuditLog({
+      entidade: "cliente",
+      entidadeId: id,
+      usuarioId: req.auth!.userId,
+      acao: "delete",
+      antes: pickAuditFields(existing as unknown as Record<string, unknown>, ["nome", "empresa"]),
+    });
 
     await prisma.cliente.delete({ where: { id } });
     res.json({ message: "Cliente removido com sucesso" });

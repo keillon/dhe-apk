@@ -16,6 +16,10 @@ interface InspectionDetailContentProps {
   showHeader?: boolean;
 }
 
+function getChecklistLabel(key: string): string {
+  return CHECKLIST_LABELS[key as keyof typeof CHECKLIST_LABELS] ?? key;
+}
+
 function InfoRow({ label, value, valueColor }: { label: string; value: string; valueColor?: string }) {
   return (
     <View className="mb-3 flex-row items-center justify-between">
@@ -31,9 +35,8 @@ export function InspectionDetailContent({
   inspection,
   showHeader = true,
 }: InspectionDetailContentProps) {
-  const checklistOk = (Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).filter(
-    (key) => inspection.checklist[key]
-  ).length;
+  const checklistKeys = Object.keys(inspection.checklist);
+  const checklistOk = checklistKeys.filter((key) => inspection.checklist[key]).length;
 
   return (
     <View>
@@ -79,9 +82,9 @@ export function InspectionDetailContent({
       <View className="mb-4 rounded-2xl bg-dhe-elevated p-4">
         <Text className="mb-1 text-sm font-bold text-dhe-text">Checklist</Text>
         <Text className="mb-3 text-xs text-dhe-textMuted">
-          {checklistOk} de {Object.keys(CHECKLIST_LABELS).length} itens verificados
+          {checklistOk} de {checklistKeys.length} itens verificados
         </Text>
-        {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key) => (
+        {checklistKeys.map((key) => (
           <View key={key} className="mb-2 flex-row items-center">
             <Text className="mr-2 text-base">{inspection.checklist[key] ? "✅" : "⬜"}</Text>
             <Text
@@ -89,7 +92,7 @@ export function InspectionDetailContent({
                 inspection.checklist[key] ? "text-dhe-text" : "text-dhe-textMuted"
               }`}
             >
-              {CHECKLIST_LABELS[key]}
+              {getChecklistLabel(key)}
             </Text>
           </View>
         ))}

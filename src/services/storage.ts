@@ -8,6 +8,10 @@ const KEYS = {
   cachedEquipments: "cached_equipments",
   cachedInspections: "cached_inspections",
   offlineMode: "offline_mode",
+  inspectionDrafts: "inspection_drafts",
+  syncHistory: "sync_history",
+  appLock: "app_lock",
+  pendingDeepLink: "pending_deep_link",
 } as const;
 
 const memory = new Map<string, string>();

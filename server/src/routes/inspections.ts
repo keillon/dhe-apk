@@ -7,18 +7,7 @@ import { persistInspectionMedia } from "../lib/media-storage";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
-const checklistSchema = z.object({
-  vazamentos: z.boolean(),
-  mangueiras: z.boolean(),
-  cilindros: z.boolean(),
-  motor: z.boolean(),
-  bomba: z.boolean(),
-  pressao: z.boolean(),
-  temperatura: z.boolean(),
-  filtros: z.boolean(),
-  ruidos: z.boolean(),
-  acoplamentos: z.boolean(),
-});
+const checklistSchema = z.record(z.boolean());
 
 const fotoSchema = z.object({
   tipo: z.enum(["antes", "depois"]),
@@ -99,6 +88,53 @@ inspectionsRouter.get("/me", async (req, res) => {
   } catch (error) {
     console.error("Erro ao listar minhas inspeções:", error);
     res.status(500).json({ error: "Erro ao buscar suas inspeções" });
+  }
+});
+
+inspectionsRouter.get("/export", adminMiddleware, async (req, res) => {
+  try {
+    const inspections = await prisma.inspecao.findMany({
+      include: {
+        tecnico: true,
+        equipamento: { include: { cliente: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const header = [
+      "id",
+      "data",
+      "equipamento",
+      "qr_code",
+      "cliente",
+      "tecnico",
+      "nivel_oleo",
+      "contaminacao",
+      "complemento",
+    ].join(",");
+
+    const rows = inspections.map((inspection) => {
+      const values = [
+        inspection.id,
+        inspection.createdAt.toISOString(),
+        inspection.equipamento.nome,
+        inspection.equipamento.qrCode,
+        inspection.equipamento.cliente?.empresa ?? inspection.equipamento.empresa,
+        inspection.tecnico.nome,
+        String(inspection.nivelOleo),
+        inspection.contaminacaoOleo,
+        (inspection.complemento ?? "").replace(/"/g, '""'),
+      ];
+      return values.map((value) => `"${value}"`).join(",");
+    });
+
+    const csv = [header, ...rows].join("\n");
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", 'attachment; filename="inspecoes-dhe.csv"');
+    res.send(csv);
+  } catch (error) {
+    console.error("Erro ao exportar inspeções:", error);
+    res.status(500).json({ error: "Erro ao exportar inspeções" });
   }
 });
 

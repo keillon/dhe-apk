@@ -27,3 +27,8 @@ export {
 export { useNetworkStatus, useOfflineSync } from "./useNetworkStatus";
 export { useSafeBack } from "./useSafeBack";
 export { useRequireAdmin } from "./useRequireAdmin";
+export {
+  useChecklistTemplate,
+  useChecklistTemplates,
+  useDefaultChecklist,
+} from "./useChecklistTemplate";

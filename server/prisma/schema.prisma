@@ -40,6 +40,17 @@ enum UserRole {
   tecnico
 }
 
+enum RouteStatus {
+  planejada
+  em_andamento
+  concluida
+}
+
+enum AuditEntity {
+  equipamento
+  cliente
+}
+
 model Usuario {
   id         String   @id @default(cuid())
   email      String   @unique
@@ -52,10 +63,13 @@ model Usuario {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  inspecoes      Inspecao[]
-  historicos     Historico[]
-  notificacoes   Notificacao[]
-  pushTokens     PushToken[]
+  inspecoes           Inspecao[]
+  historicos          Historico[]
+  notificacoes        Notificacao[]
+  pushTokens          PushToken[]
+  rotasDiarias        RotaDiaria[]
+  passwordResetTokens PasswordResetToken[]
+  auditLogs           AuditLog[]
 
   @@map("usuarios")
 }
@@ -86,6 +100,7 @@ model Equipamento {
   numeroSerie       String          @map("numero_serie")
   ano               Int
   localizacao       String
+  tipo              String?
   fotoUrl           String?         @map("foto_url")
   status            EquipmentStatus @default(operando)
   ultimaInspecao    DateTime?       @map("ultima_inspecao")
@@ -93,13 +108,16 @@ model Equipamento {
   createdAt         DateTime        @default(now()) @map("created_at")
   updatedAt         DateTime        @updatedAt @map("updated_at")
 
-  cliente       Cliente       @relation(fields: [clienteId], references: [id])
-  inspecoes     Inspecao[]
-  historicos    Historico[]
-  notificacoes  Notificacao[]
+  cliente      Cliente       @relation(fields: [clienteId], references: [id])
+  inspecoes    Inspecao[]
+  historicos   Historico[]
+  notificacoes Notificacao[]
+  rotaItens    RotaItem[]
 
   @@index([clienteId])
   @@index([status])
+  @@index([patrimonio])
+  @@index([proximaManutencao])
   @@map("equipamentos")
 }
 
@@ -175,6 +193,7 @@ model Notificacao {
   titulo        String
   mensagem      String
   lida          Boolean          @default(false)
+  pushSentAt    DateTime?        @map("push_sent_at")
   createdAt     DateTime         @default(now()) @map("created_at")
 
   usuario     Usuario      @relation(fields: [usuarioId], references: [id])
@@ -197,4 +216,75 @@ model PushToken {
 
   @@index([usuarioId])
   @@map("push_tokens")
+}
+
+model ChecklistTemplate {
+  id        String   @id @default(cuid())
+  tipo      String   @unique
+  nome      String
+  itens     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("checklist_templates")
+}
+
+model RotaDiaria {
+  id        String      @id @default(cuid())
+  tecnicoId String      @map("tecnico_id")
+  data      DateTime    @db.Date
+  status    RouteStatus @default(planejada)
+  createdAt DateTime    @default(now()) @map("created_at")
+  updatedAt DateTime    @updatedAt @map("updated_at")
+
+  tecnico Usuario    @relation(fields: [tecnicoId], references: [id], onDelete: Cascade)
+  itens   RotaItem[]
+
+  @@unique([tecnicoId, data])
+  @@map("rotas_diarias")
+}
+
+model RotaItem {
+  id            String    @id @default(cuid())
+  rotaId        String    @map("rota_id")
+  equipamentoId String    @map("equipamento_id")
+  ordem         Int
+  visitadoEm    DateTime? @map("visitado_em")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  rota        RotaDiaria  @relation(fields: [rotaId], references: [id], onDelete: Cascade)
+  equipamento Equipamento @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+
+  @@index([rotaId])
+  @@map("rota_itens")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  usuarioId String    @map("usuario_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@map("password_reset_tokens")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  entidade   AuditEntity
+  entidadeId String      @map("entidade_id")
+  usuarioId  String      @map("usuario_id")
+  acao       String
+  antes      Json?
+  depois     Json?
+  createdAt  DateTime    @default(now()) @map("created_at")
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([entidade, entidadeId])
+  @@map("audit_logs")
 }

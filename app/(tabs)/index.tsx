@@ -1,7 +1,8 @@
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { QrCode, ClipboardCheck, Bell, Wrench, History } from "lucide-react-native";
+import { QrCode, ClipboardCheck, Bell, Wrench, History, Search, FileText } from "lucide-react-native";
 import {
   DheLogo,
   Button,
@@ -17,6 +18,7 @@ import {
   useNotifications,
 } from "@/hooks";
 import { useAuthStore } from "@/store";
+import { getInspectionDraftCount } from "@/services/draft-inspections";
 import { getGreeting, isAdmin } from "@/utils";
 import { colors } from "@/theme";
 
@@ -24,6 +26,11 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
   const admin = isAdmin(user);
+  const [draftRefresh, setDraftRefresh] = useState(0);
+  const draftCount = useMemo(() => {
+    void draftRefresh;
+    return getInspectionDraftCount();
+  }, [draftRefresh]);
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: myInspections, refetch: refetchMyInspections } = useMyInspections();
   const { data: notifications, refetch: refetchNotifications } = useNotifications(
@@ -42,6 +49,7 @@ export default function HomeScreen() {
         contentContainerClassName="px-5 pb-10 pt-4"
         showsVerticalScrollIndicator={false}
         onRefresh={async () => {
+          setDraftRefresh((value) => value + 1);
           if (admin) {
             await Promise.all([refetch(), refetchNotifications()]);
           } else {
@@ -128,7 +136,29 @@ export default function HomeScreen() {
             fullWidth
             size="lg"
             icon={<QrCode size={24} color={colors.bg} />}
+            className="mb-3"
           />
+
+          <Button
+            title="Buscar equipamento"
+            onPress={() => router.push("/search")}
+            variant="secondary"
+            fullWidth
+            size="lg"
+            icon={<Search size={22} color={colors.text} />}
+            className="mb-3"
+          />
+
+          {draftCount > 0 ? (
+            <Button
+              title={`Rascunhos (${draftCount})`}
+              onPress={() => router.push("/inspection/drafts")}
+              variant="outline"
+              fullWidth
+              size="lg"
+              icon={<FileText size={22} color={colors.primary} />}
+            />
+          ) : null}
         </PageContainer>
       </RefreshableScrollView>
     </SafeAreaView>

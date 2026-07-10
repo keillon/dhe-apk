@@ -1,5 +1,6 @@
 import type { NotificationType } from "@prisma/client";
 import { prisma } from "./prisma";
+import { sendExpoPushMessages } from "./expo-push";
 
 interface EnsureNotificationInput {
   usuarioId: string;
@@ -7,6 +8,41 @@ interface EnsureNotificationInput {
   tipo: NotificationType;
   titulo: string;
   mensagem: string;
+}
+
+async function sendPushForNotification(
+  usuarioId: string,
+  notificationId: string,
+  equipamentoId: string,
+  titulo: string,
+  mensagem: string
+): Promise<void> {
+  const tokens = await prisma.pushToken.findMany({
+    where: { usuarioId },
+    select: { token: true },
+  });
+
+  if (tokens.length === 0) return;
+
+  try {
+    await sendExpoPushMessages(
+      tokens.map((item) => item.token),
+      titulo,
+      mensagem,
+      {
+        notificationId,
+        equipamentoId,
+        url: `dhe://equipment/${equipamentoId}`,
+      }
+    );
+
+    await prisma.notificacao.update({
+      where: { id: notificationId },
+      data: { pushSentAt: new Date() },
+    });
+  } catch (error) {
+    console.error("Erro ao enviar push automático:", error);
+  }
 }
 
 async function ensureNotification(input: EnsureNotificationInput): Promise<void> {
@@ -29,10 +65,27 @@ async function ensureNotification(input: EnsureNotificationInput): Promise<void>
         },
       });
     }
+
+    if (!existing.pushSentAt) {
+      await sendPushForNotification(
+        input.usuarioId,
+        existing.id,
+        input.equipamentoId,
+        input.titulo,
+        input.mensagem
+      );
+    }
     return;
   }
 
-  await prisma.notificacao.create({ data: input });
+  const created = await prisma.notificacao.create({ data: input });
+  await sendPushForNotification(
+    input.usuarioId,
+    created.id,
+    input.equipamentoId,
+    input.titulo,
+    input.mensagem
+  );
 }
 
 export async function syncNotificationsForUser(userId: string): Promise<void> {

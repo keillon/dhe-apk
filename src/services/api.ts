@@ -8,16 +8,21 @@ import {
   upsertEquipmentCache,
 } from "./equipment-cache";
 import type {
+  AuditLogEntry,
   ChangePasswordInput,
+  ChecklistTemplate,
   Client,
   ClientInput,
   CreateInspectionInput,
   CreateUserInput,
+  DailyRoute,
+  DashboardCharts,
   DashboardStats,
   Equipment,
   EquipmentInput,
   Inspection,
   InspectionFilters,
+  MaintenanceEvent,
   Notification,
   UpdateInspectionInput,
   UpdateProfileInput,
@@ -80,19 +85,129 @@ export const api = {
     }
   },
 
+  async forgotPassword(email: string): Promise<{ dev_reset_url?: string }> {
+    if (!isApiConfigured) {
+      await new Promise((r) => setTimeout(r, 800));
+      return { dev_reset_url: "dhe://reset-password?token=demo-token" };
+    }
+
+    const { data } = await http.post<{ message: string; dev_reset_url?: string }>(
+      "/auth/forgot-password",
+      { email }
+    );
+    return { dev_reset_url: data.dev_reset_url };
+  },
+
   async resetPassword(email: string): Promise<void> {
+    await this.forgotPassword(email);
+  },
+
+  async confirmResetPassword(token: string, password: string): Promise<void> {
     if (!isApiConfigured) {
       await new Promise((r) => setTimeout(r, 800));
       return;
     }
 
-    await http.post("/auth/forgot-password", { email });
+    await http.post("/auth/reset-password", { token, password });
   },
 
   async getDashboardStats(): Promise<DashboardStats> {
     if (!isApiConfigured) return demoData.getDashboardStats();
 
     const { data } = await http.get<DashboardStats>("/dashboard/stats");
+    return data;
+  },
+
+  async getDashboardCharts(): Promise<DashboardCharts> {
+    if (!isApiConfigured) return demoData.getDashboardCharts();
+
+    const { data } = await http.get<DashboardCharts>("/dashboard/charts");
+    return data;
+  },
+
+  async searchEquipments(query: string): Promise<Equipment[]> {
+    if (!isApiConfigured) return demoData.searchEquipments(query);
+
+    const { data } = await http.get<Equipment[]>(
+      `/equipments/search?q=${encodeURIComponent(query)}`
+    );
+    return data;
+  },
+
+  async getTodayRoute(): Promise<DailyRoute> {
+    if (!isApiConfigured) return demoData.getTodayRoute();
+
+    const { data } = await http.get<DailyRoute>("/daily-routes/today");
+    return data;
+  },
+
+  async visitRouteItem(itemId: string): Promise<{ visitado_em?: string }> {
+    if (!isApiConfigured) return demoData.visitRouteItem(itemId);
+
+    const { data } = await http.patch<{ success: boolean; visitado_em?: string }>(
+      `/daily-routes/items/${itemId}/visit`
+    );
+    return { visitado_em: data.visitado_em };
+  },
+
+  async regenerateTodayRoute(): Promise<DailyRoute> {
+    if (!isApiConfigured) return demoData.regenerateTodayRoute();
+
+    const { data } = await http.post<DailyRoute>("/daily-routes/regenerate");
+    return data;
+  },
+
+  async getMaintenanceCalendar(from: string, to: string): Promise<MaintenanceEvent[]> {
+    if (!isApiConfigured) return demoData.getMaintenanceCalendar(from, to);
+
+    const params = new URLSearchParams({ from, to });
+    const { data } = await http.get<MaintenanceEvent[]>(`/maintenance/calendar?${params}`);
+    return data;
+  },
+
+  async getChecklistTemplates(): Promise<ChecklistTemplate[]> {
+    if (!isApiConfigured) return demoData.getChecklistTemplates();
+
+    const { data } = await http.get<ChecklistTemplate[]>("/checklists");
+    return data;
+  },
+
+  async getChecklistTemplate(tipo: string): Promise<ChecklistTemplate> {
+    if (!isApiConfigured) return demoData.getChecklistTemplate(tipo);
+
+    const { data } = await http.get<ChecklistTemplate>(`/checklists/${encodeURIComponent(tipo)}`);
+    return data;
+  },
+
+  async updateChecklistTemplate(
+    tipo: string,
+    payload: Pick<ChecklistTemplate, "nome" | "itens">
+  ): Promise<ChecklistTemplate> {
+    if (!isApiConfigured) return demoData.updateChecklistTemplate(tipo, payload);
+
+    const { data } = await http.put<ChecklistTemplate>(`/checklists/${encodeURIComponent(tipo)}`, {
+      ...payload,
+      tipo,
+    });
+    return data;
+  },
+
+  async getAuditLog(
+    entidade: "equipamento" | "cliente",
+    id: string
+  ): Promise<AuditLogEntry[]> {
+    if (!isApiConfigured) return demoData.getAuditLog(entidade, id);
+
+    const { data } = await http.get<AuditLogEntry[]>(`/audit/${entidade}/${id}`);
+    return data;
+  },
+
+  async exportInspectionsCsv(): Promise<string> {
+    if (!isApiConfigured) return demoData.exportInspectionsCsv();
+
+    const { data } = await http.get<string>("/inspections/export", {
+      responseType: "text",
+    });
     return data;
   },
 

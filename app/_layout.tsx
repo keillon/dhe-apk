@@ -1,20 +1,31 @@
 import "react-native-gesture-handler";
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import * as Linking from "expo-linking";
+import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { FeedbackHost } from "@/components/FeedbackHost";
 import { OfflineSyncHost } from "@/components/OfflineSyncHost";
+import { AppLockGate } from "@/components/AppLockGate";
 import { bootstrapLogging, logger } from "@/utils/logger";
 import { colors } from "@/theme";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { hydrateStorage } from "@/services/storage";
+import {
+  clearPendingDeepLink,
+  getPendingDeepLink,
+  parseEquipmentDeepLink,
+  parseResetPasswordToken,
+  setPendingDeepLink,
+} from "@/services/deep-link";
+import { registerPushForCurrentUser } from "@/services/push-notifications";
 
 bootstrapLogging();
 
@@ -29,10 +40,29 @@ const queryClient = new QueryClient({
   },
 });
 
+function handleDeepLinkUrl(url: string, router: ReturnType<typeof useRouter>): void {
+  const equipmentId = parseEquipmentDeepLink(url);
+  if (equipmentId) {
+    router.push(`/equipment/${equipmentId}`);
+    return;
+  }
+
+  const resetToken = parseResetPasswordToken(url);
+  if (resetToken) {
+    router.push(`/(auth)/reset-password?token=${encodeURIComponent(resetToken)}`);
+  }
+}
+
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, setUser, setLoading } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
+
+  const registerPush = useCallback(() => {
+    void registerPushForCurrentUser((token, platform) =>
+      api.registerPushToken(token, platform)
+    );
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -54,7 +84,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
         if (user) {
           setUser(user);
+          registerPush();
           void prefetchEquipmentCache(() => api.getEquipments());
+
+          const pending = getPendingDeepLink();
+          if (pending) {
+            clearPendingDeepLink();
+            handleDeepLinkUrl(pending, router);
+          }
           return;
         }
 
@@ -74,7 +111,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
       mounted = false;
       clearTimeout(safetyTimer);
     };
-  }, [setUser, setLoading]);
+  }, [setUser, setLoading, registerPush, router]);
 
   useEffect(() => {
     if (!isLoading) {
@@ -94,6 +131,39 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, segments, router]);
 
+  useEffect(() => {
+    const processUrl = (url: string | null) => {
+      if (!url) return;
+
+      const resetToken = parseResetPasswordToken(url);
+      if (resetToken) {
+        router.push(`/(auth)/reset-password?token=${encodeURIComponent(resetToken)}`);
+        return;
+      }
+
+      if (!isAuthenticated) {
+        setPendingDeepLink(url);
+        return;
+      }
+      handleDeepLinkUrl(url, router);
+    };
+
+    void Linking.getInitialURL().then(processUrl);
+
+    const linkSub = Linking.addEventListener("url", ({ url }) => processUrl(url));
+    const notifSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      const url = response.notification.request.content.data?.url;
+      if (typeof url === "string") {
+        processUrl(url);
+      }
+    });
+
+    return () => {
+      linkSub.remove();
+      notifSub.remove();
+    };
+  }, [isAuthenticated, router]);
+
   if (isLoading) {
     return (
       <View
@@ -111,8 +181,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <OfflineSyncHost />
-      <View style={{ flex: 1 }}>{children}</View>
+      <AppLockGate>
+        <OfflineSyncHost />
+        <View style={{ flex: 1 }}>{children}</View>
+      </AppLockGate>
     </View>
   );
 }
@@ -132,9 +204,11 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="search" />
             <Stack.Screen name="scan" />
             <Stack.Screen name="equipment/[id]" />
             <Stack.Screen name="inspection/new" />
+            <Stack.Screen name="inspection/drafts" />
             <Stack.Screen name="inspection/[id]" />
             <Stack.Screen name="inspection/edit/[id]" />
             <Stack.Screen
@@ -152,6 +226,8 @@ export default function RootLayout() {
             <Stack.Screen name="qrcodes/index" />
             <Stack.Screen name="qrcodes/print/[id]" />
             <Stack.Screen name="profile/change-password" />
+            <Stack.Screen name="profile/sync-logs" />
+            <Stack.Screen name="profile/app-lock" />
           </Stack>
         </AuthGuard>
       </QueryClientProvider>

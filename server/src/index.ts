@@ -11,6 +11,9 @@ import { clientsRouter } from "./routes/clients";
 import { inspectionsRouter } from "./routes/inspections";
 import { notificationsRouter } from "./routes/notifications";
 import { pushRouter } from "./routes/push";
+import { dailyRoutesRouter } from "./routes/daily-routes";
+import { checklistsRouter } from "./routes/checklists";
+import { auditRouter, maintenanceRouter } from "./routes/features";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4002);
@@ -46,6 +49,10 @@ app.use("/api/clients", clientsRouter);
 app.use("/api/inspections", inspectionsRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/push", pushRouter);
+app.use("/api/daily-routes", dailyRoutesRouter);
+app.use("/api/checklists", checklistsRouter);
+app.use("/api/audit", auditRouter);
+app.use("/api/maintenance", maintenanceRouter);
 
 app.use(
   (

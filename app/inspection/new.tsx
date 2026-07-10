@@ -1,14 +1,20 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { BackHandler } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { InspectionForm, Loading, BackHeader, PageContainer } from "@/components";
 import { useEquipment } from "@/hooks";
+import { getInspectionDraft } from "@/services/draft-inspections";
+import { getRouteParam } from "@/utils";
 
 export default function NewInspectionScreen() {
-  const { equipmentId } = useLocalSearchParams<{ equipmentId: string }>();
+  const params = useLocalSearchParams<{ equipmentId?: string | string[]; draftId?: string | string[] }>();
+  const equipmentId = getRouteParam(params.equipmentId);
+  const draftId = getRouteParam(params.draftId);
   const router = useRouter();
   const { data: equipment } = useEquipment(equipmentId);
+
+  const draft = useMemo(() => (draftId ? getInspectionDraft(draftId) : null), [draftId]);
 
   const goBackToEquipment = useCallback(() => {
     router.replace(`/equipment/${equipmentId}`);
@@ -38,8 +44,11 @@ export default function NewInspectionScreen() {
 
       <InspectionForm
         mode="create"
-        equipmentId={equipmentId}
-        equipmentName={equipment.nome}
+        equipmentId={equipmentId!}
+        equipmentName={draft?.equipmentName ?? equipment.nome}
+        equipmentTipo={draft?.equipmentTipo ?? equipment.tipo}
+        draftId={draft?.id ?? draftId}
+        initialDraft={draft?.form}
         onSaved={() => router.replace(`/equipment/${equipmentId}`)}
       />
     </SafeAreaView>

@@ -95,6 +95,18 @@ export async function scheduleLocalTestNotification(
   });
 }
 
+export async function registerPushForCurrentUser(
+  registerToken: (token: string, platform?: string) => Promise<void>
+): Promise<void> {
+  const permission = await requestPushPermissions();
+  if (permission !== "granted") return;
+
+  const { token, error } = await getExpoPushToken();
+  if (!token || error) return;
+
+  await registerToken(token, Platform.OS);
+}
+
 export async function scheduleImmediateTestNotification(
   title: string,
   body: string

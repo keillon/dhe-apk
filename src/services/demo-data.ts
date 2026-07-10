@@ -738,6 +738,141 @@ export const demoData = {
       notif.usuario_id === demoSessionUser.id ? { ...notif, lida: true } : notif
     );
   },
+
+  async getDashboardCharts() {
+    await delay(300);
+    return {
+      inspecoes_por_mes: [
+        { mes: "2026-02", total: 3 },
+        { mes: "2026-03", total: 5 },
+        { mes: "2026-04", total: 4 },
+        { mes: "2026-05", total: 6 },
+        { mes: "2026-06", total: 8 },
+        { mes: "2026-07", total: 2 },
+      ],
+      equipamentos_por_status: [
+        { status: "operando", total: demoEquipments.filter((e) => e.status === "operando").length },
+        { status: "parado", total: demoEquipments.filter((e) => e.status === "parado").length },
+        { status: "manutencao", total: demoEquipments.filter((e) => e.status === "manutencao").length },
+      ],
+      contaminacao_distribuicao: [
+        { nivel: "baixa", total: 4 },
+        { nivel: "media", total: 2 },
+        { nivel: "alta", total: 1 },
+      ],
+    };
+  },
+
+  async searchEquipments(query: string) {
+    await delay(300);
+    const q = query.toLowerCase();
+    return demoEquipments.filter(
+      (eq) =>
+        eq.qr_code.toLowerCase().includes(q) ||
+        eq.patrimonio.toLowerCase().includes(q) ||
+        eq.nome.toLowerCase().includes(q) ||
+        eq.empresa.toLowerCase().includes(q)
+    );
+  },
+
+  async getTodayRoute() {
+    await delay(300);
+    const today = new Date().toISOString().split("T")[0];
+    return {
+      id: "demo-route",
+      data: today,
+      status: "planejada" as const,
+      itens: demoEquipments.slice(0, 3).map((equipamento, index) => ({
+        id: `route-item-${index + 1}`,
+        ordem: index + 1,
+        equipamento,
+      })),
+    };
+  },
+
+  async visitRouteItem(itemId: string) {
+    await delay(200);
+    return { visitado_em: new Date().toISOString() };
+  },
+
+  async regenerateTodayRoute() {
+    return this.getTodayRoute();
+  },
+
+  async getMaintenanceCalendar(from: string, to: string) {
+    await delay(300);
+    return demoEquipments
+      .filter((eq) => eq.proxima_manutencao)
+      .map((equipamento) => ({
+        id: equipamento.id,
+        data: equipamento.proxima_manutencao,
+        equipamento,
+        atrasada: equipamento.proxima_manutencao
+          ? new Date(equipamento.proxima_manutencao) < new Date()
+          : false,
+      }));
+  },
+
+  async getChecklistTemplates() {
+    await delay(200);
+    return [
+      {
+        id: "demo-checklist",
+        tipo: "geral",
+        nome: "Checklist geral",
+        itens: [
+          { key: "vazamentos", label: "Vazamentos", obrigatorio: false },
+          { key: "mangueiras", label: "Mangueiras", obrigatorio: false },
+          { key: "motor", label: "Motor", obrigatorio: false },
+        ],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ];
+  },
+
+  async getChecklistTemplate(tipo: string) {
+    const templates = await this.getChecklistTemplates();
+    return templates.find((t) => t.tipo === tipo) ?? templates[0];
+  },
+
+  async updateChecklistTemplate(
+    tipo: string,
+    payload: { nome: string; itens: Array<{ key: string; label: string; obrigatorio: boolean }> }
+  ) {
+    await delay(300);
+    return {
+      id: "demo-checklist",
+      tipo,
+      nome: payload.nome,
+      itens: payload.itens,
+    };
+  },
+
+  async getAuditLog(entidade: "equipamento" | "cliente", id: string) {
+    await delay(200);
+    return [
+      {
+        id: "audit-1",
+        entidade,
+        entidade_id: id,
+        acao: "atualizacao",
+        antes: { status: "parado" },
+        depois: { status: "operando" },
+        created_at: new Date().toISOString(),
+        usuario: {
+          id: DEMO_ADMIN.id,
+          nome: DEMO_ADMIN.nome,
+          email: DEMO_ADMIN.email,
+        },
+      },
+    ];
+  },
+
+  async exportInspectionsCsv() {
+    await delay(300);
+    return "id,data,equipamento,qr_code,cliente,tecnico,nivel_oleo,contaminacao,complemento\n";
+  },
 };
 
 function delay(ms: number): Promise<void> {

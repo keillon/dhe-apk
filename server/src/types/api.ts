@@ -30,6 +30,7 @@ export interface ApiEquipment {
   numero_serie: string;
   ano: number;
   localizacao: string;
+  tipo?: string;
   foto_url?: string;
   status: "operando" | "parado" | "manutencao";
   ultima_inspecao?: string;
@@ -40,16 +41,7 @@ export interface ApiEquipment {
 }
 
 export interface ApiChecklistItem {
-  vazamentos: boolean;
-  mangueiras: boolean;
-  cilindros: boolean;
-  motor: boolean;
-  bomba: boolean;
-  pressao: boolean;
-  temperatura: boolean;
-  filtros: boolean;
-  ruidos: boolean;
-  acoplamentos: boolean;
+  [key: string]: boolean;
 }
 
 export interface ApiInspection {
@@ -91,4 +83,10 @@ export interface ApiDashboardStats {
   pendencias: number;
   proximas_manutencoes: number;
   inspecoes_hoje: number;
+}
+
+export interface ApiDashboardCharts {
+  inspecoes_por_mes: Array<{ mes: string; total: number }>;
+  equipamentos_por_status: Array<{ status: string; total: number }>;
+  contaminacao_distribuicao: Array<{ nivel: string; total: number }>;
 }

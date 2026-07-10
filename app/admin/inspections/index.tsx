@@ -2,7 +2,9 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Eye, Pencil, Trash2 } from "lucide-react-native";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
+import { Eye, Pencil, Trash2, Download } from "lucide-react-native";
 import {
   BackHeader,
   Card,
@@ -13,6 +15,7 @@ import {
   Loading,
   PageContainer,
   SelectField,
+  Button,
 } from "@/components";
 import { useAllInspections, useUsers, useRequireAdmin } from "@/hooks";
 import { feedback } from "@/services/feedback";
@@ -45,6 +48,7 @@ export default function AdminInspectionsScreen() {
   const [tecnicoId, setTecnicoId] = useState("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [contaminationFilter, setContaminationFilter] = useState<ContaminationFilter>("all");
+  const [exporting, setExporting] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -70,6 +74,32 @@ export default function AdminInspectionsScreen() {
     periodFilter !== "all",
     contaminationFilter !== "all",
   ].filter(Boolean).length;
+
+  const handleExportCsv = async () => {
+    setExporting(true);
+    try {
+      const csv = await api.exportInspectionsCsv();
+      const path = `${FileSystem.cacheDirectory}inspecoes-dhe-${Date.now()}.csv`;
+      await FileSystem.writeAsStringAsync(path, csv, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+
+      const canShare = await Sharing.isAvailableAsync();
+      if (!canShare) {
+        feedback.toast.error("Compartilhamento não disponível neste dispositivo.");
+        return;
+      }
+
+      await Sharing.shareAsync(path, {
+        mimeType: "text/csv",
+        dialogTitle: "Exportar inspeções",
+      });
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao exportar inspeções."));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleDelete = async (inspection: Inspection) => {
     const confirmed = await feedback.choose(
@@ -110,6 +140,16 @@ export default function AdminInspectionsScreen() {
           <Text className="mb-6 text-sm text-dhe-textSecondary">
             Todas as inspeções realizadas pelos funcionários
           </Text>
+
+          <Button
+            title="Exportar CSV"
+            onPress={() => void handleExportCsv()}
+            loading={exporting}
+            variant="secondary"
+            fullWidth
+            className="mb-6"
+            icon={<Download size={18} color={colors.text} />}
+          />
 
           <SelectField
             label="Funcionário"

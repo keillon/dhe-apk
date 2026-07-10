@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Wrench, ChevronRight, Pencil, Plus } from "lucide-react-native";
-import { Button, Card, Loading, ErrorState, EmptyState, DisplayImage } from "@/components";
+import { Button, Card, Loading, ErrorState, EmptyState, DisplayImage, AuditLogList } from "@/components";
 import { useClient, useEquipments, useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
 import { resolveMediaUrl } from "@/utils";
@@ -95,6 +95,13 @@ export default function ClientDetailScreen() {
             </Pressable>
           ))
         )}
+
+        {allowed ? (
+          <Card className="mt-6">
+            <Text className="mb-4 text-sm font-bold text-dhe-text">Histórico de alterações</Text>
+            <AuditLogList entidade="cliente" entidadeId={client.id} />
+          </Card>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

@@ -52,6 +52,12 @@
       "expo-screen-orientation",
       "expo-video",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permitir que o DHE use Face ID para desbloquear o aplicativo."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "defaultChannel": "default"

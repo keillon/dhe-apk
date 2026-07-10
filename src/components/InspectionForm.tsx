@@ -1,7 +1,7 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Save } from "lucide-react-native";
+import { FileText, Save } from "lucide-react-native";
 import { Button } from "./Button";
 import { Card } from "./Card";
 import { DateInput } from "./DateInput";
@@ -9,14 +9,13 @@ import { Input } from "./Input";
 import { OilLevelSlider } from "./OilLevelSlider";
 import { PhotoPickerSection } from "./PhotoPickerSection";
 import { SignaturePad } from "./SignaturePad";
-import { useCreateInspection, useNetworkStatus, useUpdateInspection } from "@/hooks";
+import { useCreateInspection, useDefaultChecklist, useNetworkStatus, useUpdateInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
 import { isNetworkError } from "@/services/http";
 import { queuePendingInspection, generateClientRequestId } from "@/services/offline-sync";
+import { saveInspectionDraft } from "@/services/draft-inspections";
 import {
-  CHECKLIST_LABELS,
-  DEFAULT_CHECKLIST,
   formatDate,
   getApiErrorMessage,
   validateInspectionForm,
@@ -43,7 +42,19 @@ export interface InspectionFormProps {
   mode: "create" | "edit";
   equipmentId: string;
   equipmentName: string;
+  equipmentTipo?: string;
   inspection?: Inspection;
+  draftId?: string;
+  initialDraft?: {
+    nivelOleo: number;
+    contaminacao: OilContamination;
+    dataLimpeza: string;
+    complemento: string;
+    checklist: ChecklistItem;
+    fotosAntes: LocalPhoto[];
+    fotosDepois: LocalPhoto[];
+    assinatura: string | null;
+  };
   onSaved: () => void;
 }
 
@@ -60,7 +71,10 @@ export function InspectionForm({
   mode,
   equipmentId,
   equipmentName,
+  equipmentTipo,
   inspection,
+  draftId,
+  initialDraft,
   onSaved,
 }: InspectionFormProps) {
   const { user } = useAuthStore();
@@ -68,32 +82,76 @@ export function InspectionForm({
   const createInspection = useCreateInspection();
   const updateInspection = useUpdateInspection();
   const savingRef = useRef(false);
+  const { template, labels, checklist: defaultChecklist } = useDefaultChecklist(
+    equipmentTipo,
+    inspection?.checklist ?? initialDraft?.checklist
+  );
 
-  const [nivelOleo, setNivelOleo] = useState(inspection?.nivel_oleo ?? 75);
+  const [nivelOleo, setNivelOleo] = useState(
+    initialDraft?.nivelOleo ?? inspection?.nivel_oleo ?? 75
+  );
   const [contaminacao, setContaminacao] = useState<OilContamination>(
-    inspection?.contaminacao_oleo ?? "baixa"
+    initialDraft?.contaminacao ?? inspection?.contaminacao_oleo ?? "baixa"
   );
-  const [dataLimpeza, setDataLimpeza] = useState(getInitialDate(inspection));
-  const [complemento, setComplemento] = useState(inspection?.complemento ?? "");
+  const [dataLimpeza, setDataLimpeza] = useState(
+    initialDraft?.dataLimpeza ?? getInitialDate(inspection)
+  );
+  const [complemento, setComplemento] = useState(
+    initialDraft?.complemento ?? inspection?.complemento ?? ""
+  );
   const [checklist, setChecklist] = useState<ChecklistItem>(
-    inspection?.checklist ? { ...inspection.checklist } : { ...DEFAULT_CHECKLIST }
+    initialDraft?.checklist ?? (inspection?.checklist ? { ...inspection.checklist } : defaultChecklist)
   );
-  const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>(getInitialPhotos(inspection, "antes"));
-  const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>(getInitialPhotos(inspection, "depois"));
-  const [assinatura, setAssinatura] = useState<string | null>(inspection?.assinatura_url ?? null);
+  const [fotosAntes, setFotosAntes] = useState<LocalPhoto[]>(
+    initialDraft?.fotosAntes ?? getInitialPhotos(inspection, "antes")
+  );
+  const [fotosDepois, setFotosDepois] = useState<LocalPhoto[]>(
+    initialDraft?.fotosDepois ?? getInitialPhotos(inspection, "depois")
+  );
+  const [assinatura, setAssinatura] = useState<string | null>(
+    initialDraft?.assinatura ?? inspection?.assinatura_url ?? null
+  );
   const [formErrors, setFormErrors] = useState<InspectionFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [currentDraftId, setCurrentDraftId] = useState(draftId);
+
+  useEffect(() => {
+    if (initialDraft?.checklist || inspection?.checklist) return;
+    setChecklist(defaultChecklist);
+  }, [defaultChecklist, initialDraft?.checklist, inspection?.checklist]);
 
   const isSubmitting =
     isSaving || (mode === "create" ? createInspection.isPending : updateInspection.isPending);
 
   const pendingVideoCount = countPendingVideos(fotosAntes, fotosDepois);
 
-  const toggleChecklist = (key: keyof ChecklistItem) => {
+  const toggleChecklist = (key: string) => {
     setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
     if (formErrors.checklist) {
       setFormErrors((prev) => ({ ...prev, checklist: undefined }));
     }
+  };
+
+  const handleSaveDraft = async () => {
+    const saved = saveInspectionDraft({
+      id: currentDraftId,
+      equipmentId,
+      equipmentName,
+      equipmentTipo,
+      form: {
+        nivelOleo,
+        contaminacao,
+        dataLimpeza,
+        complemento,
+        checklist,
+        fotosAntes,
+        fotosDepois,
+        assinatura,
+      },
+    });
+    setCurrentDraftId(saved.id);
+    feedback.toast.success("Rascunho salvo no dispositivo.");
+    await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const handleSave = async () => {
@@ -293,6 +351,7 @@ export function InspectionForm({
 
       <Card className={`mb-4 ${formErrors.checklist ? "border border-dhe-danger" : ""}`}>
         <Text className="mb-1 text-sm font-bold text-dhe-text">Checklist *</Text>
+        <Text className="mb-1 text-xs text-dhe-textMuted">{template.nome}</Text>
         {formErrors.checklist ? (
           <Text className="mb-3 text-sm text-dhe-danger">{formErrors.checklist}</Text>
         ) : (
@@ -300,22 +359,22 @@ export function InspectionForm({
             Marque pelo menos um item verificado.
           </Text>
         )}
-        {(Object.keys(CHECKLIST_LABELS) as Array<keyof ChecklistItem>).map((key) => (
+        {template.itens.map((item) => (
           <Pressable
-            key={key}
-            onPress={() => toggleChecklist(key)}
+            key={item.key}
+            onPress={() => toggleChecklist(item.key)}
             className="mb-2 flex-row items-center rounded-xl bg-dhe-elevated px-4 py-3"
           >
             <View
               className={`mr-3 h-6 w-6 items-center justify-center rounded-md border-2 ${
-                checklist[key]
+                checklist[item.key]
                   ? "border-dhe-primary bg-dhe-primary"
                   : "border-dhe-border bg-dhe-card"
               }`}
             >
-              {checklist[key] && <Text className="text-xs font-bold text-dhe-bg">✓</Text>}
+              {checklist[item.key] && <Text className="text-xs font-bold text-dhe-bg">✓</Text>}
             </View>
-            <Text className="text-base text-dhe-text">{CHECKLIST_LABELS[key]}</Text>
+            <Text className="text-base text-dhe-text">{labels[item.key] ?? item.label}</Text>
           </Pressable>
         ))}
       </Card>
@@ -353,6 +412,17 @@ export function InspectionForm({
           error={formErrors.assinatura}
         />
       </Card>
+
+      {mode === "create" ? (
+        <Button
+          title="Salvar rascunho"
+          onPress={() => void handleSaveDraft()}
+          variant="secondary"
+          fullWidth
+          className="mb-3"
+          icon={<FileText size={20} color={colors.text} />}
+        />
+      ) : null}
 
       <Button
         title={

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { sendExpoPushMessages } from "../lib/expo-push";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
@@ -17,43 +18,6 @@ const testSchema = z.object({
   title: z.string().min(1).max(120).optional(),
   body: z.string().min(1).max(500).optional(),
 });
-
-interface ExpoPushTicket {
-  status: "ok" | "error";
-  id?: string;
-  message?: string;
-  details?: { error?: string };
-}
-
-async function sendExpoPushMessages(
-  tokens: string[],
-  title: string,
-  body: string
-): Promise<ExpoPushTicket[]> {
-  const response = await fetch("https://exp.host/--/api/v2/push/send", {
-    method: "POST",
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(
-      tokens.map((token) => ({
-        to: token,
-        sound: "default",
-        title,
-        body,
-        data: { source: "admin-test" },
-      }))
-    ),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Expo Push API retornou ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { data?: ExpoPushTicket[] };
-  return payload.data ?? [];
-}
 
 pushRouter.post("/register", async (req, res) => {
   const parsed = registerSchema.safeParse(req.body);
