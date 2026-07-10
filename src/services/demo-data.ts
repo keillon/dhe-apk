@@ -11,6 +11,7 @@ import type {
   DashboardStats,
   Equipment,
   Inspection,
+  InspectionFilters,
   InspectionPhoto,
   Notification,
   User,
@@ -157,30 +158,90 @@ let demoInspections: Inspection[] = [
     tecnico: DEMO_USER,
     fotos: [],
   },
+  {
+    id: "88888888-8888-8888-8888-888888888888",
+    equipamento_id: "55555555-5555-5555-5555-555555555555",
+    tecnico_id: DEMO_USER.id,
+    nivel_oleo: 40,
+    contaminacao_oleo: "alta",
+    data_ultima_limpeza: "2025-10-01",
+    complemento: "Óleo com contaminacao elevada. Recomendada troca.",
+    checklist: {
+      vazamentos: true,
+      mangueiras: true,
+      cilindros: false,
+      motor: true,
+      bomba: true,
+      pressao: false,
+      temperatura: true,
+      filtros: false,
+      ruidos: true,
+      acoplamentos: false,
+    },
+    created_at: new Date(Date.now() - 5 * 86400000).toISOString(),
+    tecnico: DEMO_USER,
+    fotos: [],
+  },
 ];
 
-const DEMO_NOTIFICATIONS: Notification[] = [
-  {
-    id: "notif-1",
-    usuario_id: DEMO_USER.id,
-    equipamento_id: "55555555-5555-5555-5555-555555555555",
-    tipo: "manutencao_vencida",
-    titulo: "Manutenção vencida",
-    mensagem: "Injetora Hidráulica (DHE-0002) está com manutenção vencida há 5 dias.",
-    lida: false,
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: "notif-2",
-    usuario_id: DEMO_USER.id,
-    equipamento_id: "55555555-5555-5555-5555-555555555555",
-    tipo: "oleo_contaminado",
-    titulo: "Óleo contaminado",
-    mensagem: "Última inspeção da Injetora Hidráulica indicou contaminação alta.",
-    lida: false,
-    created_at: new Date(Date.now() - 86400000).toISOString(),
-  },
-];
+let demoNotifications: Notification[] = [];
+
+function buildDemoNotifications(userId: string): Notification[] {
+  const now = Date.now();
+  const thirtyDaysAgo = now - 30 * 86400000;
+  const notifications: Notification[] = [];
+
+  for (const equipment of demoEquipments) {
+    if (equipment.proxima_manutencao && new Date(equipment.proxima_manutencao).getTime() < now) {
+      notifications.push({
+        id: `notif-maint-${equipment.id}-${userId}`,
+        usuario_id: userId,
+        equipamento_id: equipment.id,
+        tipo: "manutencao_vencida",
+        titulo: "Manutenção vencida",
+        mensagem: `${equipment.nome} (${equipment.qr_code}) está com manutenção atrasada.`,
+        lida: false,
+        created_at: new Date().toISOString(),
+      });
+    }
+
+    if (
+      !equipment.ultima_inspecao ||
+      new Date(equipment.ultima_inspecao).getTime() < thirtyDaysAgo
+    ) {
+      notifications.push({
+        id: `notif-insp-${equipment.id}-${userId}`,
+        usuario_id: userId,
+        equipamento_id: equipment.id,
+        tipo: "inspecao_pendente",
+        titulo: "Inspeção pendente",
+        mensagem: `${equipment.nome} (${equipment.qr_code}) está sem inspeção recente.`,
+        lida: false,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  for (const inspection of demoInspections) {
+    if (inspection.contaminacao_oleo !== "alta") continue;
+    const equipment = demoEquipments.find((e) => e.id === inspection.equipamento_id);
+    if (!equipment) continue;
+
+    notifications.push({
+      id: `notif-oil-${inspection.id}-${userId}`,
+      usuario_id: userId,
+      equipamento_id: equipment.id,
+      tipo: "oleo_contaminado",
+      titulo: "Óleo contaminado",
+      mensagem: `${equipment.nome} (${equipment.qr_code}) com contaminação alta na última inspeção.`,
+      lida: false,
+      created_at: inspection.created_at,
+    });
+    break;
+  }
+
+  return notifications;
+}
 
 export const demoData = {
   async login(email: string, password: string): Promise<User> {
@@ -269,6 +330,40 @@ export const demoData = {
       .map((inspection) => {
         const equipment = demoEquipments.find((e) => e.id === inspection.equipamento_id);
         return equipment ? { ...inspection, equipamento: equipment } : inspection;
+      })
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  },
+
+  async getAllInspections(filters: InspectionFilters = {}): Promise<Inspection[]> {
+    await delay(400);
+    const now = Date.now();
+
+    return demoInspections
+      .filter((inspection) => {
+        if (filters.tecnico_id && filters.tecnico_id !== "all") {
+          if (inspection.tecnico_id !== filters.tecnico_id) return false;
+        }
+
+        if (filters.contamination && filters.contamination !== "all") {
+          if (inspection.contaminacao_oleo !== filters.contamination) return false;
+        }
+
+        if (filters.period === "30d") {
+          if (new Date(inspection.created_at).getTime() < now - 30 * 86400000) return false;
+        } else if (filters.period === "90d") {
+          if (new Date(inspection.created_at).getTime() < now - 90 * 86400000) return false;
+        }
+
+        return true;
+      })
+      .map((inspection) => {
+        const equipment = demoEquipments.find((e) => e.id === inspection.equipamento_id);
+        const tecnico = demoUsers.find((u) => u.id === inspection.tecnico_id) ?? inspection.tecnico;
+        return {
+          ...inspection,
+          equipamento: equipment,
+          tecnico,
+        };
       })
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
@@ -617,13 +712,31 @@ export const demoData = {
 
   async getNotifications(): Promise<Notification[]> {
     await delay(300);
-    return DEMO_NOTIFICATIONS;
+    const fresh = buildDemoNotifications(demoSessionUser.id);
+
+    for (const notif of fresh) {
+      const existing = demoNotifications.find((n) => n.id === notif.id);
+      if (!existing) {
+        demoNotifications.push(notif);
+      }
+    }
+
+    return demoNotifications
+      .filter((n) => n.usuario_id === demoSessionUser.id)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   },
 
   async markNotificationRead(id: string): Promise<void> {
     await delay(200);
-    const notif = DEMO_NOTIFICATIONS.find((n) => n.id === id);
+    const notif = demoNotifications.find((n) => n.id === id);
     if (notif) notif.lida = true;
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    await delay(200);
+    demoNotifications = demoNotifications.map((notif) =>
+      notif.usuario_id === demoSessionUser.id ? { ...notif, lida: true } : notif
+    );
   },
 };
 

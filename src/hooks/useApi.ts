@@ -5,6 +5,7 @@ import type {
   CreateInspectionInput,
   CreateUserInput,
   EquipmentInput,
+  InspectionFilters,
   UpdateInspectionInput,
   UpdateUserInput,
 } from "@/types";
@@ -59,6 +60,14 @@ export function useMyInspections() {
   return useQuery({
     queryKey: ["my-inspections"],
     queryFn: () => api.getMyInspections(),
+    staleTime: 0,
+  });
+}
+
+export function useAllInspections(filters: InspectionFilters = {}) {
+  return useQuery({
+    queryKey: ["all-inspections", filters],
+    queryFn: () => api.getAllInspections(filters),
     staleTime: 0,
   });
 }
@@ -244,7 +253,9 @@ export function useDeleteInspection() {
     mutationFn: (id: string) => api.deleteInspection(id),
     onSuccess: (_result, id) => {
       queryClient.invalidateQueries({ queryKey: ["inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["all-inspections"] });
       queryClient.invalidateQueries({ queryKey: ["my-inspections"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
       queryClient.invalidateQueries({ queryKey: ["inspection", id] });
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
       queryClient.invalidateQueries({ queryKey: ["equipment"] });

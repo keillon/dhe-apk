@@ -3,6 +3,8 @@ import { useRouter, type Href } from "expo-router";
 import { Printer, Share2, QrCode, Plus } from "lucide-react-native";
 import { BackHeader, Button, Card, EmptyState, ErrorState, Loading, Screen } from "@/components";
 import { useEquipments, useRequireAdmin } from "@/hooks";
+import { feedback } from "@/services/feedback";
+import { getApiErrorMessage } from "@/utils";
 import { buildBulkQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
 import { colors } from "@/theme";
 
@@ -13,12 +15,21 @@ export default function QrCodesScreen() {
 
   const handlePrintAll = async () => {
     if (!equipments?.length) return;
-    await printQrPdf(buildBulkQrPrintHtml(equipments));
+    try {
+      await printQrPdf(buildBulkQrPrintHtml(equipments));
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
+    }
   };
 
   const handleShareAll = async () => {
     if (!equipments?.length) return;
-    await shareQrPdf(buildBulkQrPrintHtml(equipments), "QR Codes DHE");
+    try {
+      await shareQrPdf(buildBulkQrPrintHtml(equipments), "QR Codes DHE");
+      feedback.toast.success("PDF pronto para compartilhar.");
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao compartilhar PDF."));
+    }
   };
 
   if (authLoading || !allowed) return <Loading fullScreen />;

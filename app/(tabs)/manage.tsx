@@ -7,6 +7,7 @@ import {
   Building2,
   Wrench,
   QrCode,
+  ClipboardList,
   ChevronRight,
 } from "lucide-react-native";
 import { Card, Loading, PageContainer } from "@/components";
@@ -14,6 +15,12 @@ import { useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
 
 const ACTIONS = [
+  {
+    title: "Inspeções",
+    description: "Ver todas as inspeções por funcionário",
+    icon: ClipboardList,
+    href: "/admin/inspections",
+  },
   {
     title: "Usuários",
     description: "Criar, editar e remover técnicos e admins",

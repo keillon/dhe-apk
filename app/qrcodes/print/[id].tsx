@@ -12,6 +12,8 @@ import {
 } from "@/components";
 import { useEquipment, useRequireAdmin } from "@/hooks";
 import { buildQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
+import { feedback } from "@/services/feedback";
+import { getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
 
 export default function QrPrintScreen() {
@@ -22,12 +24,21 @@ export default function QrPrintScreen() {
 
   const handlePrint = async () => {
     if (!equipment) return;
-    await printQrPdf(buildQrPrintHtml(equipment));
+    try {
+      await printQrPdf(buildQrPrintHtml(equipment));
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
+    }
   };
 
   const handleShare = async () => {
     if (!equipment) return;
-    await shareQrPdf(buildQrPrintHtml(equipment), `QR-${equipment.qr_code}`);
+    try {
+      await shareQrPdf(buildQrPrintHtml(equipment), `QR-${equipment.qr_code}`);
+      feedback.toast.success("PDF pronto para compartilhar.");
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao compartilhar PDF."));
+    }
   };
 
   if (authLoading || !allowed) return <Loading fullScreen />;

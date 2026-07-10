@@ -6,6 +6,7 @@ export {
   useClient,
   useInspections,
   useMyInspections,
+  useAllInspections,
   useInspection,
   useNotifications,
   useCreateInspection,

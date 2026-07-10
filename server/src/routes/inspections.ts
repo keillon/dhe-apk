@@ -100,6 +100,56 @@ inspectionsRouter.get("/me", async (req, res) => {
   }
 });
 
+inspectionsRouter.get("/all", adminMiddleware, async (req, res) => {
+  try {
+    const tecnicoId = typeof req.query.tecnico_id === "string" ? req.query.tecnico_id : undefined;
+    const period = typeof req.query.period === "string" ? req.query.period : "all";
+    const contamination =
+      typeof req.query.contamination === "string" ? req.query.contamination : "all";
+
+    const where: {
+      tecnicoId?: string;
+      contaminacaoOleo?: "baixa" | "media" | "alta";
+      createdAt?: { gte: Date };
+    } = {};
+
+    if (tecnicoId && tecnicoId !== "all") {
+      where.tecnicoId = tecnicoId;
+    }
+
+    if (contamination !== "all" && ["baixa", "media", "alta"].includes(contamination)) {
+      where.contaminacaoOleo = contamination as "baixa" | "media" | "alta";
+    }
+
+    if (period === "30d") {
+      where.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+    } else if (period === "90d") {
+      where.createdAt = { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) };
+    }
+
+    const inspections = await prisma.inspecao.findMany({
+      where,
+      include: {
+        tecnico: true,
+        fotos: true,
+        assinatura: true,
+        equipamento: { include: { cliente: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(
+      inspections.map((inspection) => ({
+        ...mapInspection(inspection),
+        equipamento: mapEquipment(inspection.equipamento),
+      }))
+    );
+  } catch (error) {
+    console.error("Erro ao listar todas as inspeções:", error);
+    res.status(500).json({ error: "Erro ao buscar inspeções" });
+  }
+});
+
 inspectionsRouter.get("/equipment/:equipmentId", async (req, res) => {
   try {
     const inspections = await prisma.inspecao.findMany({

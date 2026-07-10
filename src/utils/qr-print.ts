@@ -1,5 +1,6 @@
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system/legacy";
 import type { Equipment } from "@/types";
 
 function escapeHtml(text: string): string {
@@ -114,11 +115,19 @@ export async function printQrPdf(html: string): Promise<void> {
 
 export async function shareQrPdf(html: string, filename: string): Promise<void> {
   const { uri } = await Print.printToFileAsync({ html });
-  if (await Sharing.isAvailableAsync()) {
-    await Sharing.shareAsync(uri, {
-      mimeType: "application/pdf",
-      dialogTitle: filename,
-      UTI: "com.adobe.pdf",
-    });
+  const safeName = filename.replace(/[^a-zA-Z0-9-_]/g, "_");
+  const destination = `${FileSystem.cacheDirectory}${safeName}.pdf`;
+
+  await FileSystem.copyAsync({ from: uri, to: destination });
+
+  const isAvailable = await Sharing.isAvailableAsync();
+  if (!isAvailable) {
+    throw new Error("Compartilhamento não disponível neste dispositivo.");
   }
+
+  await Sharing.shareAsync(destination, {
+    mimeType: "application/pdf",
+    dialogTitle: filename,
+    UTI: "com.adobe.pdf",
+  });
 }

@@ -181,6 +181,12 @@ export interface DashboardStats {
   inspecoes_hoje: number;
 }
 
+export interface InspectionFilters {
+  tecnico_id?: string;
+  period?: "all" | "30d" | "90d";
+  contamination?: "all" | OilContamination;
+}
+
 export interface PendingSyncItem {
   id: string;
   type: "inspection" | "equipment_update";

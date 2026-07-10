@@ -10,6 +10,7 @@ import type {
   Equipment,
   EquipmentInput,
   Inspection,
+  InspectionFilters,
   Notification,
   UpdateInspectionInput,
   UpdateProfileInput,
@@ -140,6 +141,21 @@ export const api = {
     if (!isApiConfigured) return demoData.getMyInspections();
 
     const { data } = await http.get<Inspection[]>("/inspections/me");
+    return data;
+  },
+
+  async getAllInspections(filters: InspectionFilters = {}): Promise<Inspection[]> {
+    if (!isApiConfigured) return demoData.getAllInspections(filters);
+
+    const params = new URLSearchParams();
+    if (filters.tecnico_id) params.set("tecnico_id", filters.tecnico_id);
+    if (filters.period) params.set("period", filters.period);
+    if (filters.contamination) params.set("contamination", filters.contamination);
+
+    const query = params.toString();
+    const { data } = await http.get<Inspection[]>(
+      `/inspections/all${query ? `?${query}` : ""}`
+    );
     return data;
   },
 
@@ -286,5 +302,11 @@ export const api = {
     if (!isApiConfigured) return demoData.markNotificationRead(id);
 
     await http.patch(`/notifications/${id}/read`);
+  },
+
+  async markAllNotificationsRead(): Promise<void> {
+    if (!isApiConfigured) return demoData.markAllNotificationsRead();
+
+    await http.patch("/notifications/read-all");
   },
 };

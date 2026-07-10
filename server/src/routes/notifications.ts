@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { prisma } from "../lib/prisma";
 import { mapNotification } from "../lib/mappers";
+import { syncNotificationsForUser } from "../lib/sync-notifications";
 import { authMiddleware } from "../middleware/auth";
 
 export const notificationsRouter = Router();
@@ -8,12 +9,44 @@ export const notificationsRouter = Router();
 notificationsRouter.use(authMiddleware);
 
 notificationsRouter.get("/", async (req, res) => {
-  const notifications = await prisma.notificacao.findMany({
-    where: { usuarioId: req.auth!.userId },
-    orderBy: { createdAt: "desc" },
+  try {
+    await syncNotificationsForUser(req.auth!.userId);
+
+    const notifications = await prisma.notificacao.findMany({
+      where: { usuarioId: req.auth!.userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(notifications.map(mapNotification));
+  } catch (error) {
+    console.error("Erro ao listar notificações:", error);
+    res.status(500).json({ error: "Erro ao buscar notificações" });
+  }
+});
+
+notificationsRouter.post("/sync", async (req, res) => {
+  try {
+    await syncNotificationsForUser(req.auth!.userId);
+
+    const notifications = await prisma.notificacao.findMany({
+      where: { usuarioId: req.auth!.userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json(notifications.map(mapNotification));
+  } catch (error) {
+    console.error("Erro ao sincronizar notificações:", error);
+    res.status(500).json({ error: "Erro ao sincronizar notificações" });
+  }
+});
+
+notificationsRouter.patch("/read-all", async (req, res) => {
+  await prisma.notificacao.updateMany({
+    where: { usuarioId: req.auth!.userId, lida: false },
+    data: { lida: true },
   });
 
-  res.json(notifications.map(mapNotification));
+  res.json({ success: true });
 });
 
 notificationsRouter.patch("/:id/read", async (req, res) => {
