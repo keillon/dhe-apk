@@ -15,6 +15,7 @@ import * as Haptics from "expo-haptics";
 import { Button, Input, Loading } from "@/components";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
+import { logger } from "@/utils/logger";
 import { colors } from "@/theme";
 
 type ScanMode = "camera" | "manual";
@@ -24,17 +25,12 @@ function normalizeQrCode(value: string): string {
 }
 
 function openEquipmentScreen(equipmentId: string) {
-  const href = {
+  logger.info("Scan", `Abrindo equipamento ${equipmentId}`);
+
+  router.push({
     pathname: "/equipment/[id]",
     params: { id: equipmentId },
-  } as const;
-
-  if (router.canDismiss()) {
-    router.dismissTo(href);
-    return;
-  }
-
-  router.push(href);
+  });
 }
 
 export default function ScanScreen() {
@@ -44,17 +40,23 @@ export default function ScanScreen() {
   const [manualCode, setManualCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [cameraReady, setCameraReady] = useState(false);
   const screenRouter = useRouter();
   const lookupInFlight = useRef(false);
   const lastScanRef = useRef<{ code: string; at: number } | null>(null);
 
   useEffect(() => {
+    logger.info("Scan", `Tela aberta (modo: ${mode})`);
+  }, [mode]);
+
+  useEffect(() => {
     if (mode === "camera" && permission && !permission.granted) {
+      logger.info("Scan", "Solicitando permissão da câmera");
       requestPermission();
     }
   }, [mode, permission, requestPermission]);
 
-  const lookupEquipment = useCallback(async (rawCode: string) => {
+  const lookupEquipment = useCallback(async (rawCode: string, source: "camera" | "manual") => {
     const code = normalizeQrCode(rawCode);
 
     if (!code) {
@@ -68,19 +70,28 @@ export default function ScanScreen() {
     setLoading(true);
     setError("");
 
+    logger.info("Scan", `Buscando equipamento (${source})`, code);
+
     try {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const equipment = await api.getEquipmentByQrCode(code);
 
       if (equipment) {
+        logger.info("Scan", "Equipamento encontrado", {
+          id: equipment.id,
+          nome: equipment.nome,
+          qr: equipment.qr_code,
+        });
         feedback.toast.success(`Equipamento ${equipment.nome} encontrado.`);
         openEquipmentScreen(equipment.id);
         return;
       }
 
+      logger.warn("Scan", "Equipamento não encontrado", code);
       setError(`Equipamento "${code}" não encontrado no banco de dados.`);
       feedback.toast.error(`Código ${code} não encontrado.`);
-    } catch {
+    } catch (lookupError) {
+      logger.error("Scan", "Erro ao buscar equipamento", lookupError);
       setError("Erro ao buscar equipamento. Tente novamente.");
       feedback.toast.error("Erro ao buscar equipamento.");
     } finally {
@@ -102,13 +113,14 @@ export default function ScanScreen() {
       }
 
       lastScanRef.current = { code, at: now };
-      void lookupEquipment(code);
+      logger.info("Scan", "QR lido na câmera interna", code);
+      void lookupEquipment(code, "camera");
     },
     [loading, lookupEquipment, mode]
   );
 
   const handleManualSubmit = () => {
-    void lookupEquipment(manualCode);
+    void lookupEquipment(manualCode, "manual");
   };
 
   const switchMode = (next: ScanMode) => {
@@ -119,6 +131,7 @@ export default function ScanScreen() {
     setMode(next);
     setError("");
     lastScanRef.current = null;
+    logger.info("Scan", `Modo alterado para ${next}`);
   };
 
   if (!permission && mode === "camera") return <Loading fullScreen />;
@@ -220,8 +233,17 @@ export default function ScanScreen() {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
+        active
         enableTorch={torchEnabled}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+        onCameraReady={() => {
+          setCameraReady(true);
+          logger.info("Scan", "Câmera interna pronta para leitura de QR");
+        }}
+        onMountError={(event) => {
+          logger.error("Scan", "Erro ao iniciar câmera", event.message);
+          setError("Não foi possível iniciar a câmera.");
+        }}
         onBarcodeScanned={handleBarCodeScanned}
       />
 
@@ -262,8 +284,13 @@ export default function ScanScreen() {
             Aponte para o QR Code do equipamento
           </Text>
           <Text className="mt-1 text-center text-xs text-dhe-textSecondary">
-            O QR Code contém apenas o ID — os dados vêm do banco
+            Leitura dentro do app — não abre scanner externo
           </Text>
+          {!cameraReady && (
+            <Text className="mt-2 text-center text-xs text-dhe-textMuted">
+              Iniciando câmera...
+            </Text>
+          )}
         </View>
 
         <View className="px-5 pb-8">

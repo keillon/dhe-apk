@@ -5,6 +5,7 @@
   "scripts": {
     "start": "expo start",
     "start:clean": "expo start -c",
+    "logs:android": "adb logcat *:S ReactNative:V ReactNativeJS:V",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",

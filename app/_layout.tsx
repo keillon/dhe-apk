@@ -9,7 +9,10 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { FeedbackHost } from "@/components";
+import { bootstrapLogging } from "@/utils/logger";
 import { colors } from "@/theme";
+
+bootstrapLogging();
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,10 +90,7 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="scan"
-              options={{ presentation: "fullScreenModal", animation: "slide_from_bottom" }}
-            />
+            <Stack.Screen name="scan" />
             <Stack.Screen name="equipment/[id]" />
             <Stack.Screen name="inspection/new" />
             <Stack.Screen name="inspection/[id]" />

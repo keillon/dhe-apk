@@ -17,6 +17,7 @@ export type { LocalPhoto } from "./images";
 export { getPhotoPreviewUri, pickProfileImage, pickEquipmentImage } from "./images";
 export { resolveMediaUrl } from "./media-url";
 export { getRouteParam } from "./route-params";
+export { logger, bootstrapLogging } from "./logger";
 export { isAdmin, getRoleLabel } from "./roles";
 
 export function formatDate(date: string | undefined): string {

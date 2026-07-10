@@ -1,5 +1,6 @@
 import axios from "axios";
 import * as SecureStore from "expo-secure-store";
+import { logger } from "@/utils/logger";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "";
 
@@ -27,8 +28,29 @@ http.interceptors.request.use(async (config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  const method = config.method?.toUpperCase() ?? "GET";
+  const path = config.url ?? "";
+  logger.info("API", `→ ${method} ${path}`);
+
   return config;
 });
+
+http.interceptors.response.use(
+  (response) => {
+    const method = response.config.method?.toUpperCase() ?? "GET";
+    const path = response.config.url ?? "";
+    logger.info("API", `← ${response.status} ${method} ${path}`);
+    return response;
+  },
+  (error) => {
+    const method = error.config?.method?.toUpperCase() ?? "GET";
+    const path = error.config?.url ?? "";
+    const status = error.response?.status ?? "sem status";
+    logger.error("API", `← ${status} ${method} ${path}`, error.message);
+    return Promise.reject(error);
+  }
+);
 
 export async function saveToken(token: string): Promise<void> {
   await SecureStore.setItemAsync(TOKEN_KEY, token);

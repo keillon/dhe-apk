@@ -19,7 +19,7 @@ import {
   PageContainer,
 } from "@/components";
 import { useMyInspections } from "@/hooks";
-import { formatDateTime, getContaminationLabel, getContaminationColor, getRouteParam } from "@/utils";
+import { formatDateTime, getContaminationLabel, getContaminationColor, getRouteParam, logger } from "@/utils";
 import type { Inspection } from "@/types";
 import { colors } from "@/theme";
 
@@ -57,6 +57,7 @@ export default function ActivityScreen() {
   );
 
   const openEquipment = (equipmentId: string) => {
+    logger.info("Activity", `Abrindo equipamento ${equipmentId}`);
     router.push({
       pathname: "/equipment/[id]",
       params: { id: equipmentId },
