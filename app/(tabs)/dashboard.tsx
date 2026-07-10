@@ -28,81 +28,85 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1 px-5 pb-8 pt-4" showsVerticalScrollIndicator={false}>
-        <Text className="mb-1 text-2xl font-bold text-dhe-text">Dashboard</Text>
-        <Text className="mb-6 text-sm text-dhe-textSecondary">
-          Visão geral das operações DHE
-        </Text>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        showsVerticalScrollIndicator={false}
+      >
+        <PageContainer>
+          <Text className="mb-1 text-2xl font-bold text-dhe-text">Dashboard</Text>
+          <Text className="mb-6 text-sm text-dhe-textSecondary">
+            Visão geral das operações DHE
+          </Text>
 
-        <View className="mb-4 flex-row gap-3">
-          <StatCard
-            icon={Wrench}
-            label="Equipamentos"
-            value={stats?.equipamentos_cadastrados ?? 0}
-          />
-          <StatCard
-            icon={ClipboardCheck}
-            label="Inspeções"
-            value={stats?.inspecoes_realizadas ?? 0}
-            color={colors.success}
-          />
-        </View>
-
-        <View className="mb-6 flex-row gap-3">
-          <StatCard
-            icon={AlertTriangle}
-            label="Pendências"
-            value={stats?.pendencias ?? 0}
-            color={colors.warning}
-          />
-          <StatCard
-            icon={Calendar}
-            label="Próx. manutenções"
-            value={stats?.proximas_manutencoes ?? 0}
-            color={colors.textSecondary}
-          />
-        </View>
-
-        <Card className="mb-6">
-          <View className="mb-4 flex-row items-center">
-            <TrendingUp size={20} color={colors.primary} />
-            <Text className="ml-3 text-lg font-bold text-dhe-text">
-              Status dos equipamentos
-            </Text>
+          <View className="mb-4 flex-row gap-3">
+            <StatCard
+              icon={Wrench}
+              label="Equipamentos"
+              value={stats?.equipamentos_cadastrados ?? 0}
+            />
+            <StatCard
+              icon={ClipboardCheck}
+              label="Inspeções"
+              value={stats?.inspecoes_realizadas ?? 0}
+              color={colors.success}
+            />
           </View>
 
-          {[
-            { label: "Operando", count: statusCounts.operando, color: colors.success },
-            { label: "Parado", count: statusCounts.parado, color: colors.warning },
-            { label: "Manutenção", count: statusCounts.manutencao, color: colors.danger },
-          ].map((item) => (
-            <View key={item.label} className="mb-4">
-              <View className="mb-2 flex-row justify-between">
-                <Text className="text-sm text-dhe-text">{item.label}</Text>
-                <Text className="text-sm font-bold text-dhe-text">{item.count}</Text>
-              </View>
-              <View className="h-3 overflow-hidden rounded-full bg-dhe-elevated">
-                <View
-                  className="h-full rounded-full"
-                  style={{
-                    backgroundColor: item.color,
-                    width: `${equipments?.length ? (item.count / equipments.length) * 100 : 0}%`,
-                  }}
-                />
-              </View>
-            </View>
-          ))}
-        </Card>
+          <View className="mb-6 flex-row gap-3">
+            <StatCard
+              icon={AlertTriangle}
+              label="Pendências"
+              value={stats?.pendencias ?? 0}
+              color={colors.warning}
+            />
+            <StatCard
+              icon={Calendar}
+              label="Próx. manutenções"
+              value={stats?.proximas_manutencoes ?? 0}
+              color={colors.textSecondary}
+            />
+          </View>
 
-        <Card>
-          <Text className="mb-3 text-lg font-bold text-dhe-text">
-            Resultados DHE
-          </Text>
-          <Text className="text-sm leading-6 text-dhe-textSecondary">
-            Nossos clientes passaram de uma média de 18 quebras por ano para 2,
-            em apenas 1 ano — redução de 89% nos custos com quebra de máquinas.
-          </Text>
-        </Card>
+          <Card className="mb-6">
+            <View className="mb-5 flex-row items-center">
+              <TrendingUp size={20} color={colors.primary} />
+              <Text className="ml-3 text-lg font-bold text-dhe-text">
+                Status dos equipamentos
+              </Text>
+            </View>
+
+            {[
+              { label: "Operando", count: statusCounts.operando, color: colors.success },
+              { label: "Parado", count: statusCounts.parado, color: colors.warning },
+              { label: "Manutenção", count: statusCounts.manutencao, color: colors.danger },
+            ].map((item, index, arr) => (
+              <View key={item.label} className={index < arr.length - 1 ? "mb-4" : ""}>
+                <View className="mb-2 flex-row justify-between">
+                  <Text className="text-sm text-dhe-text">{item.label}</Text>
+                  <Text className="text-sm font-bold text-dhe-text">{item.count}</Text>
+                </View>
+                <View className="h-3 overflow-hidden rounded-full bg-dhe-elevated">
+                  <View
+                    className="h-full rounded-full"
+                    style={{
+                      backgroundColor: item.color,
+                      width: `${equipments?.length ? (item.count / equipments.length) * 100 : 0}%`,
+                    }}
+                  />
+                </View>
+              </View>
+            ))}
+          </Card>
+
+          <Card>
+            <Text className="mb-3 text-lg font-bold text-dhe-text">Resultados DHE</Text>
+            <Text className="text-sm leading-6 text-dhe-textSecondary">
+              Nossos clientes passaram de uma média de 18 quebras por ano para 2,
+              em apenas 1 ano — redução de 89% nos custos com quebra de máquinas.
+            </Text>
+          </Card>
+        </PageContainer>
       </ScrollView>
     </SafeAreaView>
   );

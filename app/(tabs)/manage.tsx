@@ -54,7 +54,11 @@ export default function ManageScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1 px-5 pb-8 pt-4" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        showsVerticalScrollIndicator={false}
+      >
         <PageContainer>
           <Text className="mb-1 text-2xl font-bold text-dhe-text">Gestão</Text>
           <Text className="mb-6 text-sm text-dhe-textSecondary">
@@ -65,13 +69,15 @@ export default function ManageScreen() {
             const Icon = action.icon;
             return (
               <Pressable key={action.href} onPress={() => router.push(action.href as Href)}>
-                <Card className="mb-3 flex-row items-center">
-                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
+                <Card className="mb-3 flex-row items-center gap-4">
+                  <View className="h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-dhe-primary/20">
                     <Icon size={22} color={colors.primary} />
                   </View>
-                  <View className="flex-1">
+                  <View className="min-w-0 flex-1">
                     <Text className="font-semibold text-dhe-text">{action.title}</Text>
-                    <Text className="mt-1 text-xs text-dhe-textSecondary">{action.description}</Text>
+                    <Text className="mt-1 text-xs leading-4 text-dhe-textSecondary">
+                      {action.description}
+                    </Text>
                   </View>
                   <ChevronRight size={18} color={colors.textMuted} />
                 </Card>

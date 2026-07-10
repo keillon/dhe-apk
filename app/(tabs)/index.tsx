@@ -49,6 +49,7 @@ export default function HomeScreen() {
 
       <RefreshableScrollView
         className="flex-1"
+        contentContainerClassName="pb-10"
         showsVerticalScrollIndicator={false}
         onRefresh={async () => {
           if (admin) {
@@ -58,9 +59,9 @@ export default function HomeScreen() {
           }
         }}
       >
-        <View className="bg-dhe-surface px-5 pb-8 pt-4">
+        <View className="bg-dhe-surface px-5 pb-6 pt-4">
           <PageContainer>
-            <View className="mb-5 flex-row items-center justify-between">
+            <View className="mb-4 flex-row items-center justify-between">
               <DheLogo variant="white" size="sm" />
               {admin && (
                 <Pressable
@@ -82,7 +83,7 @@ export default function HomeScreen() {
             <Text className="text-2xl font-bold text-dhe-text">
               {getGreeting()}, {user?.nome?.split(" ")[0] ?? "Técnico"}.
             </Text>
-            <Text className="mt-1 text-sm text-dhe-textSecondary">
+            <Text className="mt-2 text-sm leading-5 text-dhe-textSecondary">
               {admin
                 ? "Painel de gestão DHE"
                 : "Escaneie QR Codes e acompanhe suas inspeções"}
@@ -90,7 +91,7 @@ export default function HomeScreen() {
           </PageContainer>
         </View>
 
-        <View className="-mt-4 px-5 pb-8">
+        <View className="px-5 pt-6">
           <PageContainer>
             {admin && (
               <>
@@ -127,7 +128,7 @@ export default function HomeScreen() {
                   fullWidth
                   size="lg"
                   icon={<Printer size={22} color={colors.text} />}
-                  className="mb-3"
+                  className="mb-4"
                 />
               </>
             )}
@@ -174,23 +175,23 @@ export default function HomeScreen() {
 
             {!admin && (
               <Card className="mb-6">
-                <Text className="mb-2 text-sm font-bold text-dhe-text">Como funciona</Text>
+                <Text className="mb-3 text-sm font-bold text-dhe-text">Como funciona</Text>
                 <View className="gap-3">
-                  <View className="flex-row items-start">
-                    <Text className="mr-2 text-dhe-primary">1.</Text>
-                    <Text className="flex-1 text-sm text-dhe-textSecondary">
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-dhe-primary">1.</Text>
+                    <Text className="flex-1 text-sm leading-5 text-dhe-textSecondary">
                       Escaneie o QR Code do equipamento.
                     </Text>
                   </View>
-                  <View className="flex-row items-start">
-                    <Text className="mr-2 text-dhe-primary">2.</Text>
-                    <Text className="flex-1 text-sm text-dhe-textSecondary">
+                  <View className="flex-row items-start gap-2">
+                    <Text className="text-dhe-primary">2.</Text>
+                    <Text className="flex-1 text-sm leading-5 text-dhe-textSecondary">
                       Registre uma nova inspeção com fotos e assinatura.
                     </Text>
                   </View>
-                  <View className="flex-row items-start">
-                    <History size={16} color={colors.primary} style={{ marginRight: 8, marginTop: 2 }} />
-                    <Text className="flex-1 text-sm text-dhe-textSecondary">
+                  <View className="flex-row items-start gap-2">
+                    <History size={16} color={colors.primary} style={{ marginTop: 2 }} />
+                    <Text className="flex-1 text-sm leading-5 text-dhe-textSecondary">
                       Consulte o histórico de inspeções pelo equipamento.
                     </Text>
                   </View>
@@ -213,9 +214,11 @@ export default function HomeScreen() {
                       <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
                         <Wrench size={22} color={colors.primary} />
                       </View>
-                      <View className="flex-1">
-                        <Text className="font-semibold text-dhe-text">{eq.nome}</Text>
-                        <Text className="mt-1 text-xs text-dhe-textSecondary">
+                      <View className="min-w-0 flex-1">
+                        <Text className="font-semibold text-dhe-text" numberOfLines={1}>
+                          {eq.nome}
+                        </Text>
+                        <Text className="mt-1 text-xs text-dhe-textSecondary" numberOfLines={1}>
                           {eq.cliente?.empresa ?? eq.empresa} • {eq.qr_code}
                         </Text>
                       </View>

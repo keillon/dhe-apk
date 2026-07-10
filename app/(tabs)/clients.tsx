@@ -26,66 +26,72 @@ export default function ClientsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <View className="px-5 pt-4">
-        <Text className="mb-1 text-2xl font-bold text-dhe-text">Clientes</Text>
-        <Text className="mb-5 text-sm text-dhe-textSecondary">
-          Empresas atendidas pela DHE
-        </Text>
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        showsVerticalScrollIndicator={false}
+      >
+        <PageContainer>
+          <Text className="mb-1 text-2xl font-bold text-dhe-text">Clientes</Text>
+          <Text className="mb-6 text-sm text-dhe-textSecondary">
+            Empresas atendidas pela DHE
+          </Text>
 
-        <Button
-          title="Novo cliente"
-          onPress={() => router.push("/client/new")}
-          icon={<Plus size={18} color={colors.bg} />}
-          className="mb-4"
-        />
-
-        <View className="relative mb-5">
-          <Input
-            placeholder="Pesquisar cliente..."
-            value={search}
-            onChangeText={setSearch}
-            className="mb-0"
+          <Button
+            title="Novo cliente"
+            onPress={() => router.push("/client/new")}
+            icon={<Plus size={18} color={colors.bg} />}
+            className="mb-5"
           />
-          <Search
-            size={18}
-            color={colors.textMuted}
-            style={{ position: "absolute", right: 16, top: 16 }}
-          />
-        </View>
-      </View>
 
-      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
-        {filtered?.length === 0 ? (
-          <EmptyState
-            title="Nenhum cliente encontrado"
-            description="Tente outro termo de busca ou cadastre um novo cliente."
-          />
-        ) : (
-          filtered?.map((client) => {
-            const eqCount =
-              equipments?.filter((e) => e.cliente_id === client.id).length ?? 0;
+          <View className="relative mb-6">
+            <Input
+              placeholder="Pesquisar cliente..."
+              value={search}
+              onChangeText={setSearch}
+              className="mb-0"
+            />
+            <Search
+              size={18}
+              color={colors.textMuted}
+              style={{ position: "absolute", right: 16, top: 16 }}
+            />
+          </View>
 
-            return (
-              <Pressable
-                key={client.id}
-                onPress={() => router.push(`/client/${client.id}`)}
-              >
-                <Card className="mb-3 flex-row items-center">
-                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
-                    <Building2 size={22} color={colors.primary} />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="font-semibold text-dhe-text">{client.empresa}</Text>
-                    <Text className="mt-1 text-xs text-dhe-textSecondary">
-                      {client.nome} • {eqCount} equipamento(s)
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color={colors.textMuted} />
-                </Card>
-              </Pressable>
-            );
-          })
-        )}
+          {filtered?.length === 0 ? (
+            <EmptyState
+              title="Nenhum cliente encontrado"
+              description="Tente outro termo de busca ou cadastre um novo cliente."
+            />
+          ) : (
+            filtered?.map((client) => {
+              const eqCount =
+                equipments?.filter((e) => e.cliente_id === client.id).length ?? 0;
+
+              return (
+                <Pressable
+                  key={client.id}
+                  onPress={() => router.push(`/client/${client.id}`)}
+                >
+                  <Card className="mb-3 flex-row items-center">
+                    <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
+                      <Building2 size={22} color={colors.primary} />
+                    </View>
+                    <View className="min-w-0 flex-1">
+                      <Text className="font-semibold text-dhe-text" numberOfLines={1}>
+                        {client.empresa}
+                      </Text>
+                      <Text className="mt-1 text-xs text-dhe-textSecondary" numberOfLines={1}>
+                        {client.nome} • {eqCount} equipamento(s)
+                      </Text>
+                    </View>
+                    <ChevronRight size={18} color={colors.textMuted} />
+                  </Card>
+                </Pressable>
+              );
+            })
+          )}
+        </PageContainer>
       </ScrollView>
     </SafeAreaView>
   );

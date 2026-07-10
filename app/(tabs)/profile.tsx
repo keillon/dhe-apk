@@ -3,7 +3,6 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import {
-  User,
   Briefcase,
   Building2,
   Lock,
@@ -13,7 +12,7 @@ import {
   Camera,
   Save,
 } from "lucide-react-native";
-import { Card, Button, Input, DisplayImage, PageContainer } from "@/components";
+import { Card, Button, Input, DisplayImage, PageContainer, InfoRowList } from "@/components";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
@@ -95,12 +94,16 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        <PageContainer className="px-5 pb-8 pt-4">
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        showsVerticalScrollIndicator={false}
+      >
+        <PageContainer>
           <Text className="mb-1 text-2xl font-bold text-dhe-text">Perfil</Text>
           <Text className="mb-6 text-sm text-dhe-textSecondary">Gerencie sua conta</Text>
 
-          <Card className="mb-6 items-center py-6">
+          <Card className="mb-6 items-center px-5 py-6">
             <Pressable onPress={handlePickPhoto} disabled={saving} className="relative mb-4">
               {avatarUri ? (
                 <DisplayImage
@@ -133,8 +136,14 @@ export default function ProfileScreen() {
 
             {editing ? (
               <View className="w-full">
-                <Input label="Nome" value={nome} onChangeText={setNome} placeholder="Seu nome" />
-                <View className="mt-2 flex-row gap-2">
+                <Input
+                  label="Nome"
+                  value={nome}
+                  onChangeText={setNome}
+                  placeholder="Seu nome"
+                  className="mb-4"
+                />
+                <View className="flex-row gap-3">
                   <Button
                     title="Cancelar"
                     variant="secondary"
@@ -154,51 +163,39 @@ export default function ProfileScreen() {
                 </View>
               </View>
             ) : (
-              <>
-                <Text className="text-xl font-bold text-dhe-text">{user?.nome}</Text>
-                <Text className="mt-1 text-sm text-dhe-textSecondary">
+              <View className="w-full items-center">
+                <Text className="text-center text-xl font-bold text-dhe-text">{user?.nome}</Text>
+                <Text className="mt-2 text-center text-sm text-dhe-textSecondary">
                   {user ? getRoleLabel(user.role) : ""} • {user?.cargo}
                 </Text>
                 <Button
                   title="Editar nome"
                   variant="ghost"
                   size="sm"
-                  className="mt-3"
+                  className="mt-4"
                   onPress={() => setEditing(true)}
                 />
-              </>
+              </View>
             )}
           </Card>
 
           <Card className="mb-6">
-            {[
-              { icon: Mail, label: "Email", value: user?.email },
-              { icon: Briefcase, label: "Cargo", value: user?.cargo },
-              { icon: Building2, label: "Empresa", value: user?.empresa },
-            ].map((item) => (
-              <View
-                key={item.label}
-                className="mb-3 flex-row items-center border-b border-dhe-border pb-3 last:mb-0 last:border-b-0 last:pb-0"
-              >
-                <View className="mr-3 h-10 w-10 items-center justify-center rounded-xl bg-dhe-elevated">
-                  <item.icon size={18} color={colors.primary} />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-xs text-dhe-textMuted">{item.label}</Text>
-                  <Text className="text-base font-medium text-dhe-text">{item.value}</Text>
-                </View>
-              </View>
-            ))}
+            <InfoRowList
+              items={[
+                { icon: Mail, label: "E-mail", value: user?.email },
+                { icon: Briefcase, label: "Cargo", value: user?.cargo },
+                { icon: Building2, label: "Empresa", value: user?.empresa },
+              ]}
+            />
           </Card>
 
           {admin && (
             <Card className="mb-6">
-              <Text className="mb-3 text-sm font-bold text-dhe-text">Administração</Text>
+              <Text className="mb-4 text-sm font-bold text-dhe-text">Administração</Text>
               <Button
                 title="Gerar QR Codes para impressão"
                 variant="secondary"
                 fullWidth
-                className="mb-0"
                 icon={<QrCode size={18} color={colors.text} />}
                 onPress={() => router.push("/qrcodes" as Href)}
               />
@@ -222,7 +219,7 @@ export default function ProfileScreen() {
             onPress={handleLogout}
           />
 
-          <View className="mt-8 items-center pb-4">
+          <View className="mt-8 items-center">
             <Text className="text-xs text-dhe-textMuted">DHE Componentes Hidráulicos</Text>
             <Text className="mt-1 text-xs text-dhe-textMuted">(41) 99947-0057</Text>
           </View>

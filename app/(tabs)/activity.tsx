@@ -49,9 +49,13 @@ export default function ActivityScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <RefreshableScrollView className="flex-1" showsVerticalScrollIndicator={false} onRefresh={refetch}>
-        <View className="px-5 pb-8 pt-4">
-          <PageContainer>
+      <RefreshableScrollView
+        className="flex-1"
+        contentContainerClassName="px-5 pb-10 pt-4"
+        showsVerticalScrollIndicator={false}
+        onRefresh={refetch}
+      >
+        <PageContainer>
             <Text className="mb-1 text-2xl font-bold text-dhe-text">Minha atividade</Text>
             <Text className="mb-6 text-sm text-dhe-textSecondary">
               Equipamentos e inspeções que você realizou
@@ -154,7 +158,6 @@ export default function ActivityScreen() {
               ))
             )}
           </PageContainer>
-        </View>
       </RefreshableScrollView>
     </SafeAreaView>
   );
