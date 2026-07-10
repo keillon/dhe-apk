@@ -37,7 +37,7 @@ export default function LoginScreen() {
     setError("");
 
     try {
-      await hydrateStorage();
+      void hydrateStorage().catch(() => {});
       const user = await api.login(email, password);
       setUser(user);
       void prefetchEquipmentCache(() => api.getEquipments());

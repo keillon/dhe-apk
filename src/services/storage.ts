@@ -30,21 +30,23 @@ export async function hydrateStorage(): Promise<void> {
   if (hydratePromise) return hydratePromise;
 
   hydratePromise = (async () => {
-    const allKeys = await AsyncStorage.getAllKeys();
-    const appKeys = allKeys.filter((key) => key.startsWith(STORAGE_PREFIX));
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const appKeys = allKeys.filter((key) => key.startsWith(STORAGE_PREFIX));
 
-    if (appKeys.length === 0) {
+      if (appKeys.length === 0) return;
+
+      const entries = await AsyncStorage.multiGet(appKeys);
+      for (const [fullKey, value] of entries) {
+        if (value == null) continue;
+        memory.set(fullKey.slice(STORAGE_PREFIX.length), value);
+      }
+    } catch {
+      memory.clear();
+    } finally {
       hydrated = true;
-      return;
+      hydratePromise = null;
     }
-
-    const entries = await AsyncStorage.multiGet(appKeys);
-    for (const [fullKey, value] of entries) {
-      if (value == null) continue;
-      memory.set(fullKey.slice(STORAGE_PREFIX.length), value);
-    }
-
-    hydrated = true;
   })();
 
   return hydratePromise;

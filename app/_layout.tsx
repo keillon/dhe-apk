@@ -4,17 +4,21 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
-import { FeedbackHost, OfflineSyncHost } from "@/components";
-import { bootstrapLogging } from "@/utils/logger";
+import { FeedbackHost } from "@/components/FeedbackHost";
+import { OfflineSyncHost } from "@/components/OfflineSyncHost";
+import { bootstrapLogging, logger } from "@/utils/logger";
 import { colors } from "@/theme";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { hydrateStorage } from "@/services/storage";
 
 bootstrapLogging();
+
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,16 +36,35 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    const safetyTimer = setTimeout(() => {
+      if (!mounted) return;
+      logger.warn("App", "Timeout no startup — liberando tela");
+      setLoading(false);
+      SplashScreen.hideAsync().catch(() => {});
+    }, 8000);
 
     const restore = async () => {
-      await hydrateStorage();
-      const user = await api.restoreSession();
-      if (!mounted) return;
-      if (user) {
-        setUser(user);
-        void prefetchEquipmentCache(() => api.getEquipments());
-      } else {
+      void hydrateStorage().catch((error) => {
+        logger.error("App", "Falha ao carregar cache offline", error);
+      });
+
+      try {
+        const user = await api.restoreSession();
+        if (!mounted) return;
+
+        if (user) {
+          setUser(user);
+          void prefetchEquipmentCache(() => api.getEquipments());
+          return;
+        }
+
         setLoading(false);
+      } catch (error) {
+        logger.error("App", "Erro ao restaurar sessão", error);
+        if (mounted) setLoading(false);
+      } finally {
+        clearTimeout(safetyTimer);
+        SplashScreen.hideAsync().catch(() => {});
       }
     };
 
@@ -49,8 +72,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(safetyTimer);
     };
   }, [setUser, setLoading]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isLoading]);
 
   useEffect(() => {
     if (isLoading) return;

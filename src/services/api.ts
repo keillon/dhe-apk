@@ -72,7 +72,7 @@ export const api = {
     }
 
     try {
-      const { data } = await http.get<User>("/auth/me");
+      const { data } = await http.get<User>("/auth/me", { timeout: 5000 });
       return data;
     } catch {
       await clearToken();
