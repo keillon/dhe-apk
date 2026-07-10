@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   FlatList,
@@ -11,11 +11,11 @@ import {
 } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X } from "lucide-react-native";
+import { ChevronLeft, ChevronRight, X } from "lucide-react-native";
 import type { MediaPreviewItem } from "@/utils/media";
 import { resolveMediaUrl } from "@/utils/media-url";
 import { ZoomableImage } from "./ZoomableImage";
-import { MediaVideoPlayer } from "./MediaVideoPlayer";
+import { MediaVideoPlayer, PreviewVideoPoster } from "./MediaVideoPlayer";
 
 interface MediaPreviewModalProps {
   visible: boolean;
@@ -35,24 +35,36 @@ export function MediaPreviewModal({
   const listRef = useRef<FlatList<MediaPreviewItem>>(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scrollEnabled, setScrollEnabled] = useState(true);
+  const [isScrolling, setIsScrolling] = useState(false);
+
+  const goToIndex = useCallback((index: number) => {
+    if (index < 0 || index >= items.length) return;
+    setCurrentIndex(index);
+    setScrollEnabled(true);
+    listRef.current?.scrollToIndex({ index, animated: true });
+  }, [items.length]);
 
   useEffect(() => {
     if (!visible) return;
     setCurrentIndex(initialIndex);
     setScrollEnabled(true);
+    setIsScrolling(false);
     requestAnimationFrame(() => {
       listRef.current?.scrollToIndex({ index: initialIndex, animated: false });
     });
   }, [visible, initialIndex]);
 
-  const handleMomentumEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+  const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setCurrentIndex(index);
     setScrollEnabled(true);
+    setIsScrolling(false);
   };
 
   const currentItem = items[currentIndex];
   const showImageHint = currentItem?.kind !== "video";
+  const canGoPrev = currentIndex > 0;
+  const canGoNext = currentIndex < items.length - 1;
 
   if (!visible || items.length === 0) return null;
 
@@ -66,10 +78,32 @@ export function MediaPreviewModal({
             </Pressable>
           </View>
 
-          <View className="absolute left-0 right-0 top-4 z-20 items-center">
+          <View className="absolute left-0 right-0 top-4 z-20 flex-row items-center justify-center px-14">
+            {items.length > 1 ? (
+              <Pressable
+                onPress={() => goToIndex(currentIndex - 1)}
+                disabled={!canGoPrev}
+                className="absolute left-4 rounded-full bg-white/15 p-2"
+                style={{ opacity: canGoPrev ? 1 : 0.35 }}
+              >
+                <ChevronLeft size={24} color="#fff" />
+              </Pressable>
+            ) : null}
+
             <Text className="rounded-full bg-black/50 px-3 py-1 text-sm font-semibold text-white">
               {currentIndex + 1} / {items.length}
             </Text>
+
+            {items.length > 1 ? (
+              <Pressable
+                onPress={() => goToIndex(currentIndex + 1)}
+                disabled={!canGoNext}
+                className="absolute right-4 rounded-full bg-white/15 p-2"
+                style={{ opacity: canGoNext ? 1 : 0.35 }}
+              >
+                <ChevronRight size={24} color="#fff" />
+              </Pressable>
+            ) : null}
           </View>
 
           <FlatList
@@ -81,30 +115,43 @@ export function MediaPreviewModal({
             scrollEnabled={scrollEnabled}
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={initialIndex}
+            windowSize={3}
+            removeClippedSubviews
             getItemLayout={(_, index) => ({
               length: SCREEN_WIDTH,
               offset: SCREEN_WIDTH * index,
               index,
             })}
-            onMomentumScrollEnd={handleMomentumEnd}
-            renderItem={({ item, index }) => (
-              <View
-                style={{
-                  width: SCREEN_WIDTH,
-                  height: SCREEN_HEIGHT,
-                  justifyContent: "center",
-                }}
-              >
-                {item.kind === "video" ? (
-                  <MediaVideoPlayer uri={item.uri} active={index === currentIndex} />
-                ) : (
-                  <ZoomableImage
-                    uri={resolveMediaUrl(item.uri)}
-                    onZoomChange={(zoomed) => setScrollEnabled(!zoomed)}
-                  />
-                )}
-              </View>
-            )}
+            onScrollBeginDrag={() => setIsScrolling(true)}
+            onScrollEndDrag={handleScrollEnd}
+            onMomentumScrollEnd={handleScrollEnd}
+            renderItem={({ item, index }) => {
+              const isActive = index === currentIndex;
+              const showPlayer = item.kind === "video" && isActive && !isScrolling;
+
+              return (
+                <View
+                  style={{
+                    width: SCREEN_WIDTH,
+                    height: SCREEN_HEIGHT,
+                    justifyContent: "center",
+                  }}
+                >
+                  {item.kind === "video" ? (
+                    showPlayer ? (
+                      <MediaVideoPlayer uri={item.uri} />
+                    ) : (
+                      <PreviewVideoPoster uri={item.thumbnailUri ?? item.uri} />
+                    )
+                  ) : (
+                    <ZoomableImage
+                      uri={resolveMediaUrl(item.uri)}
+                      onZoomChange={(zoomed) => setScrollEnabled(!zoomed)}
+                    />
+                  )}
+                </View>
+              );
+            }}
           />
 
           {showImageHint ? (

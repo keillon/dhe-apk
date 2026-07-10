@@ -132,74 +132,88 @@ function PhotoGrid({
         showsHorizontalScrollIndicator={false}
         className="mb-2"
         nestedScrollEnabled
+        contentContainerStyle={{ paddingTop: 6, paddingRight: 6 }}
       >
         {photos.map((photo, index) => (
-          <Pressable
-            key={`${photo.uri}-${index}`}
-            onPress={() => openPreview(index)}
-            style={{ marginRight: 8 }}
-          >
-            {photo.kind === "video" ? (
-              <VideoThumbnail uri={getLocalMediaThumbUri(photo)} size={THUMB_SIZE} />
-            ) : (
-              <DisplayImage
-                uri={getPhotoPreviewUri(photo)}
+          <View key={`${photo.uri}-${index}`} style={{ marginRight: 8 }}>
+            <Pressable onPress={() => openPreview(index)}>
+              <View
                 style={{
                   width: THUMB_SIZE,
                   height: THUMB_SIZE,
                   borderRadius: 12,
+                  overflow: "hidden",
                 }}
-                resizeMode="cover"
-              />
-            )}
+              >
+                {photo.kind === "video" ? (
+                  <VideoThumbnail uri={getLocalMediaThumbUri(photo)} size={THUMB_SIZE} borderRadius={0} />
+                ) : (
+                  <DisplayImage
+                    uri={getPhotoPreviewUri(photo)}
+                    style={{
+                      width: THUMB_SIZE,
+                      height: THUMB_SIZE,
+                    }}
+                    resizeMode="cover"
+                  />
+                )}
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: 4,
+                    right: 4,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    borderRadius: 8,
+                    padding: 4,
+                  }}
+                >
+                  {photo.kind === "video" ? (
+                    <Video size={10} color="#fff" />
+                  ) : (
+                    <ZoomIn size={10} color="#fff" />
+                  )}
+                </View>
+                {photo.kind === "video" && photo.withAudio === false ? (
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: 4,
+                      left: 4,
+                      backgroundColor: "rgba(0,0,0,0.55)",
+                      borderRadius: 6,
+                      paddingHorizontal: 4,
+                      paddingVertical: 2,
+                    }}
+                  >
+                    <Text style={{ color: "#fff", fontSize: 8, fontWeight: "700" }}>MUDO</Text>
+                  </View>
+                ) : null}
+              </View>
+            </Pressable>
+
             <Pressable
-              onPress={() => removePhoto(index)}
+              onPress={(event) => {
+                event.stopPropagation?.();
+                void removePhoto(index);
+              }}
+              hitSlop={6}
               style={{
                 position: "absolute",
-                top: -4,
-                right: -4,
-                width: 24,
-                height: 24,
-                borderRadius: 12,
+                top: 0,
+                right: 0,
+                width: 22,
+                height: 22,
+                borderRadius: 11,
                 backgroundColor: colors.danger,
                 alignItems: "center",
                 justifyContent: "center",
+                borderWidth: 2,
+                borderColor: colors.bg,
               }}
             >
               <X size={12} color="#fff" />
             </Pressable>
-            <View
-              style={{
-                position: "absolute",
-                bottom: 4,
-                right: 4,
-                backgroundColor: "rgba(0,0,0,0.5)",
-                borderRadius: 8,
-                padding: 4,
-              }}
-            >
-              {photo.kind === "video" ? (
-                <Video size={10} color="#fff" />
-              ) : (
-                <ZoomIn size={10} color="#fff" />
-              )}
-            </View>
-            {photo.kind === "video" && photo.withAudio === false ? (
-              <View
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  left: 4,
-                  backgroundColor: "rgba(0,0,0,0.55)",
-                  borderRadius: 6,
-                  paddingHorizontal: 4,
-                  paddingVertical: 2,
-                }}
-              >
-                <Text style={{ color: "#fff", fontSize: 8, fontWeight: "700" }}>MUDO</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          </View>
         ))}
 
         {photos.length === 0 && (
