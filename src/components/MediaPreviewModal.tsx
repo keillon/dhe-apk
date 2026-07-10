@@ -24,7 +24,7 @@ interface MediaPreviewModalProps {
   onClose: () => void;
 }
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 export function MediaPreviewModal({
   visible,
@@ -72,38 +72,40 @@ export function MediaPreviewModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView className="flex-1 bg-black">
-          <View className="absolute right-4 top-4 z-20">
+          <View className="z-20 flex-row items-center justify-between px-4 py-2">
             <Pressable onPress={onClose} className="rounded-full bg-white/15 p-2">
               <X size={26} color="#fff" />
             </Pressable>
-          </View>
 
-          <View className="absolute left-0 right-0 top-4 z-20 flex-row items-center justify-center px-14">
-            {items.length > 1 ? (
-              <Pressable
-                onPress={() => goToIndex(currentIndex - 1)}
-                disabled={!canGoPrev}
-                className="absolute left-4 rounded-full bg-white/15 p-2"
-                style={{ opacity: canGoPrev ? 1 : 0.35 }}
-              >
-                <ChevronLeft size={24} color="#fff" />
-              </Pressable>
-            ) : null}
+            <View className="flex-row items-center gap-3">
+              {items.length > 1 ? (
+                <Pressable
+                  onPress={() => goToIndex(currentIndex - 1)}
+                  disabled={!canGoPrev}
+                  className="rounded-full bg-white/15 p-2"
+                  style={{ opacity: canGoPrev ? 1 : 0.35 }}
+                >
+                  <ChevronLeft size={24} color="#fff" />
+                </Pressable>
+              ) : null}
 
-            <Text className="rounded-full bg-black/50 px-3 py-1 text-sm font-semibold text-white">
-              {currentIndex + 1} / {items.length}
-            </Text>
+              <Text className="rounded-full bg-black/50 px-3 py-1 text-sm font-semibold text-white">
+                {currentIndex + 1} / {items.length}
+              </Text>
 
-            {items.length > 1 ? (
-              <Pressable
-                onPress={() => goToIndex(currentIndex + 1)}
-                disabled={!canGoNext}
-                className="absolute right-4 rounded-full bg-white/15 p-2"
-                style={{ opacity: canGoNext ? 1 : 0.35 }}
-              >
-                <ChevronRight size={24} color="#fff" />
-              </Pressable>
-            ) : null}
+              {items.length > 1 ? (
+                <Pressable
+                  onPress={() => goToIndex(currentIndex + 1)}
+                  disabled={!canGoNext}
+                  className="rounded-full bg-white/15 p-2"
+                  style={{ opacity: canGoNext ? 1 : 0.35 }}
+                >
+                  <ChevronRight size={24} color="#fff" />
+                </Pressable>
+              ) : null}
+            </View>
+
+            <View style={{ width: 42 }} />
           </View>
 
           <FlatList
@@ -117,6 +119,7 @@ export function MediaPreviewModal({
             initialScrollIndex={initialIndex}
             windowSize={3}
             removeClippedSubviews
+            style={{ flex: 1 }}
             getItemLayout={(_, index) => ({
               length: SCREEN_WIDTH,
               offset: SCREEN_WIDTH * index,
@@ -133,7 +136,7 @@ export function MediaPreviewModal({
                 <View
                   style={{
                     width: SCREEN_WIDTH,
-                    height: SCREEN_HEIGHT,
+                    flex: 1,
                     justifyContent: "center",
                   }}
                 >
