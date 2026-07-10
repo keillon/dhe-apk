@@ -1,14 +1,19 @@
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { feedback } from "@/services/feedback";
+import type { MediaKind } from "./media";
 
 export interface LocalPhoto {
   uri: string;
   dataUrl: string;
+  kind: MediaKind;
 }
 
-const MAX_PHOTOS_PER_TYPE = 5;
+const MAX_MEDIA_PER_TYPE = 5;
 const IMAGE_QUALITY = 0.5;
+const MAX_VIDEO_DURATION_SEC = 45;
+const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
+const VIDEO_QUALITY = ImagePicker.UIImagePickerControllerQualityType.Low;
 
 function guessMimeType(uri: string, mimeType?: string | null): string {
   if (mimeType) return mimeType;
@@ -99,6 +104,7 @@ export async function assetToLocalPhoto(
     return {
       uri: asset.uri,
       dataUrl: `data:${mime};base64,${asset.base64}`,
+      kind: "image",
     };
   }
 
@@ -109,18 +115,20 @@ export async function assetToLocalPhoto(
     return {
       uri: asset.uri,
       dataUrl: `data:${mime};base64,${base64}`,
+      kind: "image",
     };
   } catch {
     return {
       uri: asset.uri,
       dataUrl: asset.uri,
+      kind: "image",
     };
   }
 }
 
 export async function pickFromGallery(
   currentCount: number,
-  max = MAX_PHOTOS_PER_TYPE
+  max = MAX_MEDIA_PER_TYPE
 ): Promise<LocalPhoto[]> {
   const remaining = max - currentCount;
   if (remaining <= 0) {
@@ -167,7 +175,7 @@ async function takeSinglePhoto(): Promise<LocalPhoto | null> {
 export async function captureMultipleFromCamera(
   currentCount: number,
   onPhotoTaken: (photo: LocalPhoto) => void,
-  max = MAX_PHOTOS_PER_TYPE
+  max = MAX_MEDIA_PER_TYPE
 ): Promise<void> {
   let count = currentCount;
 
@@ -194,7 +202,7 @@ export async function captureMultipleFromCamera(
 
 export async function pickFromCamera(
   currentCount: number,
-  max = MAX_PHOTOS_PER_TYPE
+  max = MAX_MEDIA_PER_TYPE
 ): Promise<LocalPhoto | null> {
   if (currentCount >= max) {
     await feedback.alert("Limite atingido", `Máximo de ${max} fotos por categoria.`);
@@ -208,4 +216,99 @@ export function getPhotoPreviewUri(photo: LocalPhoto): string {
   return photo.uri.startsWith("file:") || photo.uri.startsWith("content:")
     ? photo.uri
     : photo.dataUrl;
+}
+
+async function assetToLocalVideo(asset: ImagePicker.ImagePickerAsset): Promise<LocalPhoto> {
+  const info = await FileSystem.getInfoAsync(asset.uri);
+  if (info.exists && "size" in info && info.size && info.size > MAX_VIDEO_BYTES) {
+    throw new Error("VIDEO_TOO_LARGE");
+  }
+
+  const mime = asset.mimeType ?? "video/mp4";
+  const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  return {
+    uri: asset.uri,
+    dataUrl: `data:${mime};base64,${base64}`,
+    kind: "video",
+  };
+}
+
+export async function pickVideoFromGallery(
+  currentCount: number,
+  max = MAX_MEDIA_PER_TYPE
+): Promise<LocalPhoto | null> {
+  if (currentCount >= max) {
+    await feedback.alert("Limite atingido", `Máximo de ${max} itens por categoria.`);
+    return null;
+  }
+
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    await feedback.alert("Permissão necessária", "Permita o acesso à galeria para adicionar vídeos.");
+    return null;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["videos"],
+    allowsMultipleSelection: false,
+    videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+    videoQuality: VIDEO_QUALITY,
+  });
+
+  if (result.canceled || !result.assets[0]) return null;
+
+  try {
+    return await assetToLocalVideo(result.assets[0]);
+  } catch (error) {
+    if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
+      await feedback.alert(
+        "Vídeo muito grande",
+        "Escolha um vídeo mais curto. O limite é cerca de 20 MB após compressão."
+      );
+      return null;
+    }
+    await feedback.alert("Erro", "Não foi possível processar o vídeo selecionado.");
+    return null;
+  }
+}
+
+export async function recordVideoFromCamera(
+  currentCount: number,
+  max = MAX_MEDIA_PER_TYPE
+): Promise<LocalPhoto | null> {
+  if (currentCount >= max) {
+    await feedback.alert("Limite atingido", `Máximo de ${max} itens por categoria.`);
+    return null;
+  }
+
+  const { status } = await ImagePicker.requestCameraPermissionsAsync();
+  if (status !== "granted") {
+    await feedback.alert("Permissão necessária", "Permita o acesso à câmera para gravar vídeos.");
+    return null;
+  }
+
+  const result = await ImagePicker.launchCameraAsync({
+    mediaTypes: ["videos"],
+    videoMaxDuration: MAX_VIDEO_DURATION_SEC,
+    videoQuality: VIDEO_QUALITY,
+  });
+
+  if (result.canceled || !result.assets[0]) return null;
+
+  try {
+    return await assetToLocalVideo(result.assets[0]);
+  } catch (error) {
+    if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
+      await feedback.alert(
+        "Vídeo muito grande",
+        "Grave um vídeo mais curto. O limite é cerca de 20 MB após compressão."
+      );
+      return null;
+    }
+    await feedback.alert("Erro", "Não foi possível processar o vídeo gravado.");
+    return null;
+  }
 }

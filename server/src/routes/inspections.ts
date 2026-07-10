@@ -23,6 +23,7 @@ const checklistSchema = z.object({
 const fotoSchema = z.object({
   tipo: z.enum(["antes", "depois"]),
   url: z.string().min(1),
+  media_kind: z.enum(["image", "video"]).default("image"),
 });
 
 const inspectionPayloadSchema = z.object({
@@ -49,11 +50,11 @@ function validateInspectionFields(data: z.infer<typeof inspectionPayloadSchema>)
   }
 
   if (!data.fotos.some((f) => f.tipo === "antes")) {
-    return { error: "Adicione pelo menos uma foto em Antes." };
+    return { error: "Adicione pelo menos uma mídia em Antes." };
   }
 
   if (!data.fotos.some((f) => f.tipo === "depois")) {
-    return { error: "Adicione pelo menos uma foto em Depois." };
+    return { error: "Adicione pelo menos uma mídia em Depois." };
   }
 
   if (!Object.values(data.checklist).some(Boolean)) {
@@ -230,6 +231,7 @@ inspectionsRouter.post("/", async (req, res) => {
           inspecaoId: created.id,
           url: foto.url,
           tipo: foto.tipo,
+          mediaKind: foto.media_kind,
         })),
       });
 
@@ -327,6 +329,7 @@ inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
           inspecaoId: existing.id,
           url: foto.url,
           tipo: foto.tipo,
+          mediaKind: foto.media_kind,
         })),
       });
 

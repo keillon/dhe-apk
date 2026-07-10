@@ -134,6 +134,7 @@ export function mapInspection(
       inspecaoId: string;
       url: string;
       tipo: "antes" | "depois";
+      mediaKind: "image" | "video";
       createdAt: Date;
     }>;
     assinatura?: { url: string } | null;
@@ -156,6 +157,7 @@ export function mapInspection(
       inspecao_id: foto.inspecaoId,
       url: foto.url,
       tipo: foto.tipo,
+      media_kind: foto.mediaKind,
       created_at: foto.createdAt.toISOString(),
     })),
   };

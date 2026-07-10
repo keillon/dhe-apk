@@ -69,6 +69,7 @@ export interface ApiInspection {
     inspecao_id: string;
     url: string;
     tipo: "antes" | "depois";
+    media_kind: "image" | "video";
     created_at: string;
   }>;
 }

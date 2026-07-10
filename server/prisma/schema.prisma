@@ -30,6 +30,11 @@ enum PhotoType {
   depois
 }
 
+enum MediaKind {
+  image
+  video
+}
+
 enum UserRole {
   admin
   tecnico
@@ -141,6 +146,7 @@ model Foto {
   inspecaoId String    @map("inspecao_id")
   url        String
   tipo       PhotoType
+  mediaKind  MediaKind @default(image) @map("media_kind")
   createdAt  DateTime  @default(now()) @map("created_at")
 
   inspecao Inspecao @relation(fields: [inspecaoId], references: [id])

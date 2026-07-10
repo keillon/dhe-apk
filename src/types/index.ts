@@ -84,12 +84,16 @@ export interface InspectionPhoto {
   inspecao_id: string;
   url: string;
   tipo: "antes" | "depois";
+  media_kind?: MediaKind;
   created_at: string;
 }
+
+export type MediaKind = "image" | "video";
 
 export interface CreateInspectionPhotoInput {
   tipo: "antes" | "depois";
   url: string;
+  media_kind?: MediaKind;
 }
 
 export interface CreateInspectionInput {

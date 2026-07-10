@@ -14,7 +14,7 @@ interface EquipmentPhotoPickerProps {
 export function EquipmentPhotoPicker({ value, onChange }: EquipmentPhotoPickerProps) {
   const previewUri = value
     ? value.startsWith("data:")
-      ? getPhotoPreviewUri({ uri: value, dataUrl: value })
+      ? getPhotoPreviewUri({ uri: value, dataUrl: value, kind: "image" })
       : resolveMediaUrl(value)
     : null;
 

@@ -1,9 +1,11 @@
-import { View, Text, Pressable, Modal } from "react-native";
-import { useState } from "react";
-import { PenLine, X } from "lucide-react-native";
+import { useEffect, useMemo, useState } from "react";
+import { View, Text, Pressable } from "react-native";
+import { PenLine, Play } from "lucide-react-native";
 import type { InspectionPhoto } from "@/types";
 import { DisplayImage } from "./DisplayImage";
+import { MediaPreviewModal } from "./MediaPreviewModal";
 import { resolveMediaUrl } from "@/utils/media-url";
+import { inferMediaKind, type MediaPreviewItem } from "@/utils/media";
 import { colors } from "@/theme";
 
 const THUMB_SIZE = 88;
@@ -13,27 +15,69 @@ interface InspectionGalleryProps {
   assinaturaUrl?: string;
 }
 
-function PhotoThumb({ uri, onPress }: { uri: string; onPress: () => void }) {
+function MediaThumb({
+  uri,
+  kind,
+  onPress,
+}: {
+  uri: string;
+  kind: "image" | "video";
+  onPress: () => void;
+}) {
   const resolved = resolveMediaUrl(uri);
+
   return (
     <Pressable onPress={onPress} style={{ marginRight: 8, marginBottom: 8 }}>
-      <DisplayImage
-        uri={resolved}
-        style={{
-          width: THUMB_SIZE,
-          height: THUMB_SIZE,
-          borderRadius: 12,
-        }}
-        resizeMode="cover"
-      />
+      {kind === "video" ? (
+        <View
+          style={{
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
+            borderRadius: 12,
+            backgroundColor: colors.elevated,
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <Play size={28} color={colors.primary} fill={colors.primary} />
+        </View>
+      ) : (
+        <DisplayImage
+          uri={resolved}
+          style={{
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
+            borderRadius: 12,
+          }}
+          resizeMode="cover"
+        />
+      )}
     </Pressable>
   );
 }
 
+function buildGalleryItems(fotos: InspectionPhoto[]): MediaPreviewItem[] {
+  return fotos.map((photo) => ({
+    id: String(photo.id),
+    uri: photo.url,
+    kind: inferMediaKind(photo.url, photo.media_kind),
+  }));
+}
+
 export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalleryProps) {
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const [signaturePreview, setSignaturePreview] = useState(false);
+
+  const allItems = useMemo(() => buildGalleryItems(fotos), [fotos]);
   const antes = fotos.filter((f) => f.tipo === "antes");
   const depois = fotos.filter((f) => f.tipo === "depois");
+
+  const openPreview = (photo: InspectionPhoto) => {
+    const index = allItems.findIndex((item) => item.id === String(photo.id));
+    setPreviewIndex(index >= 0 ? index : 0);
+    setPreviewVisible(true);
+  };
 
   const renderPhotoGrid = (title: string, photos: InspectionPhoto[], accent: string) => {
     if (photos.length === 0) return null;
@@ -45,16 +89,21 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
         </Text>
         <View className="flex-row flex-wrap">
           {photos.map((photo) => (
-            <PhotoThumb
+            <MediaThumb
               key={photo.id}
               uri={photo.url}
-              onPress={() => setPreviewUri(resolveMediaUrl(photo.url))}
+              kind={inferMediaKind(photo.url, photo.media_kind)}
+              onPress={() => openPreview(photo)}
             />
           ))}
         </View>
       </View>
     );
   };
+
+  const signatureItem: MediaPreviewItem[] = assinaturaUrl
+    ? [{ id: "signature", uri: assinaturaUrl, kind: "image" }]
+    : [];
 
   return (
     <View>
@@ -69,7 +118,7 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
               Assinatura do cliente
             </Text>
           </View>
-          <Pressable onPress={() => setPreviewUri(resolveMediaUrl(assinaturaUrl))}>
+          <Pressable onPress={() => setSignaturePreview(true)}>
             <DisplayImage
               uri={resolveMediaUrl(assinaturaUrl)}
               style={{
@@ -87,26 +136,19 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
         <Text className="text-sm text-dhe-textMuted">Nenhuma mídia disponível para exibir.</Text>
       ) : null}
 
-      <Modal visible={!!previewUri} transparent animationType="fade">
-        <Pressable
-          className="flex-1 items-center justify-center bg-black/90"
-          onPress={() => setPreviewUri(null)}
-        >
-          <Pressable
-            style={{ position: "absolute", top: 48, right: 20, zIndex: 10 }}
-            onPress={() => setPreviewUri(null)}
-          >
-            <X size={28} color="#fff" />
-          </Pressable>
-          {previewUri && (
-            <DisplayImage
-              uri={previewUri}
-              style={{ width: "92%", height: "75%" }}
-              resizeMode="contain"
-            />
-          )}
-        </Pressable>
-      </Modal>
+      <MediaPreviewModal
+        visible={previewVisible}
+        items={allItems}
+        initialIndex={previewIndex}
+        onClose={() => setPreviewVisible(false)}
+      />
+
+      <MediaPreviewModal
+        visible={signaturePreview}
+        items={signatureItem}
+        initialIndex={0}
+        onClose={() => setSignaturePreview(false)}
+      />
     </View>
   );
 }

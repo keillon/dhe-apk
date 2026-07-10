@@ -16,6 +16,8 @@ export {
 export type { LocalPhoto } from "./images";
 export { getPhotoPreviewUri, pickProfileImage, pickEquipmentImage } from "./images";
 export { resolveMediaUrl } from "./media-url";
+export { inferMediaKind } from "./media";
+export type { MediaKind, MediaPreviewItem } from "./media";
 export { getRouteParam } from "./route-params";
 export { logger, bootstrapLogging } from "./logger";
 export { isAdmin, getRoleLabel } from "./roles";

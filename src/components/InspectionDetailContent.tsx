@@ -97,7 +97,7 @@ export function InspectionDetailContent({
 
       {(inspection.fotos?.length || inspection.assinatura_url) ? (
         <View className="mb-2 rounded-2xl bg-dhe-elevated p-4">
-          <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos e assinatura</Text>
+          <Text className="mb-3 text-sm font-bold text-dhe-text">Fotos, vídeos e assinatura</Text>
           <InspectionGallery fotos={inspection.fotos} assinaturaUrl={inspection.assinatura_url} />
         </View>
       ) : null}

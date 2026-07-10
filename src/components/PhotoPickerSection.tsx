@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { View, Text, Pressable, ScrollView, Modal } from "react-native";
-import { Camera, ImagePlus, X, ZoomIn } from "lucide-react-native";
+import { View, Text, Pressable, ScrollView } from "react-native";
+import { Camera, ImagePlus, Play, Video, X, ZoomIn } from "lucide-react-native";
 import { feedback } from "@/services/feedback";
 import { DisplayImage } from "./DisplayImage";
+import { MediaPreviewModal } from "./MediaPreviewModal";
 import { colors } from "@/theme";
 import {
   pickFromGallery,
   captureMultipleFromCamera,
   getPhotoPreviewUri,
+  pickVideoFromGallery,
+  recordVideoFromCamera,
   type LocalPhoto,
 } from "@/utils/images";
-import { resolveMediaUrl } from "@/utils/media-url";
+import { localPhotosToPreviewItems } from "@/utils/media";
 
 interface PhotoPickerSectionProps {
   fotosAntes: LocalPhoto[];
@@ -22,6 +25,7 @@ interface PhotoPickerSectionProps {
 }
 
 const THUMB_SIZE = 96;
+const MAX_ITEMS = 5;
 
 function PhotoGrid({
   title,
@@ -36,8 +40,14 @@ function PhotoGrid({
   accentColor: string;
   error?: string;
 }) {
-  const [previewUri, setPreviewUri] = useState<string | null>(null);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [capturing, setCapturing] = useState(false);
+  const [recordingVideo, setRecordingVideo] = useState(false);
+
+  const previewItems = localPhotosToPreviewItems(
+    photos.map((photo) => ({ uri: getPhotoPreviewUri(photo), kind: photo.kind }))
+  );
 
   const addFromGallery = async () => {
     const picked = await pickFromGallery(photos.length);
@@ -59,10 +69,34 @@ function PhotoGrid({
     }
   };
 
+  const addVideoFromGallery = async () => {
+    const video = await pickVideoFromGallery(photos.length);
+    if (video) onChange([...photos, video]);
+  };
+
+  const addVideoFromCamera = async () => {
+    if (recordingVideo) return;
+    setRecordingVideo(true);
+
+    try {
+      const video = await recordVideoFromCamera(photos.length);
+      if (video) onChange([...photos, video]);
+    } finally {
+      setRecordingVideo(false);
+    }
+  };
+
   const removePhoto = async (index: number) => {
-    const confirmed = await feedback.confirm("Remover foto", "Deseja remover esta foto?", "Remover");
+    const confirmed = await feedback.confirm("Remover mídia", "Deseja remover este item?", "Remover");
     if (confirmed) onChange(photos.filter((_, i) => i !== index));
   };
+
+  const openPreview = (index: number) => {
+    setPreviewIndex(index);
+    setPreviewVisible(true);
+  };
+
+  const atLimit = photos.length >= MAX_ITEMS;
 
   return (
     <View className="mb-4">
@@ -70,7 +104,9 @@ function PhotoGrid({
         <Text className="text-sm font-bold" style={{ color: accentColor }}>
           {title} *
         </Text>
-        <Text className="text-xs text-dhe-textMuted">{photos.length}/5</Text>
+        <Text className="text-xs text-dhe-textMuted">
+          {photos.length}/{MAX_ITEMS}
+        </Text>
       </View>
 
       <ScrollView
@@ -82,18 +118,33 @@ function PhotoGrid({
         {photos.map((photo, index) => (
           <Pressable
             key={`${photo.uri}-${index}`}
-            onPress={() => setPreviewUri(resolveMediaUrl(getPhotoPreviewUri(photo)))}
+            onPress={() => openPreview(index)}
             style={{ marginRight: 8 }}
           >
-            <DisplayImage
-              uri={resolveMediaUrl(getPhotoPreviewUri(photo))}
-              style={{
-                width: THUMB_SIZE,
-                height: THUMB_SIZE,
-                borderRadius: 12,
-              }}
-              resizeMode="cover"
-            />
+            {photo.kind === "video" ? (
+              <View
+                style={{
+                  width: THUMB_SIZE,
+                  height: THUMB_SIZE,
+                  borderRadius: 12,
+                  backgroundColor: colors.elevated,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Play size={30} color={colors.primary} fill={colors.primary} />
+              </View>
+            ) : (
+              <DisplayImage
+                uri={getPhotoPreviewUri(photo)}
+                style={{
+                  width: THUMB_SIZE,
+                  height: THUMB_SIZE,
+                  borderRadius: 12,
+                }}
+                resizeMode="cover"
+              />
+            )}
             <Pressable
               onPress={() => removePhoto(index)}
               style={{
@@ -120,7 +171,11 @@ function PhotoGrid({
                 padding: 4,
               }}
             >
-              <ZoomIn size={10} color="#fff" />
+              {photo.kind === "video" ? (
+                <Video size={10} color="#fff" />
+              ) : (
+                <ZoomIn size={10} color="#fff" />
+              )}
             </View>
           </Pressable>
         ))}
@@ -150,21 +205,21 @@ function PhotoGrid({
       <View className="flex-row gap-2">
         <Pressable
           onPress={addFromCamera}
-          disabled={capturing || photos.length >= 5}
+          disabled={capturing || atLimit}
           className={`flex-1 flex-row items-center justify-center rounded-xl py-3 ${
-            capturing || photos.length >= 5 ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
+            capturing || atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
           }`}
         >
           <Camera size={16} color={colors.primary} />
           <Text className="ml-2 text-sm font-semibold text-dhe-primary">
-            {capturing ? "Abrindo..." : "Tirar fotos"}
+            {capturing ? "Abrindo..." : "Fotos"}
           </Text>
         </Pressable>
         <Pressable
           onPress={addFromGallery}
-          disabled={photos.length >= 5}
+          disabled={atLimit}
           className={`flex-1 flex-row items-center justify-center rounded-xl py-3 ${
-            photos.length >= 5 ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
+            atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
           }`}
         >
           <ImagePlus size={16} color={colors.primary} />
@@ -172,26 +227,37 @@ function PhotoGrid({
         </Pressable>
       </View>
 
-      <Modal visible={!!previewUri} transparent animationType="fade">
+      <View className="mt-2 flex-row gap-2">
         <Pressable
-          className="flex-1 items-center justify-center bg-black/90"
-          onPress={() => setPreviewUri(null)}
+          onPress={addVideoFromCamera}
+          disabled={recordingVideo || atLimit}
+          className={`flex-1 flex-row items-center justify-center rounded-xl py-3 ${
+            recordingVideo || atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
+          }`}
         >
-          <Pressable
-            style={{ position: "absolute", top: 48, right: 20, zIndex: 10 }}
-            onPress={() => setPreviewUri(null)}
-          >
-            <X size={28} color="#fff" />
-          </Pressable>
-          {previewUri && (
-            <DisplayImage
-              uri={resolveMediaUrl(previewUri)}
-              style={{ width: "92%", height: "75%" }}
-              resizeMode="contain"
-            />
-          )}
+          <Video size={16} color={colors.primary} />
+          <Text className="ml-2 text-sm font-semibold text-dhe-primary">
+            {recordingVideo ? "Abrindo..." : "Gravar vídeo"}
+          </Text>
         </Pressable>
-      </Modal>
+        <Pressable
+          onPress={addVideoFromGallery}
+          disabled={atLimit}
+          className={`flex-1 flex-row items-center justify-center rounded-xl py-3 ${
+            atLimit ? "bg-dhe-card opacity-50" : "bg-dhe-elevated"
+          }`}
+        >
+          <Video size={16} color={colors.primary} />
+          <Text className="ml-2 text-sm font-semibold text-dhe-primary">Vídeo galeria</Text>
+        </Pressable>
+      </View>
+
+      <MediaPreviewModal
+        visible={previewVisible}
+        items={previewItems}
+        initialIndex={previewIndex}
+        onClose={() => setPreviewVisible(false)}
+      />
     </View>
   );
 }
@@ -206,9 +272,9 @@ export function PhotoPickerSection({
 }: PhotoPickerSectionProps) {
   return (
     <View>
-      <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos *</Text>
+      <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos e vídeos *</Text>
       <Text className="mb-3 text-xs text-dhe-textMuted">
-        Obrigatório: pelo menos 1 foto em Antes e 1 em Depois.
+        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois.
       </Text>
       <PhotoGrid
         title="Antes"

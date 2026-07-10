@@ -25,11 +25,11 @@ export function validateInspectionForm(input: {
   }
 
   if (input.fotosAntesCount === 0) {
-    errors.fotosAntes = "Adicione pelo menos uma foto em Antes.";
+    errors.fotosAntes = "Adicione pelo menos uma foto ou vídeo em Antes.";
   }
 
   if (input.fotosDepoisCount === 0) {
-    errors.fotosDepois = "Adicione pelo menos uma foto em Depois.";
+    errors.fotosDepois = "Adicione pelo menos uma foto ou vídeo em Depois.";
   }
 
   if (!input.assinatura) {

@@ -12,7 +12,15 @@ async function ensureDir(dir: string): Promise<void> {
   await fs.mkdir(dir, { recursive: true });
 }
 
-export async function persistImageData(url: string, subdir: string): Promise<string> {
+function extensionForMime(mime: string): string {
+  if (mime.includes("png")) return "png";
+  if (mime.includes("webp")) return "webp";
+  if (mime.includes("quicktime")) return "mov";
+  if (mime.includes("mp4") || mime.includes("video")) return "mp4";
+  return "jpg";
+}
+
+export async function persistMediaData(url: string, subdir: string): Promise<string> {
   if (!url.startsWith("data:")) {
     return url;
   }
@@ -22,7 +30,7 @@ export async function persistImageData(url: string, subdir: string): Promise<str
 
   const mime = match[1];
   const base64 = match[2];
-  const ext = mime.includes("png") ? "png" : "jpg";
+  const ext = extensionForMime(mime);
   const fileName = `${crypto.randomUUID()}.${ext}`;
   const folder = path.join(UPLOAD_ROOT, subdir);
   await ensureDir(folder);
@@ -34,12 +42,17 @@ export async function persistImageData(url: string, subdir: string): Promise<str
   return publicPath;
 }
 
+/** @deprecated Use persistMediaData */
+export async function persistImageData(url: string, subdir: string): Promise<string> {
+  return persistMediaData(url, subdir);
+}
+
 export async function persistInspectionMedia(
   inspecaoId: string,
-  fotos: Array<{ tipo: "antes" | "depois"; url: string }>,
+  fotos: Array<{ tipo: "antes" | "depois"; url: string; media_kind?: "image" | "video" }>,
   assinaturaUrl: string
 ): Promise<{
-  fotos: Array<{ tipo: "antes" | "depois"; url: string }>;
+  fotos: Array<{ tipo: "antes" | "depois"; url: string; media_kind: "image" | "video" }>;
   assinaturaUrl: string;
 }> {
   const baseDir = `inspections/${inspecaoId}`;
@@ -47,11 +60,12 @@ export async function persistInspectionMedia(
   const persistedFotos = await Promise.all(
     fotos.map(async (foto) => ({
       tipo: foto.tipo,
-      url: await persistImageData(foto.url, `${baseDir}/fotos`),
+      media_kind: foto.media_kind ?? "image",
+      url: await persistMediaData(foto.url, `${baseDir}/fotos`),
     }))
   );
 
-  const persistedSignature = await persistImageData(assinaturaUrl, `${baseDir}/assinatura`);
+  const persistedSignature = await persistMediaData(assinaturaUrl, `${baseDir}/assinatura`);
 
   return {
     fotos: persistedFotos,
