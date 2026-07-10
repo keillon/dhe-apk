@@ -1,55 +1,167 @@
-import { useState, useEffect } from "react";
-import { Text, View, StyleSheet, Pressable } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Text,
+  View,
+  StyleSheet,
+  Pressable,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { X, QrCode } from "lucide-react-native";
+import { Camera, Keyboard, QrCode, X, Zap, ZapOff } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { Loading } from "@/components";
+import { Button, Input, Loading } from "@/components";
 import { api } from "@/services/api";
 import { colors } from "@/theme";
 
+type ScanMode = "camera" | "manual";
+
+function normalizeQrCode(value: string): string {
+  return value.trim().toUpperCase();
+}
+
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
+  const [mode, setMode] = useState<ScanMode>("camera");
+  const [torchEnabled, setTorchEnabled] = useState(false);
+  const [manualCode, setManualCode] = useState("");
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
-    if (!permission?.granted) {
+    if (mode === "camera" && permission && !permission.granted) {
       requestPermission();
     }
-  }, [permission, requestPermission]);
+  }, [mode, permission, requestPermission]);
 
-  const handleBarCodeScanned = async ({ data }: { data: string }) => {
-    if (scanned || loading) return;
+  const lookupEquipment = useCallback(
+    async (rawCode: string) => {
+      const code = normalizeQrCode(rawCode);
 
-    setScanned(true);
-    setLoading(true);
-    setError("");
-
-    try {
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const equipment = await api.getEquipmentByQrCode(data.trim());
-
-      if (equipment) {
-        router.replace(`/equipment/${equipment.id}`);
-      } else {
-        setError(`Equipamento "${data}" não encontrado no banco de dados.`);
-        setScanned(false);
+      if (!code) {
+        setError("Digite o código do QR Code.");
+        return;
       }
-    } catch {
-      setError("Erro ao buscar equipamento. Tente novamente.");
-      setScanned(false);
-    } finally {
-      setLoading(false);
-    }
+
+      if (loading) return;
+
+      setScanned(true);
+      setLoading(true);
+      setError("");
+
+      try {
+        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        const equipment = await api.getEquipmentByQrCode(code);
+
+        if (equipment) {
+          router.replace(`/equipment/${equipment.id}`);
+        } else {
+          setError(`Equipamento "${code}" não encontrado no banco de dados.`);
+          setScanned(false);
+        }
+      } catch {
+        setError("Erro ao buscar equipamento. Tente novamente.");
+        setScanned(false);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, router]
+  );
+
+  const handleBarCodeScanned = ({ data }: { data: string }) => {
+    if (scanned || loading || mode !== "camera") return;
+    void lookupEquipment(data);
   };
 
-  if (!permission) return <Loading fullScreen />;
+  const handleManualSubmit = () => {
+    void lookupEquipment(manualCode);
+  };
 
-  if (!permission.granted) {
+  const switchMode = (next: ScanMode) => {
+    if (next === "manual") {
+      setTorchEnabled(false);
+    }
+
+    setMode(next);
+    setError("");
+    setScanned(false);
+  };
+
+  if (!permission && mode === "camera") return <Loading fullScreen />;
+
+  if (mode === "manual") {
+    return (
+      <SafeAreaView className="flex-1 bg-dhe-bg">
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <View className="flex-row items-center justify-between px-5 pt-2">
+            <Text className="text-lg font-bold text-dhe-text">Digitar código</Text>
+            <Pressable
+              onPress={() => router.back()}
+              className="rounded-full bg-dhe-overlay p-2"
+            >
+              <X size={24} color={colors.text} />
+            </Pressable>
+          </View>
+
+          <View className="flex-1 px-5 pt-6">
+            <QrCode size={56} color={colors.primary} />
+            <Text className="mt-4 text-base text-dhe-text">
+              Informe o código impresso abaixo do QR Code
+            </Text>
+            <Text className="mt-1 text-sm text-dhe-textSecondary">
+              Exemplo: DHE-0001
+            </Text>
+
+            <View className="mt-8">
+              <Input
+                label="Código do equipamento"
+                value={manualCode}
+                onChangeText={(text) => {
+                  setManualCode(text.toUpperCase());
+                  if (error) setError("");
+                }}
+                placeholder="DHE-0001"
+                autoCapitalize="characters"
+                autoCorrect={false}
+                autoFocus
+                returnKeyType="search"
+                onSubmitEditing={handleManualSubmit}
+                error={error}
+              />
+            </View>
+
+            <Button
+              title="Buscar equipamento"
+              onPress={handleManualSubmit}
+              loading={loading}
+              fullWidth
+            />
+
+            {permission?.granted && (
+              <Button
+                title="Usar câmera"
+                variant="outline"
+                onPress={() => switchMode("camera")}
+                icon={<Camera size={18} color={colors.primary} />}
+                fullWidth
+                className="mt-3"
+              />
+            )}
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
+
+  if (!permission?.granted) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-dhe-bg px-5">
         <QrCode size={64} color={colors.primary} />
@@ -62,6 +174,14 @@ export default function ScanScreen() {
         >
           <Text className="font-semibold text-dhe-bg">Permitir câmera</Text>
         </Pressable>
+        <Button
+          title="Digitar código manualmente"
+          variant="outline"
+          onPress={() => switchMode("manual")}
+          icon={<Keyboard size={18} color={colors.primary} />}
+          fullWidth
+          className="mt-4"
+        />
       </SafeAreaView>
     );
   }
@@ -71,22 +191,38 @@ export default function ScanScreen() {
       <CameraView
         style={StyleSheet.absoluteFill}
         facing="back"
+        enableTorch={torchEnabled}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-        onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={scanned || loading ? undefined : handleBarCodeScanned}
       />
 
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1" pointerEvents="box-none">
         <View className="flex-row items-center justify-between px-5 pt-2">
           <Text className="text-lg font-bold text-dhe-text">Escanear QR Code</Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="rounded-full bg-dhe-overlay p-2"
-          >
-            <X size={24} color={colors.text} />
-          </Pressable>
+
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => setTorchEnabled((current) => !current)}
+              className="rounded-full bg-dhe-overlay p-2"
+              accessibilityLabel={torchEnabled ? "Desligar flash" : "Ligar flash"}
+            >
+              {torchEnabled ? (
+                <Zap size={22} color={colors.primary} fill={colors.primary} />
+              ) : (
+                <ZapOff size={22} color={colors.text} />
+              )}
+            </Pressable>
+
+            <Pressable
+              onPress={() => router.back()}
+              className="rounded-full bg-dhe-overlay p-2"
+            >
+              <X size={24} color={colors.text} />
+            </Pressable>
+          </View>
         </View>
 
-        <View className="flex-1 items-center justify-center">
+        <View className="flex-1 items-center justify-center" pointerEvents="none">
           <View className="h-64 w-64 rounded-3xl border-2 border-dhe-primary">
             <View className="absolute -left-0.5 -top-0.5 h-8 w-8 rounded-tl-lg border-l-4 border-t-4 border-dhe-primary" />
             <View className="absolute -right-0.5 -top-0.5 h-8 w-8 rounded-tr-lg border-r-4 border-t-4 border-dhe-primary" />
@@ -101,16 +237,24 @@ export default function ScanScreen() {
           </Text>
         </View>
 
-        {(loading || error) && (
-          <View className="mx-5 mb-8 rounded-2xl bg-dhe-overlay p-4">
-            {loading && (
-              <Text className="text-center text-dhe-text">Buscando equipamento...</Text>
-            )}
-            {error && (
-              <Text className="text-center text-dhe-danger">{error}</Text>
-            )}
-          </View>
-        )}
+        <View className="px-5 pb-8">
+          {(loading || error) && (
+            <View className="mb-4 rounded-2xl bg-dhe-overlay p-4">
+              {loading && (
+                <Text className="text-center text-dhe-text">Buscando equipamento...</Text>
+              )}
+              {error && <Text className="text-center text-dhe-danger">{error}</Text>}
+            </View>
+          )}
+
+          <Button
+            title="Digitar código manualmente"
+            variant="secondary"
+            onPress={() => switchMode("manual")}
+            icon={<Keyboard size={18} color={colors.text} />}
+            fullWidth
+          />
+        </View>
       </SafeAreaView>
     </View>
   );
