@@ -1,13 +1,26 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Pressable, Text, View } from "react-native";
+import {
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Fingerprint, Lock } from "lucide-react-native";
 import {
   authenticateWithBiometric,
   getAppLockSettings,
   verifyAppLockPin,
 } from "@/services/app-lock";
 import { useAuthStore } from "@/store";
+import { DheLogo } from "./DheLogo";
 import { Input } from "./Input";
 import { Button } from "./Button";
+import { Card } from "./Card";
 import { colors } from "@/theme";
 
 interface AppLockGateProps {
@@ -23,9 +36,11 @@ export function AppLockGate({ children }: AppLockGateProps) {
   const appState = useRef(AppState.currentState);
 
   const settings = getAppLockSettings();
+  const showLock = locked && settings.enabled;
 
   const tryBiometricUnlock = useCallback(async () => {
-    if (!settings.enabled || !settings.useBiometric) return false;
+    const current = getAppLockSettings();
+    if (!current.enabled || !current.useBiometric) return false;
     setUnlocking(true);
     try {
       const success = await authenticateWithBiometric();
@@ -38,7 +53,7 @@ export function AppLockGate({ children }: AppLockGateProps) {
     } finally {
       setUnlocking(false);
     }
-  }, [settings.enabled, settings.useBiometric]);
+  }, []);
 
   const lockIfNeeded = useCallback(() => {
     if (!isAuthenticated) {
@@ -95,45 +110,150 @@ export function AppLockGate({ children }: AppLockGateProps) {
     }
   };
 
-  if (!locked || !settings.enabled) {
-    return <>{children}</>;
-  }
-
   return (
-    <View className="absolute inset-0 z-50 flex-1 items-center justify-center bg-dhe-bg px-6">
-      <Text className="mb-2 text-2xl font-bold text-dhe-text">App bloqueado</Text>
-      <Text className="mb-6 text-center text-sm text-dhe-textSecondary">
-        Confirme sua identidade para continuar usando o DHE.
-      </Text>
+    <View style={styles.root}>
+      {!showLock ? children : null}
 
-      <Input
-        label="PIN"
-        value={pin}
-        onChangeText={setPin}
-        keyboardType="number-pad"
-        secureTextEntry
-        maxLength={8}
-        placeholder="••••"
-        className="mb-4 w-full"
-      />
+      {showLock ? (
+        <View style={styles.overlay}>
+          <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              style={styles.safeArea}
+            >
+              <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <DheLogo variant="white" size="sm" />
 
-      {error ? <Text className="mb-4 text-sm text-dhe-danger">{error}</Text> : null}
+                <View style={styles.iconWrap}>
+                  <Lock size={28} color={colors.primary} />
+                </View>
 
-      <Button
-        title="Desbloquear"
-        onPress={handlePinUnlock}
-        loading={unlocking}
-        fullWidth
-        className="mb-3"
-      />
+                <Text style={styles.title}>App bloqueado</Text>
+                <Text style={styles.subtitle}>
+                  Confirme sua identidade para continuar usando o DHE.
+                </Text>
 
-      {settings.useBiometric ? (
-        <Pressable onPress={() => void tryBiometricUnlock()} className="py-3">
-          <Text className="text-center text-sm font-semibold text-dhe-primary">
-            Usar biometria
-          </Text>
-        </Pressable>
+                <View style={styles.form}>
+                  <Card>
+                    <Input
+                    label="PIN"
+                    value={pin}
+                    onChangeText={(value) => {
+                      setPin(value);
+                      if (error) setError("");
+                    }}
+                    keyboardType="number-pad"
+                    secureTextEntry
+                    maxLength={8}
+                    placeholder="••••"
+                    className="mb-0"
+                    />
+
+                    {error ? <Text style={styles.error}>{error}</Text> : null}
+
+                    <Button
+                    title="Desbloquear"
+                    onPress={() => void handlePinUnlock()}
+                    loading={unlocking}
+                    fullWidth
+                      className="mt-4"
+                    />
+
+                    {settings.useBiometric ? (
+                      <Pressable
+                        onPress={() => void tryBiometricUnlock()}
+                        style={styles.biometricButton}
+                        disabled={unlocking}
+                      >
+                        <Fingerprint size={18} color={colors.primary} />
+                        <Text style={styles.biometricText}>Usar biometria</Text>
+                      </Pressable>
+                    ) : null}
+                  </Card>
+                </View>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          </SafeAreaView>
+        </View>
       ) : null}
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: colors.bg,
+    zIndex: 999,
+    elevation: 999,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    width: "100%",
+  },
+  iconWrap: {
+    marginTop: 24,
+    marginBottom: 12,
+    height: 56,
+    width: 56,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 28,
+    backgroundColor: colors.elevated,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  title: {
+    marginBottom: 8,
+    fontSize: 24,
+    fontWeight: "700",
+    color: colors.text,
+    textAlign: "center",
+  },
+  subtitle: {
+    marginBottom: 24,
+    maxWidth: 320,
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  form: {
+    width: "100%",
+    maxWidth: 400,
+    alignSelf: "stretch",
+  },
+  error: {
+    marginTop: 12,
+    fontSize: 14,
+    color: colors.danger,
+    textAlign: "center",
+  },
+  biometricButton: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  biometricText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+});
