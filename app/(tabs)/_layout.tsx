@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { Home, Users, BarChart3, User, ClipboardList, Settings2 } from "lucide-react-native";
+import { House, Users, BarChart3, User, ClipboardList, Settings2 } from "lucide-react-native";
 import { useAuthStore } from "@/store";
 import { isAdmin } from "@/utils/roles";
 import { colors } from "@/theme";
@@ -32,7 +32,7 @@ export default function TabsLayout() {
         name="index"
         options={{
           title: "Início",
-          tabBarIcon: ({ color, size }) => <Home size={size} color={color} />,
+          tabBarIcon: ({ color, size }) => <House size={size} color={color} />,
         }}
       />
       <Tabs.Screen

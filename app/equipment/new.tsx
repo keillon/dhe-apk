@@ -9,6 +9,7 @@ import {
   Card,
   DateInput,
   ErrorState,
+  EquipmentPhotoPicker,
   Input,
   Loading,
   PageContainer,
@@ -44,6 +45,7 @@ export default function NewEquipmentScreen() {
   const [localizacao, setLocalizacao] = useState("");
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | undefined>();
 
   const clientOptions =
     clients?.map((c) => ({ id: c.id, label: c.empresa })) ?? [];
@@ -72,6 +74,7 @@ export default function NewEquipmentScreen() {
         localizacao: localizacao.trim() || "Não informado",
         status,
         proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
+        foto_url: fotoUrl,
       });
 
       feedback.toast.success(`Equipamento criado com QR ${equipment.qr_code}.`);
@@ -124,6 +127,7 @@ export default function NewEquipmentScreen() {
             placeholder="Selecione o cliente"
           />
           <Input label="Nome do equipamento" value={nome} onChangeText={setNome} />
+          <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
           <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
           <Input label="Marca" value={marca} onChangeText={setMarca} />
           <Input label="Modelo" value={modelo} onChangeText={setModelo} />

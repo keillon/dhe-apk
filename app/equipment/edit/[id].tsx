@@ -8,6 +8,7 @@ import {
   Button,
   DateInput,
   ErrorState,
+  EquipmentPhotoPicker,
   Input,
   Loading,
   PageContainer,
@@ -21,7 +22,7 @@ import {
   useRequireAdmin,
 } from "@/hooks";
 import { feedback } from "@/services/feedback";
-import { dateBRToISO, formatDate, getApiErrorMessage } from "@/utils";
+import { dateBRToISO, formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";
 import type { EquipmentStatus } from "@/types";
 
@@ -50,6 +51,7 @@ export default function EditEquipmentScreen() {
   const [localizacao, setLocalizacao] = useState("");
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
+  const [fotoUrl, setFotoUrl] = useState<string | undefined>();
 
   useEffect(() => {
     if (!equipment) return;
@@ -65,6 +67,7 @@ export default function EditEquipmentScreen() {
     setProximaManutencao(
       equipment.proxima_manutencao ? formatDate(equipment.proxima_manutencao) : ""
     );
+    setFotoUrl(equipment.foto_url ? resolveMediaUrl(equipment.foto_url) : undefined);
   }, [equipment]);
 
   const clientOptions =
@@ -96,6 +99,7 @@ export default function EditEquipmentScreen() {
           localizacao: localizacao.trim(),
           status,
           proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
+          foto_url: fotoUrl,
         },
       });
       feedback.toast.success("Equipamento atualizado.");
@@ -148,6 +152,7 @@ export default function EditEquipmentScreen() {
             onChange={setClienteId}
           />
           <Input label="Nome" value={nome} onChangeText={setNome} />
+          <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
           <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
           <Input label="Marca" value={marca} onChangeText={setMarca} />
           <Input label="Modelo" value={modelo} onChangeText={setModelo} />

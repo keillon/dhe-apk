@@ -15,7 +15,7 @@ import {
 } from "@/components";
 import { useEquipment, useDeleteEquipment, useRequireAdmin } from "@/hooks";
 import { feedback } from "@/services/feedback";
-import { formatDate, getApiErrorMessage } from "@/utils";
+import { formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";
 
 export default function EquipmentScreen() {
@@ -63,7 +63,7 @@ export default function EquipmentScreen() {
             <View className="h-48 items-center justify-center overflow-hidden rounded-2xl bg-dhe-elevated">
               {equipment.foto_url ? (
                 <Image
-                  source={{ uri: equipment.foto_url }}
+                  source={{ uri: resolveMediaUrl(equipment.foto_url) }}
                   style={{ width: "100%", height: 192, borderRadius: 16 }}
                   contentFit="cover"
                 />

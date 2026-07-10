@@ -2,9 +2,10 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Wrench, ChevronRight, Pencil, Plus } from "lucide-react-native";
-import { Button, Card, Loading, ErrorState, EmptyState } from "@/components";
+import { Button, Card, Loading, ErrorState, EmptyState, DisplayImage } from "@/components";
 import { useClient, useEquipments, useRequireAdmin } from "@/hooks";
 import { colors } from "@/theme";
+import { resolveMediaUrl } from "@/utils";
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -71,8 +72,17 @@ export default function ClientDetailScreen() {
               onPress={() => router.push(`/equipment/${eq.id}`)}
             >
               <Card className="mb-3 flex-row items-center">
-                <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
-                  <Wrench size={22} color={colors.primary} />
+                <View className="mr-4 h-12 w-12 overflow-hidden rounded-xl bg-dhe-primary/20">
+                  {eq.foto_url ? (
+                    <DisplayImage
+                      uri={resolveMediaUrl(eq.foto_url)}
+                      style={{ width: 48, height: 48 }}
+                    />
+                  ) : (
+                    <View className="h-12 w-12 items-center justify-center">
+                      <Wrench size={22} color={colors.primary} />
+                    </View>
+                  )}
                 </View>
                 <View className="flex-1">
                   <Text className="font-semibold text-dhe-text">{eq.nome}</Text>

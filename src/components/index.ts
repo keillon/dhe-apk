@@ -26,6 +26,7 @@ export { StatusBadge } from "./StatusBadge";
 export { OfflineBanner } from "./OfflineBanner";
 export { Screen } from "./Screen";
 export { BackHeader } from "./BackHeader";
+export { EquipmentPhotoPicker } from "./EquipmentPhotoPicker";
 export { QrPrintCard } from "./QrPrintCard";
 export { SelectField } from "./SelectField";
 export type { SelectOption } from "./SelectField";

@@ -18,6 +18,41 @@ function guessMimeType(uri: string, mimeType?: string | null): string {
 
 const PROFILE_IMAGE_QUALITY = 0.4;
 
+const EQUIPMENT_IMAGE_QUALITY = 0.5;
+
+export async function pickEquipmentImage(source: "camera" | "gallery"): Promise<LocalPhoto | null> {
+  if (source === "camera") {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      await feedback.alert("Permissão necessária", "Permita o acesso à câmera para tirar uma foto.");
+      return null;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      quality: EQUIPMENT_IMAGE_QUALITY,
+      base64: true,
+    });
+
+    if (result.canceled || !result.assets[0]) return null;
+    return assetToLocalPhoto(result.assets[0]);
+  }
+
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== "granted") {
+    await feedback.alert("Permissão necessária", "Permita o acesso à galeria para escolher uma foto.");
+    return null;
+  }
+
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ["images"],
+    quality: EQUIPMENT_IMAGE_QUALITY,
+    base64: true,
+  });
+
+  if (result.canceled || !result.assets[0]) return null;
+  return assetToLocalPhoto(result.assets[0]);
+}
+
 export async function pickProfileImage(source: "camera" | "gallery"): Promise<LocalPhoto | null> {
   if (source === "camera") {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();

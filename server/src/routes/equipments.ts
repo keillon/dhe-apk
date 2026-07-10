@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "../lib/prisma";
 import { mapEquipment } from "../lib/mappers";
 import { generateNextQrCode } from "../lib/qr-code";
+import { persistImageData } from "../lib/media-storage";
 import { parseOptionalDate } from "../lib/parse-date";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
@@ -22,6 +23,17 @@ const equipmentSchema = z.object({
 });
 
 export const equipmentsRouter = Router();
+
+async function resolveEquipmentPhoto(
+  fotoUrl: string | undefined,
+  equipmentId: string
+): Promise<string | null> {
+  if (!fotoUrl) return null;
+  if (fotoUrl.startsWith("data:")) {
+    return persistImageData(fotoUrl, `equipments/${equipmentId}`);
+  }
+  return fotoUrl;
+}
 
 equipmentsRouter.use(authMiddleware);
 
@@ -122,13 +134,23 @@ equipmentsRouter.post("/", adminMiddleware, async (req, res) => {
         ano: data.ano,
         localizacao: data.localizacao,
         status: data.status,
-        fotoUrl: data.foto_url || null,
+        fotoUrl: null,
         proximaManutencao,
       },
       include: { cliente: true },
     });
 
-    res.status(201).json(mapEquipment(equipment));
+    const persistedPhoto = await resolveEquipmentPhoto(data.foto_url, equipment.id);
+    const finalEquipment =
+      persistedPhoto !== equipment.fotoUrl
+        ? await prisma.equipamento.update({
+            where: { id: equipment.id },
+            data: { fotoUrl: persistedPhoto },
+            include: { cliente: true },
+          })
+        : equipment;
+
+    res.status(201).json(mapEquipment(finalEquipment));
   } catch (error) {
     console.error("Erro ao criar equipamento:", error);
     res.status(500).json({ error: "Erro ao criar equipamento" });
@@ -162,6 +184,8 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
       ? parseOptionalDate(data.proxima_manutencao)
       : null;
 
+    const fotoUrl = await resolveEquipmentPhoto(data.foto_url, id);
+
     const equipment = await prisma.equipamento.update({
       where: { id },
       data: {
@@ -175,7 +199,7 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
         ano: data.ano,
         localizacao: data.localizacao,
         status: data.status,
-        fotoUrl: data.foto_url || null,
+        fotoUrl,
         proximaManutencao,
       },
       include: { cliente: true },

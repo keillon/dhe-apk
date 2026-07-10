@@ -248,14 +248,18 @@ export const api = {
   async createEquipment(data: EquipmentInput): Promise<Equipment> {
     if (!isApiConfigured) return demoData.createEquipment(data);
 
-    const { data: equipment } = await http.post<Equipment>("/equipments", data);
+    const { data: equipment } = await http.post<Equipment>("/equipments", data, {
+      timeout: 120000,
+    });
     return equipment;
   },
 
   async updateEquipment(id: string, data: EquipmentInput): Promise<Equipment> {
     if (!isApiConfigured) return demoData.updateEquipment(id, data);
 
-    const { data: equipment } = await http.put<Equipment>(`/equipments/${id}`, data);
+    const { data: equipment } = await http.put<Equipment>(`/equipments/${id}`, data, {
+      timeout: 120000,
+    });
     return equipment;
   },
 
