@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View, Text, Pressable, ScrollView } from "react-native";
 import { Camera, ImagePlus, Video, X, ZoomIn } from "lucide-react-native";
 import { feedback } from "@/services/feedback";
@@ -17,7 +17,6 @@ import {
 } from "@/utils/images";
 import { localPhotosToPreviewItems } from "@/utils/media";
 import {
-  askVideoAudioPreference,
   createLocalVideoFromUri,
   getLocalMediaThumbUri,
 } from "@/utils/video";
@@ -50,7 +49,6 @@ function PhotoGrid({
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [capturing, setCapturing] = useState(false);
-  const [recordWithAudio, setRecordWithAudio] = useState(true);
   const [showVideoRecorder, setShowVideoRecorder] = useState(false);
 
   const previewItems = localPhotosToPreviewItems(
@@ -86,17 +84,13 @@ function PhotoGrid({
     if (video) onChange([...photos, video]);
   };
 
-  const addVideoFromCamera = async () => {
-    const withAudio = await askVideoAudioPreference();
-    if (withAudio === null) return;
-
-    setRecordWithAudio(withAudio);
+  const addVideoFromCamera = () => {
     setShowVideoRecorder(true);
   };
 
-  const handleVideoRecorded = async (uri: string) => {
+  const handleVideoRecorded = async (uri: string, withAudio: boolean) => {
     try {
-      const video = await createLocalVideoFromUri(uri, recordWithAudio);
+      const video = await createLocalVideoFromUri(uri, withAudio);
       onChange([...photos, video]);
     } catch (error) {
       if (error instanceof Error && error.message === "VIDEO_TOO_LARGE") {
@@ -287,9 +281,8 @@ function PhotoGrid({
 
       <VideoRecordModal
         visible={showVideoRecorder}
-        withAudio={recordWithAudio}
         onClose={() => setShowVideoRecorder(false)}
-        onRecorded={(uri) => void handleVideoRecorded(uri)}
+        onRecorded={(uri, withAudio) => void handleVideoRecorded(uri, withAudio)}
       />
     </View>
   );
@@ -307,7 +300,7 @@ export function PhotoPickerSection({
     <View>
       <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos e vídeos *</Text>
       <Text className="mb-3 text-xs text-dhe-textMuted">
-        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois. Ao gravar, escolha com ou sem áudio.
+        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois. Na gravação, escolha áudio na própria tela.
       </Text>
       <PhotoGrid
         title="Antes"

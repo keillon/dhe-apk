@@ -51,6 +51,9 @@ export function MediaPreviewModal({
     setScrollEnabled(true);
   };
 
+  const currentItem = items[currentIndex];
+  const showImageHint = currentItem?.kind !== "video";
+
   if (!visible || items.length === 0) return null;
 
   return (
@@ -104,30 +107,32 @@ export function MediaPreviewModal({
             )}
           />
 
-          <View className="absolute bottom-6 left-0 right-0 items-center px-6">
-            <View
-              style={{
-                backgroundColor: "rgba(0,0,0,0.82)",
-                borderRadius: 12,
-                paddingHorizontal: 16,
-                paddingVertical: 10,
-                borderWidth: 1,
-                borderColor: "rgba(255,255,255,0.15)",
-              }}
-            >
-              <Text
+          {showImageHint ? (
+            <View className="absolute bottom-6 left-0 right-0 items-center px-6">
+              <View
                 style={{
-                  textAlign: "center",
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: "#FFFFFF",
-                  lineHeight: 18,
+                  backgroundColor: "rgba(0,0,0,0.82)",
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  paddingVertical: 10,
+                  borderWidth: 1,
+                  borderColor: "rgba(255,255,255,0.15)",
                 }}
               >
-                Arraste para o lado • Pinça ou toque duplo para zoom em fotos
-              </Text>
+                <Text
+                  style={{
+                    textAlign: "center",
+                    fontSize: 12,
+                    fontWeight: "600",
+                    color: "#FFFFFF",
+                    lineHeight: 18,
+                  }}
+                >
+                  Arraste para o lado • Pinça ou toque duplo para zoom
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : null}
         </SafeAreaView>
       </GestureHandlerRootView>
     </Modal>

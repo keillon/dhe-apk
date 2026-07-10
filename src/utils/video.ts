@@ -1,21 +1,8 @@
 import * as VideoThumbnails from "expo-video-thumbnails";
 import * as FileSystem from "expo-file-system/legacy";
-import { feedback } from "@/services/feedback";
 import type { LocalPhoto } from "./images";
 
 const MAX_VIDEO_BYTES = 20 * 1024 * 1024;
-
-export async function askVideoAudioPreference(): Promise<boolean | null> {
-  const choice = await feedback.choose("Gravar vídeo", "Como deseja gravar o vídeo?", [
-    { text: "Cancelar", value: "cancel", style: "cancel" },
-    { text: "Sem áudio", value: "mute", style: "default" },
-    { text: "Com áudio", value: "audio", style: "primary" },
-  ]);
-
-  if (choice === "audio") return true;
-  if (choice === "mute") return false;
-  return null;
-}
 
 export async function generateVideoThumbnail(uri: string): Promise<string | undefined> {
   try {
