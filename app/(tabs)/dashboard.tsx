@@ -12,7 +12,8 @@ import {
   TrendingUp,
   Download,
 } from "lucide-react-native";
-import { Card, StatCard, Loading, ErrorState, PageContainer, Button, SimpleBarChart } from "@/components";
+import { Card, StatCard, Loading, ErrorState, PageContainer, Button } from "@/components";
+import { SimpleBarChart } from "@/components/SimpleBarChart";
 import { useDashboardStats, useEquipments, useRequireAdmin } from "@/hooks";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
