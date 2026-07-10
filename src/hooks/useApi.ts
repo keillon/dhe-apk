@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/services/api";
+import { getRouteParam } from "@/utils/route-params";
 import type {
   ClientInput,
   CreateInspectionInput,
@@ -24,11 +25,19 @@ export function useEquipments() {
   });
 }
 
-export function useEquipment(id: string) {
+export function useEquipment(id: string | string[] | undefined) {
+  const equipmentId = getRouteParam(id);
+
   return useQuery({
-    queryKey: ["equipment", id],
-    queryFn: () => api.getEquipmentById(id),
-    enabled: !!id,
+    queryKey: ["equipment", equipmentId],
+    queryFn: async () => {
+      const equipment = await api.getEquipmentById(equipmentId!);
+      if (!equipment) {
+        throw new Error("Equipamento não encontrado.");
+      }
+      return equipment;
+    },
+    enabled: !!equipmentId,
   });
 }
 

@@ -19,17 +19,29 @@ import {
   PageContainer,
 } from "@/components";
 import { useMyInspections } from "@/hooks";
-import { formatDateTime, getContaminationLabel, getContaminationColor } from "@/utils";
-import type { Equipment, Inspection } from "@/types";
+import { formatDateTime, getContaminationLabel, getContaminationColor, getRouteParam } from "@/utils";
+import type { Inspection } from "@/types";
 import { colors } from "@/theme";
 
-function getUniqueEquipments(inspections: Inspection[]): Equipment[] {
-  const map = new Map<string, Equipment>();
+interface EquipmentListItem {
+  id: string;
+  nome: string;
+  subtitle: string;
+}
+
+function getEquipmentItems(inspections: Inspection[]): EquipmentListItem[] {
+  const map = new Map<string, EquipmentListItem>();
 
   for (const inspection of inspections) {
-    if (inspection.equipamento && !map.has(inspection.equipamento.id)) {
-      map.set(inspection.equipamento.id, inspection.equipamento);
-    }
+    const equipmentId = getRouteParam(inspection.equipamento?.id ?? inspection.equipamento_id);
+    if (!equipmentId || map.has(equipmentId)) continue;
+
+    const equipment = inspection.equipamento;
+    map.set(equipmentId, {
+      id: equipmentId,
+      nome: equipment?.nome ?? "Equipamento",
+      subtitle: `${equipment?.cliente?.empresa ?? equipment?.empresa ?? "—"} • ${equipment?.qr_code ?? equipmentId}`,
+    });
   }
 
   return Array.from(map.values());
@@ -40,9 +52,16 @@ export default function ActivityScreen() {
   const { data: inspections, isLoading, error, refetch } = useMyInspections();
 
   const equipments = useMemo(
-    () => getUniqueEquipments(inspections ?? []),
+    () => getEquipmentItems(inspections ?? []),
     [inspections]
   );
+
+  const openEquipment = (equipmentId: string) => {
+    router.push({
+      pathname: "/equipment/[id]",
+      params: { id: equipmentId },
+    });
+  };
 
   if (isLoading) return <Loading fullScreen />;
   if (error) return <ErrorState onRetry={refetch} />;
@@ -89,16 +108,17 @@ export default function ActivityScreen() {
               equipments.map((equipment) => (
                 <Pressable
                   key={equipment.id}
-                  onPress={() => router.push(`/equipment/${equipment.id}`)}
+                  onPress={() => openEquipment(equipment.id)}
+                  className="mb-3"
                 >
-                  <Card className="mb-3 flex-row items-center">
+                  <Card className="flex-row items-center">
                     <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
                       <Wrench size={22} color={colors.primary} />
                     </View>
                     <View className="flex-1">
                       <Text className="font-semibold text-dhe-text">{equipment.nome}</Text>
                       <Text className="mt-1 text-xs text-dhe-textSecondary">
-                        {equipment.cliente?.empresa ?? equipment.empresa} • {equipment.qr_code}
+                        {equipment.subtitle}
                       </Text>
                     </View>
                     <ChevronRight size={18} color={colors.textMuted} />

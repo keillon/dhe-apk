@@ -16,15 +16,16 @@ import {
 import { useEquipment, useDeleteEquipment } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
-import { formatDate, getApiErrorMessage, isAdmin, resolveMediaUrl } from "@/utils";
+import { formatDate, getApiErrorMessage, getRouteParam, isAdmin, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";
 
 export default function EquipmentScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string | string[] }>();
+  const equipmentId = getRouteParam(params.id);
   const router = useRouter();
   const { user } = useAuthStore();
   const admin = isAdmin(user);
-  const { data: equipment, isLoading, error, refetch } = useEquipment(id);
+  const { data: equipment, isLoading, isFetching, error, refetch } = useEquipment(equipmentId);
   const deleteEquipment = useDeleteEquipment();
 
   const handleDelete = async () => {
@@ -50,9 +51,17 @@ export default function EquipmentScreen() {
     }
   };
 
-  if (isLoading) return <Loading fullScreen />;
+  if (!equipmentId || isLoading || (isFetching && !equipment)) {
+    return <Loading fullScreen />;
+  }
+
   if (error || !equipment) {
-    return <ErrorState onRetry={refetch} message="Equipamento não encontrado." />;
+    return (
+      <ErrorState
+        onRetry={refetch}
+        message={error instanceof Error ? error.message : "Equipamento não encontrado."}
+      />
+    );
   }
 
   return (
@@ -150,7 +159,7 @@ export default function EquipmentScreen() {
             <Button
               title="Histórico"
               variant="outline"
-              onPress={() => router.push(`/equipment/history/${equipment.id}`)}
+              onPress={() => router.push(`/equipment/history/${equipmentId}`)}
               fullWidth
               size="lg"
               icon={<History size={20} color={colors.primary} />}

@@ -7,21 +7,34 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { router, useRouter } from "expo-router";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, Keyboard, QrCode, X, Zap, ZapOff } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { Button, Input, Loading } from "@/components";
 import { api } from "@/services/api";
+import { feedback } from "@/services/feedback";
 import { colors } from "@/theme";
 
 type ScanMode = "camera" | "manual";
 
-const useModernScanner = CameraView.isModernBarcodeScannerAvailable;
-
 function normalizeQrCode(value: string): string {
   return value.trim().toUpperCase();
+}
+
+function openEquipmentScreen(equipmentId: string) {
+  const href = {
+    pathname: "/equipment/[id]",
+    params: { id: equipmentId },
+  } as const;
+
+  if (router.canDismiss()) {
+    router.dismissTo(href);
+    return;
+  }
+
+  router.push(href);
 }
 
 export default function ScanScreen() {
@@ -29,14 +42,11 @@ export default function ScanScreen() {
   const [mode, setMode] = useState<ScanMode>("camera");
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [manualCode, setManualCode] = useState("");
-  const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const router = useRouter();
+  const screenRouter = useRouter();
   const lookupInFlight = useRef(false);
-  const scannerOpenRef = useRef(false);
-  const hasAutoLaunched = useRef(false);
+  const lastScanRef = useRef<{ code: string; at: number } | null>(null);
 
   useEffect(() => {
     if (mode === "camera" && permission && !permission.granted) {
@@ -44,86 +54,58 @@ export default function ScanScreen() {
     }
   }, [mode, permission, requestPermission]);
 
-  const lookupEquipment = useCallback(
-    async (rawCode: string) => {
-      const code = normalizeQrCode(rawCode);
+  const lookupEquipment = useCallback(async (rawCode: string) => {
+    const code = normalizeQrCode(rawCode);
 
-      if (!code) {
-        setError("Digite o código do QR Code.");
-        return;
-      }
-
-      if (lookupInFlight.current) return;
-
-      lookupInFlight.current = true;
-      setScanned(true);
-      setLoading(true);
-      setError("");
-
-      try {
-        await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        const equipment = await api.getEquipmentByQrCode(code);
-
-        if (equipment) {
-          router.replace(`/equipment/${equipment.id}`);
-        } else {
-          setError(`Equipamento "${code}" não encontrado no banco de dados.`);
-          setScanned(false);
-        }
-      } catch {
-        setError("Erro ao buscar equipamento. Tente novamente.");
-        setScanned(false);
-      } finally {
-        setLoading(false);
-        lookupInFlight.current = false;
-      }
-    },
-    [router]
-  );
-
-  const handleBarCodeScanned = useCallback(
-    ({ data }: { data: string }) => {
-      if (scanned || loading || mode !== "camera") return;
-      void lookupEquipment(data);
-    },
-    [scanned, loading, mode, lookupEquipment]
-  );
-
-  const openModernScanner = useCallback(async () => {
-    if (lookupInFlight.current || scannerOpenRef.current) return;
-
-    setError("");
-    scannerOpenRef.current = true;
-    setScannerOpen(true);
-
-    try {
-      await CameraView.launchScanner({ barcodeTypes: ["qr"] });
-    } catch {
-      scannerOpenRef.current = false;
-      setScannerOpen(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!useModernScanner || mode !== "camera" || !permission?.granted) return;
-
-    const subscription = CameraView.onModernBarcodeScanned((event) => {
-      scannerOpenRef.current = false;
-      setScannerOpen(false);
-      handleBarCodeScanned(event);
-    });
-
-    return () => subscription.remove();
-  }, [mode, permission?.granted, handleBarCodeScanned]);
-
-  useEffect(() => {
-    if (!useModernScanner || mode !== "camera" || !permission?.granted || hasAutoLaunched.current) {
+    if (!code) {
+      setError("Digite o código do QR Code.");
       return;
     }
 
-    hasAutoLaunched.current = true;
-    void openModernScanner();
-  }, [mode, permission?.granted, openModernScanner]);
+    if (lookupInFlight.current) return;
+
+    lookupInFlight.current = true;
+    setLoading(true);
+    setError("");
+
+    try {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const equipment = await api.getEquipmentByQrCode(code);
+
+      if (equipment) {
+        feedback.toast.success(`Equipamento ${equipment.nome} encontrado.`);
+        openEquipmentScreen(equipment.id);
+        return;
+      }
+
+      setError(`Equipamento "${code}" não encontrado no banco de dados.`);
+      feedback.toast.error(`Código ${code} não encontrado.`);
+    } catch {
+      setError("Erro ao buscar equipamento. Tente novamente.");
+      feedback.toast.error("Erro ao buscar equipamento.");
+    } finally {
+      setLoading(false);
+      lookupInFlight.current = false;
+    }
+  }, []);
+
+  const handleBarCodeScanned = useCallback(
+    ({ data }: { data: string }) => {
+      if (mode !== "camera" || loading) return;
+
+      const code = normalizeQrCode(data);
+      const now = Date.now();
+      const lastScan = lastScanRef.current;
+
+      if (lastScan?.code === code && now - lastScan.at < 2000) {
+        return;
+      }
+
+      lastScanRef.current = { code, at: now };
+      void lookupEquipment(code);
+    },
+    [loading, lookupEquipment, mode]
+  );
 
   const handleManualSubmit = () => {
     void lookupEquipment(manualCode);
@@ -132,17 +114,11 @@ export default function ScanScreen() {
   const switchMode = (next: ScanMode) => {
     if (next === "manual") {
       setTorchEnabled(false);
-      scannerOpenRef.current = false;
-      setScannerOpen(false);
     }
 
     setMode(next);
     setError("");
-    setScanned(false);
-
-    if (next === "camera") {
-      hasAutoLaunched.current = false;
-    }
+    lastScanRef.current = null;
   };
 
   if (!permission && mode === "camera") return <Loading fullScreen />;
@@ -157,7 +133,7 @@ export default function ScanScreen() {
           <View className="flex-row items-center justify-between px-5 pt-2">
             <Text className="text-lg font-bold text-dhe-text">Digitar código</Text>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => screenRouter.back()}
               className="rounded-full bg-dhe-overlay p-2"
             >
               <X size={24} color={colors.text} />
@@ -239,63 +215,6 @@ export default function ScanScreen() {
     );
   }
 
-  if (useModernScanner) {
-    return (
-      <SafeAreaView className="flex-1 bg-dhe-bg">
-        <View className="flex-row items-center justify-between px-5 pt-2">
-          <Text className="text-lg font-bold text-dhe-text">Escanear QR Code</Text>
-          <Pressable
-            onPress={() => router.back()}
-            className="rounded-full bg-dhe-overlay p-2"
-          >
-            <X size={24} color={colors.text} />
-          </Pressable>
-        </View>
-
-        <View className="flex-1 items-center justify-center px-5">
-          <QrCode size={72} color={colors.primary} />
-          <Text className="mt-6 text-center text-base text-dhe-text">
-            {scannerOpen
-              ? "Aponte para o QR Code do equipamento"
-              : "Toque abaixo para abrir o scanner"}
-          </Text>
-          <Text className="mt-2 text-center text-sm text-dhe-textSecondary">
-            O QR Code contém apenas o ID — os dados vêm do banco
-          </Text>
-        </View>
-
-        <View className="px-5 pb-8">
-          {(loading || error) && (
-            <View className="mb-4 rounded-2xl bg-dhe-overlay p-4">
-              {loading && (
-                <Text className="text-center text-dhe-text">Buscando equipamento...</Text>
-              )}
-              {error && <Text className="text-center text-dhe-danger">{error}</Text>}
-            </View>
-          )}
-
-          <Button
-            title="Abrir scanner"
-            onPress={openModernScanner}
-            loading={scannerOpen && loading}
-            fullWidth
-            size="lg"
-            icon={<Camera size={22} color={colors.bg} />}
-          />
-
-          <Button
-            title="Digitar código manualmente"
-            variant="secondary"
-            onPress={() => switchMode("manual")}
-            icon={<Keyboard size={18} color={colors.text} />}
-            fullWidth
-            className="mt-3"
-          />
-        </View>
-      </SafeAreaView>
-    );
-  }
-
   return (
     <View className="flex-1 bg-dhe-bg">
       <CameraView
@@ -303,7 +222,7 @@ export default function ScanScreen() {
         facing="back"
         enableTorch={torchEnabled}
         barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
-        onBarcodeScanned={scanned || loading ? undefined : handleBarCodeScanned}
+        onBarcodeScanned={handleBarCodeScanned}
       />
 
       <SafeAreaView className="flex-1" pointerEvents="box-none">
@@ -324,7 +243,7 @@ export default function ScanScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => screenRouter.back()}
               className="rounded-full bg-dhe-overlay p-2"
             >
               <X size={24} color={colors.text} />
