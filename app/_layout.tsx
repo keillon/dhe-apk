@@ -6,7 +6,6 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Linking from "expo-linking";
-import * as Notifications from "expo-notifications";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
@@ -25,7 +24,7 @@ import {
   parseResetPasswordToken,
   setPendingDeepLink,
 } from "@/services/deep-link";
-import { registerPushForCurrentUser } from "@/services/push-notifications";
+import { registerPushForCurrentUser, addNotificationResponseListener } from "@/services/push-notifications";
 
 bootstrapLogging();
 
@@ -151,16 +150,15 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     void Linking.getInitialURL().then(processUrl);
 
     const linkSub = Linking.addEventListener("url", ({ url }) => processUrl(url));
-    const notifSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const url = response.notification.request.content.data?.url;
-      if (typeof url === "string") {
-        processUrl(url);
-      }
+    let removeNotifSub = () => {};
+
+    void addNotificationResponseListener((url) => processUrl(url)).then((remove) => {
+      removeNotifSub = remove;
     });
 
     return () => {
       linkSub.remove();
-      notifSub.remove();
+      removeNotifSub();
     };
   }, [isAuthenticated, router]);
 

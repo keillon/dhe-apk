@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Platform, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as Notifications from "expo-notifications";
 import { Bell, BellRing, Send, Smartphone } from "lucide-react-native";
 import {
   BackHeader,
@@ -16,9 +15,12 @@ import { feedback } from "@/services/feedback";
 import {
   getExpoPushToken,
   getPushPermissionStatus,
+  getNotificationsUnavailableMessage,
+  isNotificationsSupported,
   requestPushPermissions,
   scheduleImmediateTestNotification,
   scheduleLocalTestNotification,
+  addNotificationListeners,
   type PushPermissionStatus,
 } from "@/services/push-notifications";
 import { getApiErrorMessage } from "@/utils";
@@ -39,8 +41,16 @@ export default function NotificationTestScreen() {
   const [title, setTitle] = useState("Teste DHE");
   const [body, setBody] = useState("Notificação push de teste do painel admin.");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const notificationsSupported = isNotificationsSupported();
 
   const refreshStatus = useCallback(async () => {
+    if (!notificationsSupported) {
+      setPermission("undetermined");
+      setPushToken("");
+      setTokenError(getNotificationsUnavailableMessage());
+      return;
+    }
+
     const status = await getPushPermissionStatus();
     setPermission(status);
 
@@ -52,28 +62,31 @@ export default function NotificationTestScreen() {
       setPushToken("");
       setTokenError("");
     }
-  }, []);
+  }, [notificationsSupported]);
 
   useEffect(() => {
     if (!allowed) return;
 
     void refreshStatus();
+    if (!notificationsSupported) return;
 
-    const receivedListener = Notifications.addNotificationReceivedListener((notification) => {
-      const content = notification.request.content;
-      setLastNotification(`${content.title ?? "Sem título"} — ${content.body ?? "Sem mensagem"}`);
-    });
+    let cleanup = () => {};
 
-    const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
-      const content = response.notification.request.content;
-      setLastNotification(`Toque: ${content.title ?? "Sem título"}`);
+    void addNotificationListeners({
+      onReceived: (title, body) => {
+        setLastNotification(`${title} — ${body}`);
+      },
+      onResponse: (title) => {
+        setLastNotification(`Toque: ${title}`);
+      },
+    }).then((remove) => {
+      cleanup = remove;
     });
 
     return () => {
-      receivedListener.remove();
-      responseListener.remove();
+      cleanup();
     };
-  }, [allowed, refreshStatus]);
+  }, [allowed, notificationsSupported, refreshStatus]);
 
   const runAction = async (actionId: string, action: () => Promise<void>) => {
     setLoadingAction(actionId);
@@ -170,6 +183,14 @@ export default function NotificationTestScreen() {
             Ferramenta admin para validar notificações locais e push no dispositivo.
           </Text>
 
+          {!notificationsSupported ? (
+            <Card className="mb-4 border border-dhe-warning/40">
+              <Text className="text-sm leading-6 text-dhe-warning">
+                {getNotificationsUnavailableMessage()}
+              </Text>
+            </Card>
+          ) : null}
+
           <Card className="mb-4">
             <View className="mb-3 flex-row items-center gap-3">
               <View className="h-10 w-10 items-center justify-center rounded-xl bg-dhe-primary/20">
@@ -228,6 +249,7 @@ export default function NotificationTestScreen() {
             variant="outline"
             className="mb-3"
             loading={loadingAction === "permission"}
+            disabled={!notificationsSupported}
             icon={<Bell size={18} color={colors.primary} />}
             onPress={() => void handleRequestPermission()}
           />
@@ -236,6 +258,7 @@ export default function NotificationTestScreen() {
             title="Notificação local imediata"
             className="mb-3"
             loading={loadingAction === "immediate"}
+            disabled={!notificationsSupported}
             icon={<BellRing size={18} color={colors.bg} />}
             onPress={() => void handleImmediateTest()}
           />
@@ -245,6 +268,7 @@ export default function NotificationTestScreen() {
             variant="secondary"
             className="mb-3"
             loading={loadingAction === "local"}
+            disabled={!notificationsSupported}
             onPress={() => void handleLocalTest()}
           />
 
@@ -253,6 +277,7 @@ export default function NotificationTestScreen() {
             variant="secondary"
             className="mb-3"
             loading={loadingAction === "register"}
+            disabled={!notificationsSupported}
             onPress={() => void handleRegisterToken()}
           />
 
@@ -260,6 +285,7 @@ export default function NotificationTestScreen() {
             title="Enviar push remota (servidor)"
             className="mb-3"
             loading={loadingAction === "remote"}
+            disabled={!notificationsSupported}
             icon={<Send size={18} color={colors.bg} />}
             onPress={() => void handleRemoteTest()}
           />

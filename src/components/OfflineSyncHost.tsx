@@ -4,7 +4,8 @@ import { useAuthStore } from "@/store";
 import { useOfflineSync } from "@/hooks";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { api } from "@/services/api";
-import { OfflineBanner, PendingSyncBanner } from "@/components";
+import { OfflineBanner } from "./OfflineBanner";
+import { PendingSyncBanner } from "./PendingSyncBanner";
 
 export function OfflineSyncHost() {
   const { isAuthenticated } = useAuthStore();
