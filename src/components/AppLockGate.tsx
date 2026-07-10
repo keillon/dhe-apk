@@ -98,7 +98,9 @@ export function AppLockGate({ children }: AppLockGateProps) {
 
   return (
     <View style={styles.root}>
-      {!showLock ? children : null}
+      <View style={styles.content} pointerEvents={showLock ? "none" : "auto"}>
+        {children}
+      </View>
 
       {showLock ? (
         <View style={styles.overlay}>
@@ -172,6 +174,9 @@ export function AppLockGate({ children }: AppLockGateProps) {
 
 const styles = StyleSheet.create({
   root: {
+    flex: 1,
+  },
+  content: {
     flex: 1,
   },
   overlay: {

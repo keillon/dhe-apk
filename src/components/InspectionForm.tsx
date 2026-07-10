@@ -114,11 +114,15 @@ export function InspectionForm({
   const [formErrors, setFormErrors] = useState<InspectionFormErrors>({});
   const [isSaving, setIsSaving] = useState(false);
   const [currentDraftId, setCurrentDraftId] = useState(draftId);
+  const appliedTemplateKeyRef = useRef<string | null>(null);
+  const templateKey = template.itens.map((item) => item.key).join("|");
 
   useEffect(() => {
     if (initialDraft?.checklist || inspection?.checklist) return;
+    if (appliedTemplateKeyRef.current === templateKey) return;
+    appliedTemplateKeyRef.current = templateKey;
     setChecklist(defaultChecklist);
-  }, [defaultChecklist, initialDraft?.checklist, inspection?.checklist]);
+  }, [templateKey, defaultChecklist, initialDraft?.checklist, inspection?.checklist]);
 
   const isSubmitting =
     isSaving || (mode === "create" ? createInspection.isPending : updateInspection.isPending);

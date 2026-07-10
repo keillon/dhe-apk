@@ -7,6 +7,7 @@ const KEYS = {
   pendingSync: "pending_sync",
   cachedEquipments: "cached_equipments",
   cachedInspections: "cached_inspections",
+  cachedUser: "cached_user",
   offlineMode: "offline_mode",
   inspectionDrafts: "inspection_drafts",
   syncHistory: "sync_history",
@@ -88,6 +89,10 @@ export function getCachedData<T>(key: string): T | null {
   } catch {
     return null;
   }
+}
+
+export function clearCachedData(key: string): void {
+  remove(key);
 }
 
 export function setOfflineMode(offline: boolean): void {

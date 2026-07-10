@@ -79,7 +79,7 @@ export function useOfflineSync(enabled = true) {
   useEffect(() => {
     if (!enabled) return;
 
-    if (wasOfflineRef.current && isConnected) {
+    if (wasOfflineRef.current && isConnected && !syncingRef.current) {
       void prefetchEquipmentCache(() => api.getEquipments());
       void runSync({ silent: false });
     }

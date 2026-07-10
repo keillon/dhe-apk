@@ -7,6 +7,7 @@ import {
   normalizeEquipmentQr,
   upsertEquipmentCache,
 } from "./equipment-cache";
+import { clearCachedData, getCachedData, setCachedData, StorageKeys } from "./storage";
 import type {
   AuditLogEntry,
   ChangePasswordInput,
@@ -56,11 +57,13 @@ export const api = {
     });
 
     await saveToken(data.token);
+    setCachedData(StorageKeys.cachedUser, data.user);
     return data.user;
   },
 
   async logout(): Promise<void> {
     await clearToken();
+    clearCachedData(StorageKeys.cachedUser);
   },
 
   async restoreSession(): Promise<User | null> {
@@ -76,11 +79,19 @@ export const api = {
       }
     }
 
+    const token = await getToken();
+    if (!token) return null;
+
     try {
       const { data } = await http.get<User>("/auth/me", { timeout: 5000 });
+      setCachedData(StorageKeys.cachedUser, data);
       return data;
-    } catch {
+    } catch (error) {
+      if (isNetworkError(error)) {
+        return getCachedData<User>(StorageKeys.cachedUser);
+      }
       await clearToken();
+      clearCachedData(StorageKeys.cachedUser);
       return null;
     }
   },
@@ -361,6 +372,7 @@ export const api = {
     const { data: user } = await http.patch<User>("/auth/profile", data, {
       timeout: 60000,
     });
+    setCachedData(StorageKeys.cachedUser, user);
     return user;
   },
 
