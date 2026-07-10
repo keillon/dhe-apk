@@ -357,4 +357,28 @@ export const api = {
 
     await http.patch("/notifications/read-all");
   },
+
+  async registerPushToken(token: string, platform?: string): Promise<void> {
+    if (!isApiConfigured) return;
+
+    await http.post("/push/register", { token, platform });
+  },
+
+  async sendTestPushNotification(title?: string, body?: string): Promise<{
+    success: boolean;
+    sent: number;
+    errors: string[];
+  }> {
+    if (!isApiConfigured) {
+      return { success: false, sent: 0, errors: ["API não configurada"] };
+    }
+
+    const { data } = await http.post<{
+      success: boolean;
+      sent: number;
+      errors: string[];
+    }>("/push/test", { title, body });
+
+    return data;
+  },
 };

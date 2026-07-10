@@ -8,6 +8,7 @@ import {
   Wrench,
   QrCode,
   ClipboardList,
+  BellRing,
   ChevronRight,
 } from "lucide-react-native";
 import { Card, Loading, PageContainer } from "@/components";
@@ -50,6 +51,12 @@ const ACTIONS = [
     description: "Imprimir QR Codes para colar nas máquinas",
     icon: QrCode,
     href: "/qrcodes",
+  },
+  {
+    title: "Teste de notificações",
+    description: "Validar alertas locais e push no dispositivo",
+    icon: BellRing,
+    href: "/admin/notification-test",
   },
 ] as const;
 

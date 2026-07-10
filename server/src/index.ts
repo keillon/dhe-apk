@@ -10,6 +10,7 @@ import { equipmentsRouter } from "./routes/equipments";
 import { clientsRouter } from "./routes/clients";
 import { inspectionsRouter } from "./routes/inspections";
 import { notificationsRouter } from "./routes/notifications";
+import { pushRouter } from "./routes/push";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4002);
@@ -44,6 +45,7 @@ app.use("/api/equipments", equipmentsRouter);
 app.use("/api/clients", clientsRouter);
 app.use("/api/inspections", inspectionsRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/push", pushRouter);
 
 app.use(
   (
