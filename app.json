@@ -27,7 +27,9 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
-        "android.permission.POST_NOTIFICATIONS"
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT"
       ]
     },
     "web": {
@@ -72,8 +74,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "dhe-hidraulicos-app"
+        "projectId": "1129fcc8-ea00-40d6-8e31-4d88a9fb4060"
       }
-    }
+    },
+    "owner": "keillon"
   }
 }
