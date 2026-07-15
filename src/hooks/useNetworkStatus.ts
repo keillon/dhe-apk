@@ -90,11 +90,16 @@ export function useOfflineSync(enabled = true) {
   useEffect(() => {
     if (!enabled || !isConnected) return;
 
+    // Tentativa imediata ao estar online com pendências
+    if (getPendingInspectionCount() > 0) {
+      void runSync({ silent: true });
+    }
+
     const interval = setInterval(() => {
       if (getPendingInspectionCount() > 0) {
         void runSync({ silent: true });
       }
-    }, 60000);
+    }, 30000);
 
     return () => clearInterval(interval);
   }, [enabled, isConnected, runSync]);

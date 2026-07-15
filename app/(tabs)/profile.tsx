@@ -214,7 +214,7 @@ export default function ProfileScreen() {
           />
 
           <Button
-            title="Logs de sincronização"
+            title="Sincronização"
             variant="outline"
             fullWidth
             className="mb-3"

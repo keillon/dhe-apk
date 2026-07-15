@@ -180,8 +180,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <AppLockGate>
-        <OfflineSyncHost />
-        <View style={{ flex: 1 }}>{children}</View>
+        <View style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>{children}</View>
+          <OfflineSyncHost />
+        </View>
       </AppLockGate>
     </View>
   );
