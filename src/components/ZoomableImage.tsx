@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -9,10 +10,11 @@ import Animated, {
 
 interface ZoomableImageProps {
   uri: string;
+  enabled?: boolean;
   onZoomChange?: (zoomed: boolean) => void;
 }
 
-export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
+export function ZoomableImage({ uri, enabled = true, onZoomChange }: ZoomableImageProps) {
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -35,15 +37,28 @@ export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
     runOnJS(emitZoom)(false);
   };
 
+  useEffect(() => {
+    scale.value = 1;
+    savedScale.value = 1;
+    translateX.value = 0;
+    translateY.value = 0;
+    savedTranslateX.value = 0;
+    savedTranslateY.value = 0;
+    onZoomChange?.(false);
+    // Reset only when the media page changes / becomes inactive.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uri, enabled]);
+
   const pinch = Gesture.Pinch()
-    .onBegin(() => {
-      runOnJS(emitZoom)(true);
-    })
+    .enabled(enabled)
     .onUpdate((event) => {
       scale.value = Math.min(Math.max(savedScale.value * event.scale, 1), 4);
+      if (scale.value > 1.05) {
+        runOnJS(emitZoom)(true);
+      }
     })
     .onEnd(() => {
-      if (scale.value <= 1.01) {
+      if (scale.value <= 1.05) {
         resetZoom();
       } else {
         savedScale.value = scale.value;
@@ -52,9 +67,11 @@ export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
     });
 
   const pan = Gesture.Pan()
+    .enabled(enabled)
+    .averageTouches(true)
     .manualActivation(true)
     .onTouchesMove((_, state) => {
-      if (scale.value > 1) {
+      if (scale.value > 1.05) {
         state.activate();
       } else {
         state.fail();
@@ -70,6 +87,7 @@ export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
     });
 
   const doubleTap = Gesture.Tap()
+    .enabled(enabled)
     .numberOfTaps(2)
     .maxDuration(250)
     .onEnd(() => {
@@ -83,7 +101,7 @@ export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
       runOnJS(emitZoom)(true);
     });
 
-  const gesture = Gesture.Simultaneous(pinch, pan, doubleTap);
+  const gesture = Gesture.Simultaneous(pinch, Gesture.Exclusive(pan, doubleTap));
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -95,7 +113,7 @@ export function ZoomableImage({ uri, onZoomChange }: ZoomableImageProps) {
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View style={styles.container}>
+      <Animated.View style={styles.container} collapsable={false}>
         <Animated.Image source={{ uri }} style={[styles.image, animatedStyle]} resizeMode="contain" />
       </Animated.View>
     </GestureDetector>

@@ -152,6 +152,13 @@ export const api = {
     return data;
   },
 
+  async startTodayRoute(): Promise<DailyRoute> {
+    if (!isApiConfigured) return demoData.startTodayRoute();
+
+    const { data } = await http.patch<DailyRoute>("/daily-routes/start");
+    return data;
+  },
+
   async visitRouteItem(itemId: string): Promise<{ visitado_em?: string }> {
     if (!isApiConfigured) return demoData.visitRouteItem(itemId);
 

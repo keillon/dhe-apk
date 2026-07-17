@@ -15,6 +15,7 @@ import type {
   InspectionPhoto,
   Notification,
   User,
+  DailyRoute,
 } from "@/types";
 import { generateId } from "@/utils/id";
 
@@ -185,6 +186,7 @@ let demoInspections: Inspection[] = [
 ];
 
 let demoNotifications: Notification[] = [];
+let demoDailyRoute: DailyRoute | null = null;
 
 function buildDemoNotifications(userId: string): Notification[] {
   const now = Date.now();
@@ -772,24 +774,50 @@ export const demoData = {
   async getTodayRoute() {
     await delay(300);
     const today = new Date().toISOString().split("T")[0];
-    return {
-      id: "demo-route",
-      data: today,
-      status: "planejada" as const,
-      itens: demoEquipments.slice(0, 3).map((equipamento, index) => ({
-        id: `route-item-${index + 1}`,
-        ordem: index + 1,
-        equipamento,
-      })),
-    };
+    if (!demoDailyRoute || demoDailyRoute.data !== today) {
+      demoDailyRoute = {
+        id: "demo-route",
+        data: today,
+        status: "planejada" as const,
+        itens: demoEquipments.slice(0, Math.min(5, demoEquipments.length)).map((equipamento, index) => ({
+          id: `route-item-${equipamento.id}`,
+          ordem: index + 1,
+          visitado_em: undefined as string | undefined,
+          equipamento,
+        })),
+      };
+    }
+    return structuredClone(demoDailyRoute);
+  },
+
+  async startTodayRoute() {
+    const route = await this.getTodayRoute();
+    if (route.status === "concluida") return route;
+    demoDailyRoute = { ...route, status: "em_andamento" };
+    return structuredClone(demoDailyRoute);
   },
 
   async visitRouteItem(itemId: string) {
     await delay(200);
-    return { visitado_em: new Date().toISOString() };
+    const route = await this.getTodayRoute();
+    const visitado_em = new Date().toISOString();
+    demoDailyRoute = {
+      ...route,
+      status: "em_andamento",
+      itens: route.itens.map((item) =>
+        item.id === itemId ? { ...item, visitado_em } : item
+      ),
+    };
+    const pending = demoDailyRoute.itens.some((item) => !item.visitado_em);
+    if (!pending) {
+      demoDailyRoute = { ...demoDailyRoute, status: "concluida" };
+    }
+    return { visitado_em };
   },
 
   async regenerateTodayRoute() {
+    await delay(250);
+    demoDailyRoute = null;
     return this.getTodayRoute();
   },
 

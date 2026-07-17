@@ -1,86 +1,94 @@
-import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Search, ChevronRight } from "lucide-react-native";
+import { ChevronRight } from "lucide-react-native";
 import {
   BackHeader,
-  Button,
   Card,
   EmptyState,
+  ErrorState,
   Input,
   Loading,
   PageContainer,
   StatusBadge,
 } from "@/components";
-import { api } from "@/services/api";
-import { feedback } from "@/services/feedback";
-import { getApiErrorMessage } from "@/utils";
-import type { Equipment } from "@/types";
+import { useEquipments, useResponsive } from "@/hooks";
 import { colors } from "@/theme";
 
 export default function SearchScreen() {
   const router = useRouter();
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<Equipment[]>([]);
-  const [searched, setSearched] = useState(false);
+  const { data: equipments, isLoading, error, refetch } = useEquipments();
+  const { horizontalPadding, screenTopPadding, scrollBottomPadding } = useResponsive();
 
-  const handleSearch = async () => {
-    const trimmed = query.trim();
-    if (trimmed.length < 2) {
-      feedback.toast.warning("Informe ao menos 2 caracteres.");
-      return;
-    }
+  const results = useMemo(() => {
+    const list = equipments ?? [];
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return list;
 
-    setLoading(true);
-    setSearched(true);
-    try {
-      const data = await api.searchEquipments(trimmed);
-      setResults(data);
-    } catch (error) {
-      feedback.toast.error(getApiErrorMessage(error, "Erro ao buscar equipamentos."));
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return list.filter((equipment) => {
+      const haystack = [
+        equipment.qr_code,
+        equipment.patrimonio,
+        equipment.nome,
+        equipment.empresa,
+        equipment.localizacao,
+        equipment.cliente?.empresa,
+        equipment.cliente?.nome,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(trimmed);
+    });
+  }, [equipments, query]);
+
+  if (isLoading) return <Loading fullScreen />;
+  if (error) return <ErrorState onRetry={refetch} />;
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <View className="flex-1 px-5 pb-8 pt-2">
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: scrollBottomPadding,
+        }}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <PageContainer>
           <BackHeader fallback="/(tabs)" />
 
           <Text className="mb-1 text-2xl font-bold text-dhe-text">Buscar equipamento</Text>
           <Text className="mb-6 text-sm text-dhe-textSecondary">
-            Pesquise por QR Code, patrimônio, nome ou cliente
+            Todos os equipamentos já aparecem abaixo. Filtre por QR, patrimônio, nome ou cliente.
           </Text>
 
           <Input
-            label="Termo de busca"
+            label="Filtrar"
             value={query}
             onChangeText={setQuery}
             placeholder="Ex: DHE-0001, patrimônio ou cliente"
-            autoCapitalize="characters"
-            onSubmitEditing={() => void handleSearch()}
+            autoCapitalize="none"
+            autoCorrect={false}
           />
 
-          <Button
-            title="Buscar"
-            onPress={() => void handleSearch()}
-            loading={loading}
-            fullWidth
-            className="mb-6"
-            icon={<Search size={18} color={colors.bg} />}
-          />
+          <Text className="mb-4 text-xs font-semibold uppercase tracking-wide text-dhe-textMuted">
+            {results.length} equipamento{results.length === 1 ? "" : "s"}
+          </Text>
 
-          {loading ? (
-            <Loading />
-          ) : searched && results.length === 0 ? (
+          {results.length === 0 ? (
             <EmptyState
               title="Nenhum resultado"
-              description="Tente outro termo de busca."
+              description={
+                query.trim()
+                  ? "Tente outro termo de busca."
+                  : "Nenhum equipamento cadastrado."
+              }
             />
           ) : (
             results.map((equipment) => (
@@ -88,7 +96,7 @@ export default function SearchScreen() {
                 key={equipment.id}
                 onPress={() => router.push(`/equipment/${equipment.id}`)}
               >
-                <Card className="mb-3 flex-row items-center gap-3">
+                <Card className="mb-4 flex-row items-center gap-3">
                   <View className="min-w-0 flex-1">
                     <View className="mb-1 flex-row items-center justify-between gap-2">
                       <Text className="flex-1 font-semibold text-dhe-text" numberOfLines={1}>
@@ -109,7 +117,7 @@ export default function SearchScreen() {
             ))
           )}
         </PageContainer>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
