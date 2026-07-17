@@ -115,6 +115,10 @@ export const DEFAULT_CHECKLIST = {
   filtros: false,
   ruidos: false,
   acoplamentos: false,
+  analise_oleo: false,
+  filtragem_oleo: false,
+  limpeza_reservatorio: false,
+  substituicao_filtros: false,
 } as const;
 
 export const CHECKLIST_LABELS: Record<keyof typeof DEFAULT_CHECKLIST, string> = {
@@ -128,4 +132,8 @@ export const CHECKLIST_LABELS: Record<keyof typeof DEFAULT_CHECKLIST, string> = 
   filtros: "Filtros",
   ruidos: "Ruídos",
   acoplamentos: "Acoplamentos",
+  analise_oleo: "Análise de óleo",
+  filtragem_oleo: "Filtragem de óleo",
+  limpeza_reservatorio: "Limpeza de Reservatório",
+  substituicao_filtros: "Substituição de filtros",
 };

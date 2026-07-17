@@ -17,6 +17,10 @@ export const DEFAULT_CHECKLIST_TEMPLATE: ChecklistTemplate = {
     { key: "filtros", label: "Filtros", obrigatorio: false },
     { key: "ruidos", label: "Ruídos", obrigatorio: false },
     { key: "acoplamentos", label: "Acoplamentos", obrigatorio: false },
+    { key: "analise_oleo", label: "Análise de óleo", obrigatorio: false },
+    { key: "filtragem_oleo", label: "Filtragem de óleo", obrigatorio: false },
+    { key: "limpeza_reservatorio", label: "Limpeza de Reservatório", obrigatorio: false },
+    { key: "substituicao_filtros", label: "Substituição de filtros", obrigatorio: false },
   ],
 };
 

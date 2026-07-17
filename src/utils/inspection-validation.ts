@@ -28,12 +28,8 @@ export function validateInspectionForm(input: {
     errors.fotosAntes = "Adicione pelo menos uma foto ou vídeo em Antes.";
   }
 
-  if (input.fotosDepoisCount === 0) {
-    errors.fotosDepois = "Adicione pelo menos uma foto ou vídeo em Depois.";
-  }
-
   if (!input.assinatura) {
-    errors.assinatura = "A assinatura do cliente é obrigatória.";
+    errors.assinatura = "A assinatura do técnico é obrigatória.";
   }
 
   const checklistOk = Object.values(input.checklist).some(Boolean);

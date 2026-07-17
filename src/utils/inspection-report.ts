@@ -49,7 +49,7 @@ export function buildInspectionReportHtml(inspection: Inspection): string {
     .join("");
 
   const assinatura = inspection.assinatura_url
-    ? `<div class="signature"><p><strong>Assinatura do cliente</strong></p><img src="${inspection.assinatura_url}" /></div>`
+    ? `<div class="signature"><p><strong>Assinatura do técnico</strong></p><img src="${inspection.assinatura_url}" /></div>`
     : "";
 
   return `<!DOCTYPE html>

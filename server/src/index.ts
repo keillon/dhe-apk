@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { prisma } from "./lib/prisma";
 import { ensureDefaultUsers } from "./lib/ensure-users";
+import { ensureDefaultChecklist } from "./lib/ensure-checklist";
 import { getUploadRoot } from "./lib/media-storage";
 import { authRouter } from "./routes/auth";
 import { dashboardRouter } from "./routes/dashboard";
@@ -70,8 +71,10 @@ app.listen(port, "0.0.0.0", async () => {
   try {
     await ensureDefaultUsers();
     console.log("Usuários padrão verificados (admin e técnico).");
+    await ensureDefaultChecklist();
+    console.log("Checklist padrão verificado.");
   } catch (error) {
-    console.error("Erro ao garantir usuários padrão:", error);
+    console.error("Erro ao garantir dados padrão:", error);
   }
 
   console.log(`DHE API rodando na porta ${port}`);

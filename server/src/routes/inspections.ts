@@ -21,7 +21,7 @@ const inspectionPayloadSchema = z.object({
   data_ultima_limpeza: z.string().min(1),
   complemento: z.string().optional(),
   checklist: checklistSchema,
-  fotos: z.array(fotoSchema).min(2).max(10),
+  fotos: z.array(fotoSchema).min(1).max(20),
   assinatura_url: z.string().min(1),
 });
 
@@ -41,10 +41,6 @@ function validateInspectionFields(data: z.infer<typeof inspectionPayloadSchema>)
 
   if (!data.fotos.some((f) => f.tipo === "antes")) {
     return { error: "Adicione pelo menos uma mídia em Antes." };
-  }
-
-  if (!data.fotos.some((f) => f.tipo === "depois")) {
-    return { error: "Adicione pelo menos uma mídia em Depois." };
   }
 
   if (!Object.values(data.checklist).some(Boolean)) {

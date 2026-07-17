@@ -382,11 +382,8 @@ export const demoData = {
     if (!data.fotos?.some((f) => f.tipo === "antes")) {
       throw new Error("Adicione pelo menos uma foto em Antes.");
     }
-    if (!data.fotos?.some((f) => f.tipo === "depois")) {
-      throw new Error("Adicione pelo menos uma foto em Depois.");
-    }
     if (!data.assinatura_url) {
-      throw new Error("A assinatura do cliente é obrigatória.");
+      throw new Error("A assinatura do técnico é obrigatória.");
     }
     if (!Object.values(data.checklist).some(Boolean)) {
       throw new Error("Marque pelo menos um item do checklist.");
@@ -436,11 +433,8 @@ export const demoData = {
     if (!data.fotos.some((f) => f.tipo === "antes")) {
       throw new Error("Adicione pelo menos uma foto em Antes.");
     }
-    if (!data.fotos.some((f) => f.tipo === "depois")) {
-      throw new Error("Adicione pelo menos uma foto em Depois.");
-    }
     if (!data.assinatura_url) {
-      throw new Error("A assinatura do cliente é obrigatória.");
+      throw new Error("A assinatura do técnico é obrigatória.");
     }
     if (!Object.values(data.checklist).some(Boolean)) {
       throw new Error("Marque pelo menos um item do checklist.");
@@ -823,7 +817,18 @@ export const demoData = {
         itens: [
           { key: "vazamentos", label: "Vazamentos", obrigatorio: false },
           { key: "mangueiras", label: "Mangueiras", obrigatorio: false },
+          { key: "cilindros", label: "Cilindros", obrigatorio: false },
           { key: "motor", label: "Motor", obrigatorio: false },
+          { key: "bomba", label: "Bomba", obrigatorio: false },
+          { key: "pressao", label: "Pressão", obrigatorio: false },
+          { key: "temperatura", label: "Temperatura", obrigatorio: false },
+          { key: "filtros", label: "Filtros", obrigatorio: false },
+          { key: "ruidos", label: "Ruídos", obrigatorio: false },
+          { key: "acoplamentos", label: "Acoplamentos", obrigatorio: false },
+          { key: "analise_oleo", label: "Análise de óleo", obrigatorio: false },
+          { key: "filtragem_oleo", label: "Filtragem de óleo", obrigatorio: false },
+          { key: "limpeza_reservatorio", label: "Limpeza de Reservatório", obrigatorio: false },
+          { key: "substituicao_filtros", label: "Substituição de filtros", obrigatorio: false },
         ],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),

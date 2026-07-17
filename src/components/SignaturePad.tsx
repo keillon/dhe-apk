@@ -51,7 +51,7 @@ export function SignaturePad({ value, onChange, error }: SignaturePadProps) {
     <View>
       <View className="mb-2 flex-row items-center">
         <PenLine size={16} color={colors.primary} />
-        <Text className="ml-2 text-sm font-bold text-dhe-text">Assinatura do cliente *</Text>
+        <Text className="ml-2 text-sm font-bold text-dhe-text">Assinatura do técnico *</Text>
       </View>
 
       {error ? <Text className="mb-2 text-sm text-dhe-danger">{error}</Text> : null}

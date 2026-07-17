@@ -124,7 +124,7 @@ export default function SignatureScreen() {
           <X size={18} color={colors.text} />
           <Text className="ml-2 text-sm font-semibold text-dhe-text">Cancelar</Text>
         </Pressable>
-        <Text className="text-base font-bold text-dhe-text">Assinatura do cliente</Text>
+        <Text className="text-base font-bold text-dhe-text">Assinatura do técnico</Text>
         <View className="w-24" />
       </View>
 

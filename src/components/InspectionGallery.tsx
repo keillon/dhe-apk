@@ -122,7 +122,7 @@ export function InspectionGallery({ fotos = [], assinaturaUrl }: InspectionGalle
           <View className="mb-2 flex-row items-center">
             <PenLine size={14} color={colors.primary} />
             <Text className="ml-1 text-xs font-bold uppercase tracking-wide text-dhe-primary">
-              Assinatura do cliente
+              Assinatura do técnico
             </Text>
           </View>
           <Pressable onPress={() => setSignaturePreview(true)}>

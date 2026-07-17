@@ -31,7 +31,7 @@ interface PhotoPickerSectionProps {
 }
 
 const THUMB_SIZE = 96;
-const MAX_ITEMS = 5;
+const MAX_ITEMS = 10;
 
 function PhotoGrid({
   title,
@@ -314,17 +314,17 @@ export function PhotoPickerSection({
     <View>
       <Text className="mb-1 text-sm font-bold text-dhe-text">Fotos e vídeos *</Text>
       <Text className="mb-3 text-xs text-dhe-textMuted">
-        Obrigatório: pelo menos 1 foto ou vídeo em Antes e 1 em Depois. Na gravação, escolha áudio na própria tela.
+        Obrigatório: pelo menos 1 foto ou vídeo em Antes. Depois é opcional. Até {MAX_ITEMS} mídias por seção.
       </Text>
       <PhotoGrid
-        title="Antes"
+        title="Antes *"
         photos={fotosAntes}
         onChange={onChangeAntes}
         accentColor={colors.warning}
         error={errorAntes}
       />
       <PhotoGrid
-        title="Depois"
+        title="Depois (opcional)"
         photos={fotosDepois}
         onChange={onChangeDepois}
         accentColor={colors.success}
