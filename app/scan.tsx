@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Text,
   View,
@@ -14,11 +14,12 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Camera, Keyboard, QrCode, X, Zap, ZapOff } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
 import { Button, Input, Loading, PageContainer } from "@/components";
-import { useResponsive } from "@/hooks";
+import { useEquipments, useResponsive } from "@/hooks";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
 import { logger } from "@/utils/logger";
 import { colors } from "@/theme";
+import type { Equipment } from "@/types";
 
 type ScanMode = "camera" | "manual";
 
@@ -35,6 +36,21 @@ function openEquipmentScreen(equipmentId: string) {
   });
 }
 
+function scoreEquipmentMatch(equipment: Equipment, query: string): number {
+  const qr = normalizeQrCode(equipment.qr_code);
+  const nome = equipment.nome.toUpperCase();
+  const local = (equipment.localizacao ?? "").toUpperCase();
+  const cliente = (equipment.cliente?.nome ?? "").toUpperCase();
+
+  if (qr === query) return 100;
+  if (qr.startsWith(query)) return 90;
+  if (qr.includes(query)) return 80;
+  if (nome.includes(query)) return 70;
+  if (local.includes(query)) return 55;
+  if (cliente.includes(query)) return 45;
+  return 0;
+}
+
 export default function ScanScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [mode, setMode] = useState<ScanMode>("camera");
@@ -48,6 +64,7 @@ export default function ScanScreen() {
   const lookupInFlight = useRef(false);
   const hasNavigatedRef = useRef(false);
   const lastScanRef = useRef<{ code: string; at: number } | null>(null);
+  const { data: equipments } = useEquipments();
   const {
     width,
     height,
@@ -60,6 +77,21 @@ export default function ScanScreen() {
   const viewfinderSize = Math.round(
     Math.min(width * 0.68, height * 0.36, isCompactHeight ? 220 : 256)
   );
+
+  const suggestions = useMemo(() => {
+    const query = normalizeQrCode(manualCode);
+    if (query.length < 2 || !equipments?.length) return [];
+
+    return equipments
+      .map((equipment) => ({
+        equipment,
+        score: scoreEquipmentMatch(equipment, query),
+      }))
+      .filter((item) => item.score > 0)
+      .sort((a, b) => b.score - a.score || a.equipment.qr_code.localeCompare(b.equipment.qr_code))
+      .slice(0, 8)
+      .map((item) => item.equipment);
+  }, [equipments, manualCode]);
 
   const stopCamera = useCallback(() => {
     setTorchEnabled(false);
@@ -121,7 +153,7 @@ export default function ScanScreen() {
         });
 
         if (result.fromCache) {
-          feedback.toast.info(`Modo offline: ${result.equipment.nome} (cache local).`);
+          feedback.toast.info(`Sem conexão: abrindo ${result.equipment.nome} do aparelho.`);
         } else {
           feedback.toast.success(`Equipamento ${result.equipment.nome} encontrado.`);
         }
@@ -135,28 +167,28 @@ export default function ScanScreen() {
       if (result.status === "offline_not_cached") {
         logger.warn("Scan", "Sem conexão e equipamento não está no cache", code);
         setError(
-          "Sem internet e este equipamento não foi sincronizado. Abra o app com conexão ao menos uma vez ou digite outro código já visitado."
+          "Sem internet e este equipamento ainda não foi aberto neste aparelho. Conecte-se ou escolha uma sugestão abaixo."
         );
-        feedback.toast.error("Equipamento não disponível offline.");
+        feedback.toast.error("Equipamento indisponível sem internet.");
         return;
       }
 
       if (result.status === "error") {
         logger.error("Scan", "Erro ao buscar equipamento", result.message);
-        setError(result.message);
-        feedback.toast.error("Erro ao buscar equipamento.");
+        setError("Não foi possível buscar o equipamento. Tente novamente.");
+        feedback.toast.error("Não foi possível buscar o equipamento.");
         return;
       }
 
-      logger.warn("Scan", "Equipamento não encontrado no servidor", code);
+      logger.warn("Scan", "Equipamento não encontrado", code);
       setError(
-        `Equipamento "${code}" não está cadastrado. Verifique o código ou cadastre o equipamento no painel admin.`
+        `Código "${code}" não encontrado. Confira o número ou selecione uma sugestão parecida.`
       );
       feedback.toast.error(`Código ${code} não encontrado.`);
     } catch (lookupError) {
       logger.error("Scan", "Erro ao buscar equipamento", lookupError);
-      setError("Erro ao buscar equipamento. Tente novamente.");
-      feedback.toast.error("Erro ao buscar equipamento.");
+      setError("Não foi possível buscar o equipamento. Tente novamente.");
+      feedback.toast.error("Não foi possível buscar o equipamento.");
     } finally {
       setLoading(false);
       lookupInFlight.current = false;
@@ -189,6 +221,12 @@ export default function ScanScreen() {
 
   const handleManualSubmit = () => {
     void lookupEquipment(manualCode, "manual");
+  };
+
+  const handleSuggestionPress = (equipment: Equipment) => {
+    setManualCode(equipment.qr_code);
+    setError("");
+    void lookupEquipment(equipment.qr_code, "manual");
   };
 
   const switchMode = (next: ScanMode) => {
@@ -245,7 +283,7 @@ export default function ScanScreen() {
                 Informe o código impresso abaixo do QR Code
               </Text>
               <Text className="mt-1 text-sm text-dhe-textSecondary">
-                Exemplo: DHE-0001
+                Exemplo: DHE-0001 — sugestões aparecem enquanto você digita
               </Text>
 
               <View className="mt-8">
@@ -265,6 +303,31 @@ export default function ScanScreen() {
                   error={error}
                 />
               </View>
+
+              {suggestions.length > 0 ? (
+                <View className="mb-4 overflow-hidden rounded-2xl border border-dhe-border bg-dhe-card">
+                  <Text className="border-b border-dhe-border px-4 py-3 text-xs font-semibold uppercase tracking-wide text-dhe-textMuted">
+                    Sugestões
+                  </Text>
+                  {suggestions.map((equipment, index) => (
+                    <Pressable
+                      key={equipment.id}
+                      onPress={() => handleSuggestionPress(equipment)}
+                      className={`px-4 py-3 active:bg-dhe-overlay ${
+                        index < suggestions.length - 1 ? "border-b border-dhe-border" : ""
+                      }`}
+                    >
+                      <Text className="text-base font-semibold text-dhe-text">
+                        {equipment.qr_code}
+                      </Text>
+                      <Text className="mt-0.5 text-sm text-dhe-textSecondary" numberOfLines={1}>
+                        {equipment.nome}
+                        {equipment.cliente?.nome ? ` · ${equipment.cliente.nome}` : ""}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : null}
 
               <Button
                 title="Buscar equipamento"

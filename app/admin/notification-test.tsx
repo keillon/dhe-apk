@@ -148,7 +148,7 @@ export default function NotificationTestScreen() {
       await api.registerPushToken(result.token, Platform.OS);
       setPushToken(result.token);
       setTokenError("");
-      feedback.toast.success("Token registrado no servidor.");
+      feedback.toast.success("Token registrado com sucesso.");
     });
   };
 
@@ -273,7 +273,7 @@ export default function NotificationTestScreen() {
           />
 
           <Button
-            title="Registrar token no servidor"
+            title="Registrar token do aparelho"
             variant="secondary"
             className="mb-3"
             loading={loadingAction === "register"}
@@ -282,7 +282,7 @@ export default function NotificationTestScreen() {
           />
 
           <Button
-            title="Enviar push remota (servidor)"
+            title="Enviar push remota"
             className="mb-3"
             loading={loadingAction === "remote"}
             disabled={!notificationsSupported}
@@ -295,7 +295,7 @@ export default function NotificationTestScreen() {
               1. Conceda permissão no aparelho físico.{"\n"}
               2. Teste local para validar canal e som.{"\n"}
               3. Registre o token e envie push remota.{"\n"}
-              4. Push remota exige APK com EAS projectId válido em app.json.
+              4. Push remota exige o aplicativo instalado (APK) com configuração válida.
             </Text>
           </Card>
         </PageContainer>

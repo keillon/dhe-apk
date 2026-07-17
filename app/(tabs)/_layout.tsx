@@ -87,7 +87,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: "Painel",
           href: admin ? undefined : null,
           tabBarIcon: ({ color, size }) => <BarChart3 size={size} color={color} />,
         }}

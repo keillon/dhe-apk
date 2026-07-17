@@ -60,7 +60,7 @@ export default function EquipmentScreen() {
     return (
       <ErrorState
         onRetry={refetch}
-        message={error instanceof Error ? error.message : "Equipamento não encontrado."}
+        message={getApiErrorMessage(error, "Equipamento não encontrado.")}
       />
     );
   }

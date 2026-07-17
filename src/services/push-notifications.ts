@@ -14,7 +14,7 @@ export function isNotificationsSupported(): boolean {
 }
 
 export function getNotificationsUnavailableMessage(): string {
-  return "Notificações push exigem APK ou development build. O Expo Go não suporta push remoto desde o SDK 53.";
+  return "Notificações push só funcionam no aplicativo instalado.";
 }
 
 async function getNotifications(): Promise<NotificationsModule | null> {
@@ -114,16 +114,15 @@ export async function getExpoPushToken(): Promise<{ token?: string; error?: stri
 
   if (!projectId) {
     return {
-      error: "Project ID do EAS não configurado em app.json (extra.eas.projectId).",
+      error: "Configuração de notificações incompleta neste aplicativo.",
     };
   }
 
   try {
     const result = await Notifications.getExpoPushTokenAsync({ projectId });
     return { token: result.data };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Não foi possível obter o token push.";
-    return { error: message };
+  } catch {
+    return { error: "Não foi possível obter o token de notificação." };
   }
 }
 

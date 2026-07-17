@@ -307,7 +307,7 @@ export const api = {
 
       return {
         status: "error",
-        message: error instanceof Error ? error.message : "Erro ao buscar equipamento.",
+        message: "Não foi possível buscar o equipamento. Tente novamente.",
       };
     }
   },
@@ -543,7 +543,7 @@ export const api = {
     errors: string[];
   }> {
     if (!isApiConfigured) {
-      return { success: false, sent: 0, errors: ["API não configurada"] };
+      return { success: false, sent: 0, errors: ["Serviço indisponível no momento."] };
     }
 
     const { data } = await http.post<{

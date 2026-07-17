@@ -63,7 +63,7 @@ app.use(
     _next: express.NextFunction
   ) => {
     console.error(err);
-    res.status(500).json({ error: "Erro interno do servidor" });
+    res.status(500).json({ error: "Não foi possível concluir a operação. Tente novamente." });
   }
 );
 

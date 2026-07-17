@@ -25,7 +25,8 @@
       "navigationBarColor": "#000A14",
       "adaptiveIcon": {
         "backgroundColor": "#0172FE",
-        "foregroundImage": "./assets/adaptive-icon.png"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/monochrome-icon.png"
       },
       "permissions": [
         "android.permission.CAMERA",

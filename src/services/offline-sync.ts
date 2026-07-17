@@ -3,6 +3,7 @@ import { api } from "./api";
 import { isNetworkError } from "./http";
 import { appendSyncHistory } from "./sync-history";
 import { getPendingSync, setStorageValue, StorageKeys } from "./storage";
+import { getApiErrorMessage } from "@/utils/api-error";
 
 function savePendingItems(items: PendingSyncItem[]): void {
   setStorageValue(StorageKeys.pendingSync, JSON.stringify(items));
@@ -94,10 +95,8 @@ export async function syncPendingInspections(): Promise<SyncPendingResult> {
       synced += 1;
     } catch (error) {
       const message = isNetworkError(error)
-        ? "Sem conexão com o servidor."
-        : error instanceof Error
-          ? error.message
-          : "Erro ao enviar inspeção.";
+        ? "Sem conexão. Verifique sua internet e tente novamente."
+        : getApiErrorMessage(error, "Não foi possível enviar a inspeção.");
 
       updatePendingItem(item.id, (current) => ({
         ...current,

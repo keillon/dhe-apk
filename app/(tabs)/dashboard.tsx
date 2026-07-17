@@ -129,7 +129,7 @@ export default function DashboardScreen() {
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>
-          <Text className="mb-1 text-2xl font-bold text-dhe-text">Dashboard</Text>
+          <Text className="mb-1 text-2xl font-bold text-dhe-text">Painel</Text>
           <Text className="mb-6 text-sm text-dhe-textSecondary">
             Visão geral das operações DHE
           </Text>
