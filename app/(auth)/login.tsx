@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react-native";
+import { Lock, Eye, EyeOff } from "lucide-react-native";
 import { DheLogo, Button, Input, PageContainer } from "@/components";
+import { useResponsive } from "@/hooks";
 import { api } from "@/services/api";
 import { prefetchEquipmentCache } from "@/services/equipment-cache";
 import { hydrateStorage } from "@/services/storage";
@@ -27,6 +28,13 @@ export default function LoginScreen() {
   const [error, setError] = useState("");
   const { setUser } = useAuthStore();
   const router = useRouter();
+  const {
+    horizontalPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+    isCompactHeight,
+    isSmallPhone,
+  } = useResponsive();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -54,27 +62,41 @@ export default function LoginScreen() {
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg">
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={keyboardBehavior}
+        keyboardVerticalOffset={keyboardVerticalOffset}
         className="flex-1"
       >
         <ScrollView
-          contentContainerClassName="flex-grow justify-center px-5 py-8"
+          contentContainerStyle={{
+            flexGrow: 1,
+            justifyContent: "center",
+            paddingHorizontal: horizontalPadding,
+            paddingVertical: isCompactHeight ? 16 : 32,
+          }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          showsVerticalScrollIndicator={false}
         >
           <PageContainer>
-            <View className="mb-10 items-center">
-              <DheLogo variant="mark" size="lg" />
-              <View className="mt-5">
-                <DheLogo variant="white" size="md" />
+            <View className={isCompactHeight ? "mb-6 items-center" : "mb-10 items-center"}>
+              <DheLogo variant="mark" size={isSmallPhone || isCompactHeight ? "md" : "lg"} />
+              <View className="mt-4">
+                <DheLogo variant="white" size={isSmallPhone ? "sm" : "md"} />
               </View>
-              <Text className="mt-4 text-center text-sm text-dhe-textSecondary">
+              <Text className="mt-3 text-center text-sm text-dhe-textSecondary">
                 Manutenção Hidráulica Preditiva
               </Text>
             </View>
 
-            <View className="rounded-3xl border border-dhe-border bg-dhe-card p-6">
-              <Text className="mb-1 text-2xl font-bold text-dhe-text">Entrar</Text>
-              <Text className="mb-6 text-sm text-dhe-textSecondary">
+            <View
+              className={`rounded-3xl border border-dhe-border bg-dhe-card ${isCompactHeight ? "p-4" : "p-6"}`}
+            >
+              <Text
+                className={`mb-1 font-bold text-dhe-text ${isCompactHeight ? "text-xl" : "text-2xl"}`}
+              >
+                Entrar
+              </Text>
+              <Text className="mb-5 text-sm text-dhe-textSecondary">
                 Acesse com suas credenciais
               </Text>
 

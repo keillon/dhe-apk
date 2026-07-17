@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { Text, View } from "react-native";
 import QRCode from "react-native-qrcode-svg";
+import { useResponsive } from "@/hooks/useResponsive";
 import { DheLogo } from "./DheLogo";
 
 interface QrPrintCardProps {
@@ -15,11 +16,15 @@ export const QrPrintCard = forwardRef<View, QrPrintCardProps>(function QrPrintCa
   { qrCode, equipmentName, clientName, patrimonio, localizacao },
   ref
 ) {
+  const { width, horizontalPadding, scale, isSmallPhone } = useResponsive();
+  const cardWidth = Math.min(320, width - horizontalPadding * 2);
+  const qrSize = scale(isSmallPhone ? 160 : 200, { min: 140, max: 200 });
+
   return (
     <View
       ref={ref}
       className="items-center rounded-3xl border-2 border-[#1E4A73] bg-white p-8"
-      style={{ width: 320 }}
+      style={{ width: cardWidth, maxWidth: "100%" }}
     >
       <DheLogo variant="mark" size="md" />
       <Text className="mt-4 text-center text-xs font-semibold text-[#001423]">
@@ -27,7 +32,7 @@ export const QrPrintCard = forwardRef<View, QrPrintCardProps>(function QrPrintCa
       </Text>
 
       <View className="my-6 rounded-2xl bg-white p-4">
-        <QRCode value={qrCode} size={200} color="#001423" backgroundColor="#FFFFFF" />
+        <QRCode value={qrCode} size={qrSize} color="#001423" backgroundColor="#FFFFFF" />
       </View>
 
       <Text className="text-2xl font-bold text-[#001423]">{qrCode}</Text>

@@ -1,5 +1,10 @@
 import { useCallback, useState, type ReactNode } from "react";
-import { RefreshControl, ScrollView, type ScrollViewProps } from "react-native";
+import {
+  Platform,
+  RefreshControl,
+  ScrollView,
+  type ScrollViewProps,
+} from "react-native";
 import { colors } from "@/theme";
 
 interface RefreshableScrollViewProps extends ScrollViewProps {
@@ -25,6 +30,9 @@ export function RefreshableScrollView({
 
   return (
     <ScrollView
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+      showsVerticalScrollIndicator={false}
       {...props}
       refreshControl={
         <RefreshControl

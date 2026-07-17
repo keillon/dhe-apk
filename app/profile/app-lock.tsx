@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Fingerprint, Lock } from "lucide-react-native";
 import { BackHeader, Button, Card, Input, PageContainer } from "@/components";
+import { useResponsive } from "@/hooks";
 import {
   authenticateWithBiometric,
   getAppLockSettings,
@@ -27,6 +28,13 @@ export default function AppLockScreen() {
   const [pin, setPin] = useState("");
   const [confirmPin, setConfirmPin] = useState("");
   const [saving, setSaving] = useState(false);
+  const {
+    horizontalPadding,
+    scrollBottomPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+    isCompactHeight,
+  } = useResponsive();
 
   useEffect(() => {
     const settings = getAppLockSettings();
@@ -77,23 +85,33 @@ export default function AppLockScreen() {
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={keyboardBehavior}
+        keyboardVerticalOffset={keyboardVerticalOffset}
         className="flex-1"
       >
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-5 pb-8 pt-2"
+          contentContainerStyle={{
+            paddingHorizontal: horizontalPadding,
+            paddingBottom: scrollBottomPadding,
+            paddingTop: 8,
+          }}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
           showsVerticalScrollIndicator={false}
         >
           <PageContainer>
             <BackHeader fallback="/(tabs)/profile" />
 
-            <Text className="mb-1 text-2xl font-bold text-dhe-text">Bloqueio do app</Text>
-          <Text className="mb-6 text-sm text-dhe-textSecondary">
-            Exige PIN ou biometria uma vez ao entrar. Depois de desbloquear, você permanece
-            conectado até sair da conta.
-          </Text>
+            <Text
+              className={`mb-1 font-bold text-dhe-text ${isCompactHeight ? "text-xl" : "text-2xl"}`}
+            >
+              Bloqueio do app
+            </Text>
+            <Text className="mb-6 text-sm text-dhe-textSecondary">
+              Exige PIN ou biometria uma vez ao entrar. Depois de desbloquear, você permanece
+              conectado até sair da conta.
+            </Text>
 
             <Card className="mb-4">
               <View className="flex-row items-center justify-between py-2">

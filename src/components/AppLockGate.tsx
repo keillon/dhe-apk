@@ -16,6 +16,7 @@ import {
   verifyAppLockPin,
 } from "@/services/app-lock";
 import { useAuthStore } from "@/store";
+import { useResponsive } from "@/hooks/useResponsive";
 import { DheLogo } from "./DheLogo";
 import { Input } from "./Input";
 import { Button } from "./Button";
@@ -36,6 +37,13 @@ export function AppLockGate({ children }: AppLockGateProps) {
 
   const settings = getAppLockSettings();
   const showLock = locked && settings.enabled;
+  const {
+    horizontalPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+    contentMaxWidth,
+    isCompactHeight,
+  } = useResponsive();
 
   const markSessionUnlocked = useCallback(() => {
     sessionUnlockedRef.current = true;
@@ -106,12 +114,20 @@ export function AppLockGate({ children }: AppLockGateProps) {
         <View style={styles.overlay}>
           <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              behavior={keyboardBehavior}
+              keyboardVerticalOffset={keyboardVerticalOffset}
               style={styles.safeArea}
             >
               <ScrollView
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  {
+                    paddingHorizontal: horizontalPadding,
+                    paddingVertical: isCompactHeight ? 16 : 32,
+                  },
+                ]}
                 keyboardShouldPersistTaps="handled"
+                keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
                 showsVerticalScrollIndicator={false}
               >
                 <DheLogo variant="white" size="sm" />
@@ -125,7 +141,7 @@ export function AppLockGate({ children }: AppLockGateProps) {
                   Confirme sua identidade para entrar nesta sessão.
                 </Text>
 
-                <View style={styles.form}>
+                <View style={[styles.form, { maxWidth: Math.min(400, contentMaxWidth) }]}>
                   <Card>
                     <Input
                       label="PIN"
@@ -192,8 +208,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingVertical: 32,
     width: "100%",
   },
   iconWrap: {

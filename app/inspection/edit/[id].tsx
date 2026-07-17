@@ -1,12 +1,13 @@
 import { SafeAreaView } from "react-native-safe-area-context";
 import { InspectionForm, Loading, BackHeader, PageContainer } from "@/components";
-import { useEquipment, useInspection, useRequireAdmin } from "@/hooks";
+import { useEquipment, useInspection, useRequireAdmin, useResponsive } from "@/hooks";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
 export default function EditInspectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { allowed, isLoading: authLoading } = useRequireAdmin();
+  const { horizontalPadding } = useResponsive();
   const { data: inspection, isLoading: loadingInspection } = useInspection(id);
   const { data: equipment, isLoading: loadingEquipment } = useEquipment(
     inspection?.equipamento_id ?? ""
@@ -19,7 +20,7 @@ export default function EditInspectionScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <PageContainer className="px-5 pt-2">
+      <PageContainer style={{ paddingHorizontal: horizontalPadding, paddingTop: 8 }}>
         <BackHeader fallback={`/inspection/${inspection.id}`} />
       </PageContainer>
 

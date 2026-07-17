@@ -3,7 +3,7 @@ import { BackHandler } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { InspectionForm, Loading, BackHeader, PageContainer } from "@/components";
-import { useEquipment } from "@/hooks";
+import { useEquipment, useResponsive } from "@/hooks";
 import { getInspectionDraft } from "@/services/draft-inspections";
 import { getRouteParam } from "@/utils";
 
@@ -13,6 +13,7 @@ export default function NewInspectionScreen() {
   const draftId = getRouteParam(params.draftId);
   const router = useRouter();
   const { data: equipment } = useEquipment(equipmentId);
+  const { horizontalPadding } = useResponsive();
 
   const draft = useMemo(() => (draftId ? getInspectionDraft(draftId) : null), [draftId]);
 
@@ -35,7 +36,7 @@ export default function NewInspectionScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <PageContainer className="px-5 pt-2">
+      <PageContainer style={{ paddingHorizontal: horizontalPadding, paddingTop: 8 }}>
         <BackHeader
           fallback={`/equipment/${equipmentId}`}
           onBack={goBackToEquipment}

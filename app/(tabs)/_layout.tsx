@@ -1,12 +1,17 @@
 import { Tabs } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { House, Users, BarChart3, User, ClipboardList, Settings2, Route, CalendarDays } from "lucide-react-native";
 import { useAuthStore } from "@/store";
+import { useResponsive } from "@/hooks";
 import { isAdmin } from "@/utils/roles";
 import { colors } from "@/theme";
 
 export default function TabsLayout() {
   const { user } = useAuthStore();
   const admin = isAdmin(user);
+  const insets = useSafeAreaInsets();
+  const { isSmallPhone } = useResponsive();
+  const tabBarHeight = (isSmallPhone ? 52 : 56) + Math.max(insets.bottom, 8);
 
   return (
     <Tabs
@@ -17,12 +22,12 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.surface,
           borderTopColor: colors.border,
-          height: 64,
-          paddingBottom: 10,
-          paddingTop: 8,
+          height: tabBarHeight,
+          paddingBottom: Math.max(insets.bottom, 8),
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: isSmallPhone ? 10 : 11,
           fontWeight: "600",
         },
         sceneStyle: { backgroundColor: colors.bg },

@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { View } from "react-native";
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface DheLogoProps {
   variant?: "color" | "white" | "mark";
@@ -10,8 +11,11 @@ const WORDMARK_SIZES = { sm: 80, md: 140, lg: 200 };
 const MARK_SIZES = { sm: 40, md: 64, lg: 96 };
 
 export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
+  const { scale, isCompactHeight } = useResponsive();
+  const shrink = isCompactHeight ? 0.88 : 1;
+
   if (variant === "mark") {
-    const side = MARK_SIZES[size];
+    const side = Math.round(scale(MARK_SIZES[size]) * shrink);
     return (
       <View className="items-center">
         <Image
@@ -23,7 +27,7 @@ export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
     );
   }
 
-  const width = WORDMARK_SIZES[size];
+  const width = Math.round(scale(WORDMARK_SIZES[size]) * shrink);
   const height = width * 0.35;
 
   return (

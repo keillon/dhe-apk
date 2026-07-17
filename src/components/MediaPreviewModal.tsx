@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  Dimensions,
   FlatList,
   Modal,
   Pressable,
   Text,
+  useWindowDimensions,
   View,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
@@ -24,14 +24,13 @@ interface MediaPreviewModalProps {
   onClose: () => void;
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
 export function MediaPreviewModal({
   visible,
   items,
   initialIndex = 0,
   onClose,
 }: MediaPreviewModalProps) {
+  const { width: screenWidth } = useWindowDimensions();
   const listRef = useRef<FlatList<MediaPreviewItem>>(null);
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scrollEnabled, setScrollEnabled] = useState(true);
@@ -55,7 +54,7 @@ export function MediaPreviewModal({
   }, [visible, initialIndex]);
 
   const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const index = Math.round(event.nativeEvent.contentOffset.x / screenWidth);
     setCurrentIndex(index);
     setScrollEnabled(true);
     setIsScrolling(false);
@@ -121,8 +120,8 @@ export function MediaPreviewModal({
             removeClippedSubviews
             style={{ flex: 1 }}
             getItemLayout={(_, index) => ({
-              length: SCREEN_WIDTH,
-              offset: SCREEN_WIDTH * index,
+              length: screenWidth,
+              offset: screenWidth * index,
               index,
             })}
             onScrollBeginDrag={() => setIsScrolling(true)}
@@ -135,7 +134,7 @@ export function MediaPreviewModal({
               return (
                 <View
                   style={{
-                    width: SCREEN_WIDTH,
+                    width: screenWidth,
                     flex: 1,
                     justifyContent: "center",
                   }}

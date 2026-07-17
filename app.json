@@ -21,6 +21,7 @@
     "android": {
       "package": "com.dhepr.hidraulicos",
       "usesCleartextTraffic": true,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#0172FE",
         "foregroundImage": "./assets/adaptive-icon.png"

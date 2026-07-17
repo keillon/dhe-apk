@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { useResponsive } from "@/hooks/useResponsive";
 import { colors } from "@/theme";
 
 export interface BarChartItem {
@@ -15,9 +16,12 @@ interface SimpleBarChartProps {
 
 export function SimpleBarChart({
   data,
-  height = 180,
+  height,
   barColor = colors.primary,
 }: SimpleBarChartProps) {
+  const { scale, isCompactHeight } = useResponsive();
+  const resolvedHeight = height ?? scale(isCompactHeight ? 140 : 180, { min: 120, max: 200 });
+
   if (!data?.length) {
     return (
       <View className="items-center justify-center py-8">
@@ -27,7 +31,7 @@ export function SimpleBarChart({
   }
 
   const maxValue = Math.max(...data.map((item) => item.value), 1);
-  const chartHeight = height - 48;
+  const chartHeight = resolvedHeight - 48;
 
   return (
     <View className="items-center">

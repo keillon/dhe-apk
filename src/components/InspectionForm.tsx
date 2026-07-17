@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { useResponsive } from "@/hooks/useResponsive";
 import * as Haptics from "expo-haptics";
 import { FileText, Save } from "lucide-react-native";
 import { Button } from "./Button";
@@ -79,6 +87,13 @@ export function InspectionForm({
 }: InspectionFormProps) {
   const { user } = useAuthStore();
   const { isOffline } = useNetworkStatus();
+  const {
+    horizontalPadding,
+    scrollBottomPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+    isCompactHeight,
+  } = useResponsive();
   const createInspection = useCreateInspection();
   const updateInspection = useUpdateInspection();
   const savingRef = useRef(false);
@@ -286,13 +301,26 @@ export function InspectionForm({
   };
 
   return (
+    <KeyboardAvoidingView
+      className="flex-1"
+      behavior={keyboardBehavior}
+      keyboardVerticalOffset={keyboardVerticalOffset}
+    >
     <ScrollView
-      className="flex-1 px-5 pb-8"
+      className="flex-1"
+      contentContainerStyle={{
+        paddingHorizontal: horizontalPadding,
+        paddingBottom: scrollBottomPadding + 24,
+        paddingTop: 4,
+      }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
       nestedScrollEnabled
     >
-      <Text className="mb-1 text-2xl font-bold text-dhe-text">
+      <Text
+        className={`mb-1 font-bold text-dhe-text ${isCompactHeight ? "text-xl" : "text-2xl"}`}
+      >
         {mode === "create" ? "Nova Inspeção" : "Editar Inspeção"}
       </Text>
       <Text className="mb-2 text-sm text-dhe-textSecondary">{equipmentName}</Text>
@@ -449,5 +477,6 @@ export function InspectionForm({
         className="mb-8"
       />
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

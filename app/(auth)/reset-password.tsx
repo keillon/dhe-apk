@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { Lock } from "lucide-react-native";
-import { Button, Input, PageContainer } from "@/components";
+import { Button, Input, Screen } from "@/components";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
 import { getApiErrorMessage, getRouteParam } from "@/utils";
@@ -47,49 +46,45 @@ export default function ResetPasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-dhe-bg">
-      <View className="flex-1 justify-center px-5">
-        <PageContainer>
-          <Text className="mb-2 text-2xl font-bold text-dhe-text">Redefinir senha</Text>
-          <Text className="mb-8 text-base text-dhe-textSecondary">
-            Informe sua nova senha para acessar o DHE.
-          </Text>
+    <Screen edges={["top", "bottom"]} contentContainerStyle={{ justifyContent: "center" }}>
+      <Text className="mb-2 text-2xl font-bold text-dhe-text">Redefinir senha</Text>
+      <Text className="mb-8 text-base text-dhe-textSecondary">
+        Informe sua nova senha para acessar o DHE.
+      </Text>
 
-          {done ? (
-            <View className="rounded-2xl border border-dhe-success/40 bg-dhe-success/10 p-6">
-              <Text className="mb-4 text-center text-base text-dhe-success">
-                Senha atualizada. Faça login com a nova senha.
-              </Text>
-              <Button title="Ir para login" onPress={() => router.replace("/(auth)/login")} fullWidth />
-            </View>
-          ) : (
-            <>
-              <Input
-                label="Nova senha"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                placeholder="••••••••"
-              />
-              <Input
-                label="Confirmar senha"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry
-                placeholder="••••••••"
-              />
-              <Button
-                title="Redefinir senha"
-                onPress={() => void handleReset()}
-                loading={loading}
-                fullWidth
-                size="lg"
-                icon={<Lock size={18} color={colors.bg} />}
-              />
-            </>
-          )}
-        </PageContainer>
-      </View>
-    </SafeAreaView>
+      {done ? (
+        <View className="rounded-2xl border border-dhe-success/40 bg-dhe-success/10 p-6">
+          <Text className="mb-4 text-center text-base text-dhe-success">
+            Senha atualizada. Faça login com a nova senha.
+          </Text>
+          <Button title="Ir para login" onPress={() => router.replace("/(auth)/login")} fullWidth />
+        </View>
+      ) : (
+        <>
+          <Input
+            label="Nova senha"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+          <Input
+            label="Confirmar senha"
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+            placeholder="••••••••"
+          />
+          <Button
+            title="Redefinir senha"
+            onPress={() => void handleReset()}
+            loading={loading}
+            fullWidth
+            size="lg"
+            icon={<Lock size={18} color={colors.bg} />}
+          />
+        </>
+      )}
+    </Screen>
   );
 }
