@@ -9,7 +9,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/logo-dhe-white.webp",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#001423"
     },
@@ -57,7 +57,7 @@
         "expo-navigation-bar",
         {
           "backgroundColor": "#000A14",
-          "barStyle": "light",
+          "style": "light",
           "borderColor": "#000A14"
         }
       ],
@@ -94,7 +94,7 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo-dhe-white.webp",
+          "image": "./assets/splash-icon.png",
           "imageWidth": 220,
           "resizeMode": "contain",
           "backgroundColor": "#001423"
