@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { Card, Loading, PageContainer } from "@/components";
-import { useRequireAdmin } from "@/hooks";
+import { useRequireAdmin, useResponsive } from "@/hooks";
 import { colors } from "@/theme";
 
 const ACTIONS = [
@@ -70,6 +70,7 @@ const ACTIONS = [
 export default function ManageScreen() {
   const router = useRouter();
   const { allowed, isLoading } = useRequireAdmin();
+  const { horizontalPadding, screenTopPadding, tabScrollBottomPadding } = useResponsive();
 
   if (isLoading || !allowed) return <Loading fullScreen />;
 
@@ -77,7 +78,11 @@ export default function ManageScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: tabScrollBottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>

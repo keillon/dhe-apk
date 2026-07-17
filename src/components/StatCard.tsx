@@ -10,7 +10,7 @@ interface StatCardProps {
 
 export function StatCard({ icon: Icon, label, value, color = "#0172FE" }: StatCardProps) {
   return (
-    <View className="flex-1 rounded-2xl border border-dhe-border bg-dhe-card p-5">
+    <View className="flex-1 rounded-2xl border border-dhe-border bg-dhe-card p-6">
       <View
         className="mb-4 h-11 w-11 items-center justify-center rounded-xl"
         style={{ backgroundColor: `${color}25` }}

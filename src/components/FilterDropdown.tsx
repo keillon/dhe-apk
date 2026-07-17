@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, Pressable, Modal, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SlidersHorizontal, X, Check } from "lucide-react-native";
 import { Button } from "./Button";
 import { colors } from "@/theme";
@@ -48,6 +49,7 @@ function FilterChip({
 
 export function FilterDropdown({ groups, activeCount }: FilterDropdownProps) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
 
   return (
     <>
@@ -70,7 +72,8 @@ export function FilterDropdown({ groups, activeCount }: FilterDropdownProps) {
           onPress={() => setOpen(false)}
         >
           <Pressable
-            className="max-h-[80%] rounded-t-3xl bg-dhe-surface px-5 pb-8 pt-4"
+            className="max-h-[80%] rounded-t-3xl bg-dhe-surface px-6 pt-5"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
             onPress={(e) => e.stopPropagation()}
           >
             <View className="mb-4 flex-row items-center justify-between">

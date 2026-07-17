@@ -15,6 +15,7 @@ import {
   Shield,
 } from "lucide-react-native";
 import { Card, Button, Input, DisplayImage, PageContainer, InfoRowList } from "@/components";
+import { useResponsive } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const { user, setUser, logout } = useAuthStore();
   const router = useRouter();
   const admin = isAdmin(user);
+  const { horizontalPadding, screenTopPadding, tabScrollBottomPadding } = useResponsive();
 
   const [nome, setNome] = useState(user?.nome ?? "");
   const [saving, setSaving] = useState(false);
@@ -98,7 +100,11 @@ export default function ProfileScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: tabScrollBottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>

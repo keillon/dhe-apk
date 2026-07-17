@@ -232,8 +232,8 @@ const styles = StyleSheet.create({
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     backgroundColor: colors.bg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
@@ -320,8 +320,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   bottomBar: {
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
     backgroundColor: colors.bg,
     borderTopWidth: 1,
     borderTopColor: colors.border,

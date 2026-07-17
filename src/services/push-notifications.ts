@@ -196,6 +196,13 @@ export async function addNotificationResponseListener(
 
   await ensureNotificationHandler();
 
+  const lastResponse = await Notifications.getLastNotificationResponseAsync();
+  const lastUrl = lastResponse?.notification.request.content.data?.url;
+  if (typeof lastUrl === "string") {
+    onResponse(lastUrl);
+    await Notifications.clearLastNotificationResponseAsync();
+  }
+
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const url = response.notification.request.content.data?.url;
     if (typeof url === "string") {

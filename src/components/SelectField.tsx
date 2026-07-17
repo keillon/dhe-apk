@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ChevronDown, Check, X } from "lucide-react-native";
 import { colors } from "@/theme";
 
@@ -26,6 +27,7 @@ export function SelectField<T extends string>({
   error,
 }: SelectFieldProps<T>) {
   const [open, setOpen] = useState(false);
+  const insets = useSafeAreaInsets();
   const selected = options.find((opt) => opt.id === value);
 
   return (
@@ -52,7 +54,8 @@ export function SelectField<T extends string>({
           onPress={() => setOpen(false)}
         >
           <Pressable
-            className="max-h-[70%] rounded-t-3xl bg-dhe-surface px-5 pb-8 pt-4"
+            className="max-h-[70%] rounded-t-3xl bg-dhe-surface px-6 pt-5"
+            style={{ paddingBottom: Math.max(insets.bottom, 16) + 24 }}
             onPress={(e) => e.stopPropagation()}
           >
             <View className="mb-4 flex-row items-center justify-between">

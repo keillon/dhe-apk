@@ -19,7 +19,6 @@ export function useResponsive() {
     const shortest = Math.min(width, height);
     const longest = Math.max(width, height);
     const widthScale = shortest / BASE_WIDTH;
-    const heightScale = longest / BASE_HEIGHT;
 
     const isSmallPhone = shortest < 360 || longest < 700;
     const isCompactHeight = height < 720;
@@ -35,8 +34,13 @@ export function useResponsive() {
       return Math.round(clamp(scaled, size * 0.85, size * 1.2));
     };
 
-    const horizontalPadding = isTablet ? 32 : isSmallPhone ? 14 : 20;
+    const horizontalPadding = isTablet ? 32 : isSmallPhone ? 16 : 20;
     const contentMaxWidth = isTablet ? 560 : width;
+    const tabBarContentHeight = isSmallPhone ? 52 : 56;
+    const tabBarHeight = tabBarContentHeight + Math.max(insets.bottom, 8);
+    const screenTopPadding = isCompactHeight ? 16 : 20;
+    const scrollBottomPadding = Math.max(insets.bottom, 16) + (isCompactHeight ? 32 : 48);
+    const tabScrollBottomPadding = tabBarHeight + 24;
 
     return {
       width,
@@ -52,8 +56,13 @@ export function useResponsive() {
       moderateScale,
       horizontalPadding,
       contentMaxWidth,
-      /** Safe content bottom padding for scroll forms (keyboard + home indicator). */
-      scrollBottomPadding: Math.max(insets.bottom, 12) + (isCompactHeight ? 24 : 40),
+      screenTopPadding,
+      tabBarContentHeight,
+      tabBarHeight,
+      /** Safe content bottom padding for stack forms (keyboard + home indicator). */
+      scrollBottomPadding,
+      /** Extra clearance so lists clear the bottom tab bar. */
+      tabScrollBottomPadding,
       /** KeyboardAvoidingView behavior that works best per platform. */
       keyboardBehavior: Platform.OS === "ios" ? ("padding" as const) : undefined,
       keyboardVerticalOffset: Platform.OS === "ios" ? insets.top : 0,

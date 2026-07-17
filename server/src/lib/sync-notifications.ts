@@ -10,6 +10,10 @@ interface EnsureNotificationInput {
   mensagem: string;
 }
 
+function alertKey(equipamentoId: string, tipo: NotificationType): string {
+  return `${equipamentoId}|${tipo}`;
+}
+
 async function sendPushForNotification(
   usuarioId: string,
   notificationId: string,
@@ -45,17 +49,26 @@ async function sendPushForNotification(
   }
 }
 
+/**
+ * Garante no máximo um alerta ativo por usuário+equipamento+tipo.
+ * Se o usuário já marcou como lida enquanto a condição persiste, não recria nem reenvia push.
+ * Quando a condição some, settleResolvedNotifications remove o registro para permitir reaviso futuro.
+ */
 async function ensureNotification(input: EnsureNotificationInput): Promise<void> {
   const existing = await prisma.notificacao.findFirst({
     where: {
       usuarioId: input.usuarioId,
       equipamentoId: input.equipamentoId,
       tipo: input.tipo,
-      lida: false,
     },
+    orderBy: { createdAt: "desc" },
   });
 
   if (existing) {
+    if (existing.lida) {
+      return;
+    }
+
     if (existing.mensagem !== input.mensagem || existing.titulo !== input.titulo) {
       await prisma.notificacao.update({
         where: { id: existing.id },
@@ -88,23 +101,79 @@ async function ensureNotification(input: EnsureNotificationInput): Promise<void>
   );
 }
 
+/** Remove alertas cuja condição já não existe, liberando recriação se o problema voltar. */
+async function settleResolvedNotifications(
+  usuarioId: string,
+  activeKeys: Set<string>
+): Promise<void> {
+  const rows = await prisma.notificacao.findMany({
+    where: { usuarioId },
+    select: { id: true, equipamentoId: true, tipo: true },
+  });
+
+  const staleIds = rows
+    .filter((row) => {
+      if (!row.equipamentoId) return false;
+      return !activeKeys.has(alertKey(row.equipamentoId, row.tipo));
+    })
+    .map((row) => row.id);
+
+  if (staleIds.length === 0) return;
+
+  await prisma.notificacao.deleteMany({
+    where: { id: { in: staleIds } },
+  });
+}
+
+/** Mantém apenas a notificação mais recente por equipamento+tipo. */
+async function dedupeNotifications(usuarioId: string): Promise<void> {
+  const rows = await prisma.notificacao.findMany({
+    where: { usuarioId },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, equipamentoId: true, tipo: true },
+  });
+
+  const seen = new Set<string>();
+  const duplicateIds: string[] = [];
+
+  for (const row of rows) {
+    if (!row.equipamentoId) continue;
+    const key = alertKey(row.equipamentoId, row.tipo);
+    if (seen.has(key)) {
+      duplicateIds.push(row.id);
+      continue;
+    }
+    seen.add(key);
+  }
+
+  if (duplicateIds.length === 0) return;
+
+  await prisma.notificacao.deleteMany({
+    where: { id: { in: duplicateIds } },
+  });
+}
+
 export async function syncNotificationsForUser(userId: string): Promise<void> {
   const user = await prisma.usuario.findUnique({
     where: { id: userId },
     select: { role: true },
   });
 
-  if (!user) return;
+  if (!user || user.role !== "admin") return;
+
+  await dedupeNotifications(userId);
 
   const now = new Date();
   const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const activeKeys = new Set<string>();
 
   const overdueEquipments = await prisma.equipamento.findMany({
     where: { proximaManutencao: { lt: now } },
   });
 
   for (const equipment of overdueEquipments) {
+    activeKeys.add(alertKey(equipment.id, "manutencao_vencida"));
     await ensureNotification({
       usuarioId: userId,
       equipamentoId: equipment.id,
@@ -121,6 +190,7 @@ export async function syncNotificationsForUser(userId: string): Promise<void> {
   });
 
   for (const equipment of staleEquipments) {
+    activeKeys.add(alertKey(equipment.id, "inspecao_pendente"));
     await ensureNotification({
       usuarioId: userId,
       equipamentoId: equipment.id,
@@ -144,6 +214,7 @@ export async function syncNotificationsForUser(userId: string): Promise<void> {
     if (seenEquipmentIds.has(inspection.equipamentoId)) continue;
     seenEquipmentIds.add(inspection.equipamentoId);
 
+    activeKeys.add(alertKey(inspection.equipamentoId, "oleo_contaminado"));
     await ensureNotification({
       usuarioId: userId,
       equipamentoId: inspection.equipamentoId,
@@ -152,4 +223,6 @@ export async function syncNotificationsForUser(userId: string): Promise<void> {
       mensagem: `${inspection.equipamento.nome} (${inspection.equipamento.qrCode}) com contaminação alta na última inspeção.`,
     });
   }
+
+  await settleResolvedNotifications(userId, activeKeys);
 }

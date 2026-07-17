@@ -4,13 +4,14 @@ import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Search, Building2, ChevronRight, Plus } from "lucide-react-native";
 import { Card, Input, Loading, ErrorState, EmptyState, PageContainer, Button } from "@/components";
-import { useClients, useEquipments, useRequireAdmin } from "@/hooks";
+import { useClients, useEquipments, useRequireAdmin, useResponsive } from "@/hooks";
 import { colors } from "@/theme";
 
 export default function ClientsScreen() {
   const [search, setSearch] = useState("");
   const router = useRouter();
   const { allowed, isLoading: authLoading } = useRequireAdmin();
+  const { horizontalPadding, screenTopPadding, tabScrollBottomPadding } = useResponsive();
   const { data: clients, isLoading, error, refetch } = useClients();
   const { data: equipments } = useEquipments();
 
@@ -28,7 +29,11 @@ export default function ClientsScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: tabScrollBottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>

@@ -71,7 +71,7 @@ export function MediaPreviewModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <GestureHandlerRootView style={{ flex: 1 }}>
         <SafeAreaView className="flex-1 bg-black">
-          <View className="z-20 flex-row items-center justify-between px-4 py-2">
+          <View className="z-20 flex-row items-center justify-between px-5 py-4">
             <Pressable onPress={onClose} className="rounded-full bg-white/15 p-2">
               <X size={26} color="#fff" />
             </Pressable>

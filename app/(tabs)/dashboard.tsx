@@ -14,7 +14,7 @@ import {
 } from "lucide-react-native";
 import { Card, StatCard, Loading, ErrorState, PageContainer, Button } from "@/components";
 import { SimpleBarChart } from "@/components/SimpleBarChart";
-import { useDashboardStats, useEquipments, useRequireAdmin } from "@/hooks";
+import { useDashboardStats, useEquipments, useRequireAdmin, useResponsive } from "@/hooks";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
 import { getApiErrorMessage, getStatusLabel } from "@/utils";
@@ -29,6 +29,7 @@ function formatMonthLabel(mes: string): string {
 
 export default function DashboardScreen() {
   const { allowed, isLoading: authLoading } = useRequireAdmin();
+  const { horizontalPadding, screenTopPadding, tabScrollBottomPadding } = useResponsive();
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: equipments } = useEquipments();
   const { data: charts } = useQuery({
@@ -118,7 +119,11 @@ export default function DashboardScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: tabScrollBottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>

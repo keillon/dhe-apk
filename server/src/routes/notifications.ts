@@ -14,7 +14,7 @@ notificationsRouter.get("/", async (req, res) => {
 
     const notifications = await prisma.notificacao.findMany({
       where: { usuarioId: req.auth!.userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ lida: "asc" }, { createdAt: "desc" }],
     });
 
     res.json(notifications.map(mapNotification));
@@ -30,7 +30,7 @@ notificationsRouter.post("/sync", async (req, res) => {
 
     const notifications = await prisma.notificacao.findMany({
       where: { usuarioId: req.auth!.userId },
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ lida: "asc" }, { createdAt: "desc" }],
     });
 
     res.json(notifications.map(mapNotification));
@@ -41,27 +41,37 @@ notificationsRouter.post("/sync", async (req, res) => {
 });
 
 notificationsRouter.patch("/read-all", async (req, res) => {
-  await prisma.notificacao.updateMany({
-    where: { usuarioId: req.auth!.userId, lida: false },
-    data: { lida: true },
-  });
+  try {
+    await prisma.notificacao.updateMany({
+      where: { usuarioId: req.auth!.userId, lida: false },
+      data: { lida: true },
+    });
 
-  res.json({ success: true });
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao marcar todas como lidas:", error);
+    res.status(500).json({ error: "Erro ao marcar notificações como lidas" });
+  }
 });
 
 notificationsRouter.patch("/:id/read", async (req, res) => {
-  const notification = await prisma.notificacao.updateMany({
-    where: {
-      id: req.params.id,
-      usuarioId: req.auth!.userId,
-    },
-    data: { lida: true },
-  });
+  try {
+    const notification = await prisma.notificacao.updateMany({
+      where: {
+        id: req.params.id,
+        usuarioId: req.auth!.userId,
+      },
+      data: { lida: true },
+    });
 
-  if (notification.count === 0) {
-    res.status(404).json({ error: "Notificação não encontrada" });
-    return;
+    if (notification.count === 0) {
+      res.status(404).json({ error: "Notificação não encontrada" });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Erro ao marcar notificação como lida:", error);
+    res.status(500).json({ error: "Erro ao marcar notificação como lida" });
   }
-
-  res.json({ success: true });
 });

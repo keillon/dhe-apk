@@ -12,7 +12,7 @@ export function PendingSyncBanner({ pendingCount, syncing, onRetry }: PendingSyn
   if (pendingCount <= 0) return null;
 
   return (
-    <View className="rounded-2xl border border-dhe-primary/40 bg-dhe-card px-4 py-3 shadow-lg shadow-black/40">
+    <View className="rounded-2xl border border-dhe-primary/40 bg-dhe-card px-5 py-4 shadow-lg shadow-black/40">
       <View className="flex-row items-center">
         <CloudUpload size={16} color={colors.primary} />
         <Text className="ml-2 flex-1 text-sm font-medium text-dhe-text">

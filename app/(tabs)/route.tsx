@@ -62,7 +62,7 @@ export default function RouteScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <RefreshableScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentPadding="tab"
         onRefresh={refetch}
       >
         <PageContainer>

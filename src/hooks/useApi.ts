@@ -8,6 +8,7 @@ import type {
   CreateUserInput,
   EquipmentInput,
   InspectionFilters,
+  Notification,
   UpdateInspectionInput,
   UpdateUserInput,
 } from "@/types";
@@ -97,6 +98,60 @@ export function useNotifications(userId: string) {
     queryKey: ["notifications", userId],
     queryFn: () => api.getNotifications(userId),
     enabled: !!userId,
+    staleTime: 1000 * 60,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useMarkNotificationRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => api.markNotificationRead(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previous = queryClient.getQueriesData<Notification[]>({ queryKey: ["notifications"] });
+
+      queryClient.setQueriesData<Notification[]>({ queryKey: ["notifications"] }, (current) =>
+        current?.map((item) => (item.id === id ? { ...item, lida: true } : item))
+      );
+
+      return { previous };
+    },
+    onError: (_error, _id, context) => {
+      context?.previous.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => api.markAllNotificationsRead(),
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ["notifications"] });
+      const previous = queryClient.getQueriesData<Notification[]>({ queryKey: ["notifications"] });
+
+      queryClient.setQueriesData<Notification[]>({ queryKey: ["notifications"] }, (current) =>
+        current?.map((item) => ({ ...item, lida: true }))
+      );
+
+      return { previous };
+    },
+    onError: (_error, _vars, context) => {
+      context?.previous.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
   });
 }
 
@@ -112,6 +167,7 @@ export function useCreateInspection() {
       queryClient.invalidateQueries({ queryKey: ["equipment", variables.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }
@@ -128,6 +184,7 @@ export function useUpdateInspection() {
       queryClient.invalidateQueries({ queryKey: ["inspection", inspection.id] });
       queryClient.invalidateQueries({ queryKey: ["equipment", inspection.equipamento_id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }

@@ -10,8 +10,7 @@ export default function TabsLayout() {
   const { user } = useAuthStore();
   const admin = isAdmin(user);
   const insets = useSafeAreaInsets();
-  const { isSmallPhone } = useResponsive();
-  const tabBarHeight = (isSmallPhone ? 52 : 56) + Math.max(insets.bottom, 8);
+  const { isSmallPhone, tabBarHeight } = useResponsive();
 
   return (
     <Tabs
@@ -24,7 +23,7 @@ export default function TabsLayout() {
           borderTopColor: colors.border,
           height: tabBarHeight,
           paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 6,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
           fontSize: isSmallPhone ? 10 : 11,

@@ -26,7 +26,7 @@ export function OfflineSyncHost() {
   return (
     <View
       pointerEvents="box-none"
-      style={[styles.host, { top: insets.top + 8 }]}
+      style={[styles.host, { top: insets.top + 12, left: 20, right: 20 }]}
     >
       {isOffline ? <OfflineBanner /> : null}
       <PendingSyncBanner
@@ -41,10 +41,8 @@ export function OfflineSyncHost() {
 const styles = StyleSheet.create({
   host: {
     position: "absolute",
-    left: 16,
-    right: 16,
     zIndex: 40,
     elevation: 40,
-    gap: 8,
+    gap: 10,
   },
 });

@@ -311,7 +311,7 @@ export function InspectionForm({
       contentContainerStyle={{
         paddingHorizontal: horizontalPadding,
         paddingBottom: scrollBottomPadding + 24,
-        paddingTop: 4,
+        paddingTop: 12,
       }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"

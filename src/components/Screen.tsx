@@ -46,6 +46,7 @@ export function Screen({
   const {
     horizontalPadding,
     scrollBottomPadding,
+    screenTopPadding,
     keyboardBehavior,
     keyboardVerticalOffset,
     isCompactHeight,
@@ -81,7 +82,7 @@ export function Screen({
   const paddedStyle = [
     {
       paddingHorizontal: horizontalPadding,
-      paddingTop: 12,
+      paddingTop: screenTopPadding,
       paddingBottom: scrollBottomPadding,
       flexGrow: 1,
     },

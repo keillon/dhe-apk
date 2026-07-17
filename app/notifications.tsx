@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,11 +12,16 @@ import {
   BackHeader,
   PageContainer,
 } from "@/components";
-import { useNotifications, useRequireAdmin } from "@/hooks";
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotifications,
+  useRequireAdmin,
+  useResponsive,
+} from "@/hooks";
 import { useAuthStore } from "@/store";
-import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
-import { formatRelative } from "@/utils";
+import { formatRelative, getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
 import type { NotificationType } from "@/types";
 
@@ -36,23 +42,45 @@ export default function NotificationsScreen() {
   const router = useRouter();
   const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: notifications, isLoading, error, refetch } = useNotifications(user?.id ?? "");
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const { horizontalPadding, screenTopPadding, scrollBottomPadding } = useResponsive();
+  const [openingId, setOpeningId] = useState<string | null>(null);
+  const openingLockRef = useRef(false);
 
   const unreadCount = notifications?.filter((n) => !n.lida).length ?? 0;
 
-  const handleOpen = async (id: string, equipmentId?: string) => {
-    await api.markNotificationRead(id);
-    await refetch();
+  const handleOpen = useCallback(
+    async (id: string, equipmentId?: string) => {
+      if (openingLockRef.current) return;
+      openingLockRef.current = true;
+      setOpeningId(id);
 
-    if (equipmentId) {
-      router.push(`/equipment/${equipmentId}`);
+      try {
+        await markRead.mutateAsync(id);
+        if (equipmentId) {
+          router.push(`/equipment/${equipmentId}`);
+        }
+      } catch (err) {
+        feedback.toast.error(getApiErrorMessage(err, "Não foi possível marcar como lida."));
+      } finally {
+        openingLockRef.current = false;
+        setOpeningId(null);
+      }
+    },
+    [markRead, router]
+  );
+
+  const handleMarkAllRead = useCallback(async () => {
+    if (markAllRead.isPending || unreadCount === 0) return;
+
+    try {
+      await markAllRead.mutateAsync();
+      feedback.toast.success("Todas as notificações foram marcadas como lidas.");
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Não foi possível marcar todas como lidas."));
     }
-  };
-
-  const handleMarkAllRead = async () => {
-    await api.markAllNotificationsRead();
-    await refetch();
-    feedback.toast.success("Todas as notificações foram marcadas como lidas.");
-  };
+  }, [markAllRead, unreadCount]);
 
   if (authLoading || !allowed) return <Loading fullScreen />;
   if (isLoading) return <Loading fullScreen />;
@@ -62,25 +90,31 @@ export default function NotificationsScreen() {
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-5 pb-10 pt-4"
+        contentContainerStyle={{
+          paddingHorizontal: horizontalPadding,
+          paddingTop: screenTopPadding,
+          paddingBottom: scrollBottomPadding,
+        }}
         showsVerticalScrollIndicator={false}
       >
         <PageContainer>
           <BackHeader />
-          <Text className="mb-1 text-2xl font-bold text-dhe-text">Notificações</Text>
-          <Text className="mb-5 text-sm text-dhe-textSecondary">
+          <Text className="mb-2 text-2xl font-bold text-dhe-text">Notificações</Text>
+          <Text className="mb-6 text-sm text-dhe-textSecondary">
             Alertas de manutenção, inspeções e equipamentos
           </Text>
 
-          {unreadCount > 0 && (
+          {unreadCount > 0 ? (
             <Button
               title="Marcar todas como lidas"
               variant="outline"
               size="sm"
-              className="mb-5"
-              onPress={handleMarkAllRead}
+              className="mb-6"
+              loading={markAllRead.isPending}
+              disabled={markAllRead.isPending}
+              onPress={() => void handleMarkAllRead()}
             />
-          )}
+          ) : null}
 
           {notifications?.length === 0 ? (
             <EmptyState
@@ -91,29 +125,36 @@ export default function NotificationsScreen() {
             notifications?.map((notif) => {
               const Icon = NOTIF_ICONS[notif.tipo];
               const color = NOTIF_COLORS[notif.tipo];
+              const busy = openingId === notif.id;
 
               return (
                 <Pressable
                   key={notif.id}
-                  onPress={() => handleOpen(notif.id, notif.equipamento_id)}
+                  disabled={busy || openingLockRef.current}
+                  onPress={() => void handleOpen(notif.id, notif.equipamento_id)}
                 >
                   <Card
-                    className={`mb-3 ${!notif.lida ? "border-l-4" : ""}`}
+                    className={`mb-4 ${!notif.lida ? "border-l-4" : "opacity-80"}`}
                     style={!notif.lida ? { borderLeftColor: color } : undefined}
                   >
-                    <View className="flex-row items-start gap-3">
+                    <View className="flex-row items-start gap-4">
                       <View
-                        className="h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                        className="h-11 w-11 shrink-0 items-center justify-center rounded-xl"
                         style={{ backgroundColor: `${color}20` }}
                       >
                         <Icon size={18} color={color} />
                       </View>
                       <View className="min-w-0 flex-1">
-                        <Text className="font-semibold text-dhe-text">{notif.titulo}</Text>
-                        <Text className="mt-1 text-sm leading-5 text-dhe-textSecondary">
+                        <View className="flex-row items-center gap-2">
+                          <Text className="flex-1 font-semibold text-dhe-text">{notif.titulo}</Text>
+                          {!notif.lida ? (
+                            <View className="h-2.5 w-2.5 rounded-full bg-dhe-primary" />
+                          ) : null}
+                        </View>
+                        <Text className="mt-2 text-sm leading-5 text-dhe-textSecondary">
                           {notif.mensagem}
                         </Text>
-                        <Text className="mt-2 text-xs text-dhe-textMuted">
+                        <Text className="mt-3 text-xs text-dhe-textMuted">
                           {formatRelative(notif.created_at)}
                         </Text>
                       </View>

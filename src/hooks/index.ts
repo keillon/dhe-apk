@@ -9,6 +9,8 @@ export {
   useAllInspections,
   useInspection,
   useNotifications,
+  useMarkNotificationRead,
+  useMarkAllNotificationsRead,
   useCreateInspection,
   useUpdateInspection,
   useDeleteInspection,

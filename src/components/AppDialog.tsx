@@ -18,12 +18,12 @@ export function AppDialog() {
           className="w-full max-w-md overflow-hidden rounded-3xl bg-dhe-card"
           onPress={(e) => e.stopPropagation()}
         >
-          <View className="border-b border-dhe-border px-5 py-5">
+          <View className="border-b border-dhe-border px-6 py-6">
             <Text className="text-lg font-bold text-dhe-text">{dialog.title}</Text>
-            <Text className="mt-2 text-sm leading-6 text-dhe-textSecondary">{dialog.message}</Text>
+            <Text className="mt-3 text-sm leading-6 text-dhe-textSecondary">{dialog.message}</Text>
           </View>
 
-          <View className="gap-2 p-4">
+          <View className="gap-3 p-5">
             {dialog.buttons.map((button) => {
               const isPrimary = button.style === "primary";
               const isDestructive = button.style === "destructive";
