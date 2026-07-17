@@ -25,7 +25,7 @@ export default function QrPrintScreen() {
   const handlePrint = async () => {
     if (!equipment) return;
     try {
-      await printQrPdf(buildQrPrintHtml(equipment));
+      await printQrPdf(await buildQrPrintHtml(equipment));
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
     }
@@ -34,7 +34,7 @@ export default function QrPrintScreen() {
   const handleShare = async () => {
     if (!equipment) return;
     try {
-      await shareQrPdf(buildQrPrintHtml(equipment), `QR-${equipment.qr_code}`);
+      await shareQrPdf(await buildQrPrintHtml(equipment), `QR-${equipment.qr_code}`);
       feedback.toast.success("PDF pronto para compartilhar.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao compartilhar PDF."));

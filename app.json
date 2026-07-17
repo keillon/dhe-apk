@@ -22,6 +22,7 @@
       "package": "com.dhepr.hidraulicos",
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "resize",
+      "navigationBarColor": "#000A14",
       "adaptiveIcon": {
         "backgroundColor": "#0172FE",
         "foregroundImage": "./assets/adaptive-icon.png"
@@ -34,6 +35,12 @@
         "android.permission.USE_FINGERPRINT"
       ]
     },
+    "androidNavigationBar": {
+      "backgroundColor": "#000A14",
+      "barStyle": "light-content"
+    },
+    "backgroundColor": "#000A14",
+    "primaryColor": "#0172FE",
     "web": {
       "favicon": "./assets/favicon.png",
       "bundler": "metro",
@@ -45,6 +52,15 @@
     "plugins": [
       "./plugins/withCleartextTraffic.js",
       "expo-router",
+      "expo-system-ui",
+      [
+        "expo-navigation-bar",
+        {
+          "backgroundColor": "#000A14",
+          "barStyle": "light",
+          "borderColor": "#000A14"
+        }
+      ],
       [
         "expo-camera",
         {

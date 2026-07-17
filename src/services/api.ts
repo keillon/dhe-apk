@@ -220,10 +220,49 @@ export const api = {
     return data;
   },
 
-  async exportInspectionsCsv(): Promise<string> {
-    if (!isApiConfigured) return demoData.exportInspectionsCsv();
+  async exportInspectionsCsv(filters?: {
+    tecnico_id?: string;
+    contaminacao?: string;
+    period?: string;
+  }): Promise<string> {
+    if (!isApiConfigured) return demoData.exportInspectionsCsv(filters);
 
-    const { data } = await http.get<string>("/inspections/export", {
+    const params = new URLSearchParams({ format: "csv" });
+    if (filters?.tecnico_id && filters.tecnico_id !== "all") {
+      params.set("tecnico_id", filters.tecnico_id);
+    }
+    if (filters?.contaminacao && filters.contaminacao !== "all") {
+      params.set("contaminacao", filters.contaminacao);
+    }
+    if (filters?.period && filters.period !== "all") {
+      params.set("period", filters.period);
+    }
+
+    const { data } = await http.get<string>(`/inspections/export?${params.toString()}`, {
+      responseType: "text",
+    });
+    return data;
+  },
+
+  async exportInspectionsExcel(filters?: {
+    tecnico_id?: string;
+    contaminacao?: string;
+    period?: string;
+  }): Promise<string> {
+    if (!isApiConfigured) return demoData.exportInspectionsExcel(filters);
+
+    const params = new URLSearchParams({ format: "excel" });
+    if (filters?.tecnico_id && filters.tecnico_id !== "all") {
+      params.set("tecnico_id", filters.tecnico_id);
+    }
+    if (filters?.contaminacao && filters.contaminacao !== "all") {
+      params.set("contaminacao", filters.contaminacao);
+    }
+    if (filters?.period && filters.period !== "all") {
+      params.set("period", filters.period);
+    }
+
+    const { data } = await http.get<string>(`/inspections/export?${params.toString()}`, {
       responseType: "text",
     });
     return data;

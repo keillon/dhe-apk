@@ -1,11 +1,13 @@
 import "react-native-gesture-handler";
 import "../global.css";
 import { useEffect, useCallback } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
 import * as Linking from "expo-linking";
+import * as SystemUI from "expo-system-ui";
+import { NavigationBar } from "expo-navigation-bar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useAuthStore } from "@/store";
@@ -29,6 +31,12 @@ import { registerPushForCurrentUser, addNotificationResponseListener } from "@/s
 bootstrapLogging();
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
+
+void SystemUI.setBackgroundColorAsync(colors.bg).catch(() => {});
+
+if (Platform.OS === "android") {
+  NavigationBar.setStyle("light");
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -195,6 +203,7 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthGuard>
           <StatusBar style="light" />
+          {Platform.OS === "android" ? <NavigationBar style="light" /> : null}
           <FeedbackHost />
           <Stack
             screenOptions={{

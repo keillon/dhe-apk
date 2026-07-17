@@ -372,7 +372,10 @@ export const demoData = {
 
   async getInspectionById(id: string): Promise<Inspection | null> {
     await delay(300);
-    return demoInspections.find((i) => i.id === id) ?? null;
+    const inspection = demoInspections.find((i) => i.id === id);
+    if (!inspection) return null;
+    const equipamento = demoEquipments.find((e) => e.id === inspection.equipamento_id);
+    return { ...inspection, equipamento };
   },
 
   async createInspection(data: CreateInspectionInput): Promise<Inspection> {
@@ -902,9 +905,60 @@ export const demoData = {
     ];
   },
 
-  async exportInspectionsCsv() {
+  async exportInspectionsCsv(filters?: {
+    tecnico_id?: string;
+    contaminacao?: string;
+    period?: string;
+  }) {
     await delay(300);
-    return "id,data,equipamento,qr_code,cliente,tecnico,nivel_oleo,contaminacao,complemento\n";
+    const rows = demoInspections
+      .filter((inspection) => {
+        if (filters?.tecnico_id && filters.tecnico_id !== "all" && inspection.tecnico_id !== filters.tecnico_id) {
+          return false;
+        }
+        if (
+          filters?.contaminacao &&
+          filters.contaminacao !== "all" &&
+          inspection.contaminacao_oleo !== filters.contaminacao
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map((inspection) => {
+        const equipment = demoEquipments.find((item) => item.id === inspection.equipamento_id);
+        const tecnico = demoUsers.find((item) => item.id === inspection.tecnico_id);
+        return [
+          inspection.id,
+          inspection.created_at,
+          equipment?.nome ?? "",
+          equipment?.qr_code ?? "",
+          equipment?.patrimonio ?? "",
+          equipment?.localizacao ?? "",
+          equipment?.cliente?.empresa ?? equipment?.empresa ?? "",
+          tecnico?.nome ?? "",
+          String(inspection.nivel_oleo),
+          inspection.contaminacao_oleo,
+          inspection.data_ultima_limpeza ?? "",
+          String(inspection.fotos?.length ?? 0),
+          inspection.assinatura_url ? "Sim" : "Não",
+          (inspection.complemento ?? "").replace(/"/g, '""'),
+        ]
+          .map((value) => `"${value}"`)
+          .join(",");
+      });
+
+    const header =
+      "ID,Data,Equipamento,QR Code,Patrimônio,Localização,Cliente,Técnico,Nível óleo (%),Contaminação,Última limpeza,Fotos,Assinatura,Observações";
+    return `\uFEFF${[header, ...rows].join("\r\n")}`;
+  },
+
+  async exportInspectionsExcel(filters?: {
+    tecnico_id?: string;
+    contaminacao?: string;
+    period?: string;
+  }) {
+    return this.exportInspectionsCsv(filters);
   },
 };
 

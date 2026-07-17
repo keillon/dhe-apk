@@ -4,6 +4,11 @@ import { prisma } from "../lib/prisma";
 import { mapInspection, mapEquipment } from "../lib/mappers";
 import { parseOptionalDate } from "../lib/parse-date";
 import { persistInspectionMedia } from "../lib/media-storage";
+import {
+  buildInspectionExportWhere,
+  buildInspectionsCsv,
+  buildInspectionsExcelXml,
+} from "../lib/inspection-export";
 import { authMiddleware } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
 
@@ -89,42 +94,34 @@ inspectionsRouter.get("/me", async (req, res) => {
 
 inspectionsRouter.get("/export", adminMiddleware, async (req, res) => {
   try {
+    const format = typeof req.query.format === "string" ? req.query.format : "csv";
+    const where = buildInspectionExportWhere({
+      tecnico_id: typeof req.query.tecnico_id === "string" ? req.query.tecnico_id : undefined,
+      contaminacao:
+        typeof req.query.contaminacao === "string" ? req.query.contaminacao : undefined,
+      period: typeof req.query.period === "string" ? req.query.period : undefined,
+    });
+
     const inspections = await prisma.inspecao.findMany({
+      where,
       include: {
         tecnico: true,
+        assinatura: true,
         equipamento: { include: { cliente: true } },
+        _count: { select: { fotos: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    const header = [
-      "id",
-      "data",
-      "equipamento",
-      "qr_code",
-      "cliente",
-      "tecnico",
-      "nivel_oleo",
-      "contaminacao",
-      "complemento",
-    ].join(",");
+    if (format === "excel" || format === "xls") {
+      const xml = buildInspectionsExcelXml(inspections);
+      res.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8");
+      res.setHeader("Content-Disposition", 'attachment; filename="inspecoes-dhe.xls"');
+      res.send(xml);
+      return;
+    }
 
-    const rows = inspections.map((inspection) => {
-      const values = [
-        inspection.id,
-        inspection.createdAt.toISOString(),
-        inspection.equipamento.nome,
-        inspection.equipamento.qrCode,
-        inspection.equipamento.cliente?.empresa ?? inspection.equipamento.empresa,
-        inspection.tecnico.nome,
-        String(inspection.nivelOleo),
-        inspection.contaminacaoOleo,
-        (inspection.complemento ?? "").replace(/"/g, '""'),
-      ];
-      return values.map((value) => `"${value}"`).join(",");
-    });
-
-    const csv = [header, ...rows].join("\n");
+    const csv = buildInspectionsCsv(inspections);
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", 'attachment; filename="inspecoes-dhe.csv"');
     res.send(csv);
@@ -203,7 +200,12 @@ inspectionsRouter.get("/:id", async (req, res) => {
   try {
     const inspection = await prisma.inspecao.findUnique({
       where: { id: req.params.id },
-      include: { tecnico: true, fotos: true, assinatura: true },
+      include: {
+        tecnico: true,
+        fotos: true,
+        assinatura: true,
+        equipamento: { include: { cliente: true } },
+      },
     });
 
     if (!inspection) {

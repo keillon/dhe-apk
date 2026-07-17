@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Pencil, Trash2, Share2 } from "lucide-react-native";
+import { Pencil, Trash2, Share2, Printer } from "lucide-react-native";
 import {
   Card,
   Loading,
@@ -16,7 +16,7 @@ import { useInspection, useDeleteInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
 import { formatDateTime, getApiErrorMessage, isAdmin } from "@/utils";
-import { shareInspectionPdf } from "@/utils/inspection-report";
+import { printInspectionPdf, shareInspectionPdf } from "@/utils/inspection-report";
 import { colors } from "@/theme";
 
 export default function InspectionDetailScreen() {
@@ -26,17 +26,30 @@ export default function InspectionDetailScreen() {
   const admin = isAdmin(user);
   const { data: inspection, isLoading, error, refetch } = useInspection(id);
   const deleteInspection = useDeleteInspection();
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"share" | "print" | null>(null);
 
   const handleExportPdf = async () => {
     if (!inspection) return;
-    setExporting(true);
+    setExporting("share");
     try {
       await shareInspectionPdf(inspection);
+      feedback.toast.success("PDF pronto para compartilhar.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao exportar PDF."));
     } finally {
-      setExporting(false);
+      setExporting(null);
+    }
+  };
+
+  const handlePrintPdf = async () => {
+    if (!inspection) return;
+    setExporting("print");
+    try {
+      await printInspectionPdf(inspection);
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
+    } finally {
+      setExporting(null);
     }
   };
 
@@ -77,15 +90,26 @@ export default function InspectionDetailScreen() {
             {formatDateTime(inspection.created_at)} • {inspection.tecnico?.nome}
           </Text>
 
-          <Button
-            title="Exportar PDF"
-            variant="secondary"
-            onPress={() => void handleExportPdf()}
-            loading={exporting}
-            fullWidth
-            className="mb-4"
-            icon={<Share2 size={18} color={colors.text} />}
-          />
+          <View className="mb-4 gap-3">
+            <Button
+              title="Compartilhar PDF"
+              variant="secondary"
+              onPress={() => void handleExportPdf()}
+              loading={exporting === "share"}
+              disabled={exporting !== null}
+              fullWidth
+              icon={<Share2 size={18} color={colors.text} />}
+            />
+            <Button
+              title="Imprimir PDF"
+              variant="outline"
+              onPress={() => void handlePrintPdf()}
+              loading={exporting === "print"}
+              disabled={exporting !== null}
+              fullWidth
+              icon={<Printer size={18} color={colors.primary} />}
+            />
+          </View>
 
           {admin && (
             <View className="mb-4 flex-row gap-3">

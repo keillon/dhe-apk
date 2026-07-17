@@ -1,11 +1,15 @@
 import { Tabs } from "expo-router";
-import { View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { House, Users, BarChart3, User, ClipboardList, Settings2, Route, CalendarDays } from "lucide-react-native";
 import { useAuthStore } from "@/store";
 import { useResponsive } from "@/hooks";
 import { isAdmin } from "@/utils/roles";
 import { colors } from "@/theme";
+
+function DarkTabBarBackground() {
+  return <View style={styles.tabBarBg} />;
+}
 
 export default function TabsLayout() {
   const { user } = useAuthStore();
@@ -19,23 +23,29 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarActiveBackgroundColor: "transparent",
-        tabBarInactiveBackgroundColor: "transparent",
+        tabBarActiveBackgroundColor: colors.bg,
+        tabBarInactiveBackgroundColor: colors.bg,
         tabBarStyle: {
           backgroundColor: colors.bg,
           borderTopColor: colors.border,
-          borderTopWidth: 1,
+          borderTopWidth: StyleSheet.hairlineWidth,
           height: tabBarHeight,
           paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
           elevation: 0,
+          shadowColor: "transparent",
           shadowOpacity: 0,
           shadowOffset: { width: 0, height: 0 },
           shadowRadius: 0,
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
         },
-        tabBarBackground: () => (
-          <View style={{ flex: 1, backgroundColor: colors.bg }} />
-        ),
+        tabBarBackground: DarkTabBarBackground,
+        tabBarItemStyle: {
+          backgroundColor: colors.bg,
+        },
         tabBarLabelStyle: {
           fontSize: isSmallPhone ? 10 : 11,
           fontWeight: "600",
@@ -108,3 +118,14 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBarBg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.bg,
+  },
+});

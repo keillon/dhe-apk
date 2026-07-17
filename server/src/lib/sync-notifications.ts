@@ -159,7 +159,7 @@ export async function syncNotificationsForUser(userId: string): Promise<void> {
     select: { role: true },
   });
 
-  if (!user || user.role !== "admin") return;
+  if (!user) return;
 
   await dedupeNotifications(userId);
 

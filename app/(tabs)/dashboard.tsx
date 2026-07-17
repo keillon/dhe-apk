@@ -2,8 +2,6 @@ import { useMemo, useState } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery } from "@tanstack/react-query";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
 import {
   Wrench,
   ClipboardCheck,
@@ -11,6 +9,7 @@ import {
   Calendar,
   TrendingUp,
   Download,
+  FileSpreadsheet,
 } from "lucide-react-native";
 import { Card, StatCard, Loading, ErrorState, PageContainer, Button } from "@/components";
 import { SimpleBarChart } from "@/components/SimpleBarChart";
@@ -18,6 +17,7 @@ import { useDashboardStats, useEquipments, useRequireAdmin, useResponsive } from
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
 import { getApiErrorMessage, getStatusLabel } from "@/utils";
+import { shareTextFile } from "@/utils/share-file";
 import { colors } from "@/theme";
 
 function formatMonthLabel(mes: string): string {
@@ -37,7 +37,7 @@ export default function DashboardScreen() {
     queryFn: () => api.getDashboardCharts(),
     enabled: allowed,
   });
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "excel" | null>(null);
 
   const statusCounts = {
     operando: equipments?.filter((e) => e.status === "operando").length ?? 0,
@@ -85,29 +85,31 @@ export default function DashboardScreen() {
     [charts?.contaminacao_distribuicao]
   );
 
-  const handleExportCsv = async () => {
-    setExporting(true);
+  const handleExport = async (format: "csv" | "excel") => {
+    setExporting(format);
     try {
-      const csv = await api.exportInspectionsCsv();
-      const path = `${FileSystem.cacheDirectory}inspecoes-dhe-${Date.now()}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
-
-      const canShare = await Sharing.isAvailableAsync();
-      if (!canShare) {
-        feedback.toast.error("Compartilhamento não disponível neste dispositivo.");
-        return;
+      if (format === "excel") {
+        const content = await api.exportInspectionsExcel();
+        await shareTextFile({
+          content,
+          filename: `inspecoes-dhe-${Date.now()}.xls`,
+          mimeType: "application/vnd.ms-excel",
+          dialogTitle: "Exportar Excel",
+        });
+      } else {
+        const content = await api.exportInspectionsCsv();
+        await shareTextFile({
+          content,
+          filename: `inspecoes-dhe-${Date.now()}.csv`,
+          mimeType: "text/csv",
+          dialogTitle: "Exportar CSV",
+        });
       }
-
-      await Sharing.shareAsync(path, {
-        mimeType: "text/csv",
-        dialogTitle: "Exportar inspeções",
-      });
+      feedback.toast.success("Arquivo pronto para compartilhar.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao exportar inspeções."));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -132,15 +134,26 @@ export default function DashboardScreen() {
             Visão geral das operações DHE
           </Text>
 
-          <Button
-            title="Exportar inspeções (CSV)"
-            onPress={() => void handleExportCsv()}
-            loading={exporting}
-            variant="secondary"
-            fullWidth
-            className="mb-6"
-            icon={<Download size={18} color={colors.text} />}
-          />
+          <View className="mb-6 gap-3">
+            <Button
+              title="Exportar CSV"
+              onPress={() => void handleExport("csv")}
+              loading={exporting === "csv"}
+              disabled={exporting !== null}
+              variant="secondary"
+              fullWidth
+              icon={<Download size={18} color={colors.text} />}
+            />
+            <Button
+              title="Exportar Excel"
+              onPress={() => void handleExport("excel")}
+              loading={exporting === "excel"}
+              disabled={exporting !== null}
+              variant="outline"
+              fullWidth
+              icon={<FileSpreadsheet size={18} color={colors.primary} />}
+            />
+          </View>
 
           <View className="mb-4 flex-row gap-3">
             <StatCard

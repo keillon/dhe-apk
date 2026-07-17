@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { QrCode, ClipboardCheck, Bell, Wrench, History, Search, FileText } from "lucide-react-native";
+import { QrCode, ClipboardCheck, Bell, History, Search, FileText } from "lucide-react-native";
 import {
   DheLogo,
   Button,
@@ -34,7 +34,7 @@ export default function HomeScreen() {
   const { data: stats, isLoading, error, refetch } = useDashboardStats();
   const { data: myInspections, refetch: refetchMyInspections } = useMyInspections();
   const { data: notifications, refetch: refetchNotifications } = useNotifications(
-    admin ? (user?.id ?? "") : ""
+    user?.id ?? ""
   );
 
   const unreadCount = notifications?.filter((n) => !n.lida).length ?? 0;
@@ -53,26 +53,24 @@ export default function HomeScreen() {
           if (admin) {
             await Promise.all([refetch(), refetchNotifications()]);
           } else {
-            await refetchMyInspections();
+            await Promise.all([refetchMyInspections(), refetchNotifications()]);
           }
         }}
       >
         <PageContainer>
             <View className="mb-6 flex-row items-center justify-between">
             <DheLogo variant="mark" size="sm" />
-            {admin && (
-              <Pressable
-                onPress={() => router.push("/notifications")}
-                className="relative rounded-full bg-dhe-elevated p-3"
-              >
-                <Bell size={22} color={colors.text} />
-                {unreadCount > 0 && (
-                  <View className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-dhe-danger">
-                    <Text className="text-xs font-bold text-white">{unreadCount}</Text>
-                  </View>
-                )}
-              </Pressable>
-            )}
+            <Pressable
+              onPress={() => router.push("/notifications")}
+              className="relative rounded-full bg-dhe-elevated p-3"
+            >
+              <Bell size={22} color={colors.text} />
+              {unreadCount > 0 && (
+                <View className="absolute -right-1 -top-1 h-5 w-5 items-center justify-center rounded-full bg-dhe-danger">
+                  <Text className="text-xs font-bold text-white">{unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
           </View>
 
           <Text className="text-2xl font-bold text-dhe-text">
@@ -109,12 +107,10 @@ export default function HomeScreen() {
                   color={colors.primary}
                 />
                 <StatCard
-                  icon={Wrench}
-                  label="Equipamentos"
-                  value={
-                    new Set((myInspections ?? []).map((i) => i.equipamento_id)).size
-                  }
-                  color={colors.success}
+                  icon={Bell}
+                  label="Alertas"
+                  value={unreadCount}
+                  color={colors.warning}
                 />
               </View>
 

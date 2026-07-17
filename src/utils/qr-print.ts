@@ -2,6 +2,7 @@ import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system/legacy";
 import { Platform } from "react-native";
+import QRCode from "qrcode";
 import type { Equipment } from "@/types";
 
 function escapeHtml(text: string): string {
@@ -12,12 +13,42 @@ function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function buildQrPrintHtml(equipment: Equipment): string {
+async function buildQrSvgMarkup(value: string, size: number): Promise<string> {
+  const svg = await QRCode.toString(value, {
+    type: "svg",
+    width: size,
+    margin: 1,
+    color: {
+      dark: "#001423",
+      light: "#FFFFFF",
+    },
+  });
+  return svg.replace("<svg", `<svg width="${size}" height="${size}"`);
+}
+
+async function buildQrCardHtml(equipment: Equipment, size: number): Promise<string> {
+  const qrMarkup = await buildQrSvgMarkup(equipment.qr_code, size);
   const qrValue = escapeHtml(equipment.qr_code);
   const nome = escapeHtml(equipment.nome);
   const cliente = escapeHtml(equipment.cliente?.empresa ?? equipment.empresa);
   const patrimonio = escapeHtml(equipment.patrimonio);
   const local = escapeHtml(equipment.localizacao);
+
+  return `<div class="card">
+    <div class="logo">DHE Componentes Hidráulicos</div>
+    <div class="subtitle">Manutenção Preditiva</div>
+    <div class="qr">${qrMarkup}</div>
+    <div class="code">${qrValue}</div>
+    <div class="name">${nome}</div>
+    <div class="meta">${cliente}</div>
+    <div class="meta">Patrimônio: ${patrimonio}</div>
+    <div class="meta">${local}</div>
+    <div class="hint">Escaneie para abrir a ficha do equipamento</div>
+  </div>`;
+}
+
+export async function buildQrPrintHtml(equipment: Equipment): Promise<string> {
+  const card = await buildQrCardHtml(equipment, 180);
 
   return `<!DOCTYPE html>
 <html>
@@ -31,9 +62,9 @@ export function buildQrPrintHtml(equipment: Equipment): string {
       width: 280px; border: 2px solid #1E4A73; border-radius: 16px;
       padding: 24px; text-align: center; page-break-inside: avoid;
     }
-    .logo { font-size: 18px; font-weight: bold; color: #0172FE; margin-bottom: 4px; }
+    .logo { font-size: 16px; font-weight: bold; color: #0172FE; margin-bottom: 4px; }
     .subtitle { font-size: 10px; color: #5396B7; margin-bottom: 16px; }
-    .qr img { width: 180px; height: 180px; }
+    .qr { display: flex; justify-content: center; }
     .code { font-size: 24px; font-weight: bold; margin-top: 12px; }
     .name { font-size: 14px; font-weight: 600; margin-top: 8px; }
     .meta { font-size: 11px; color: #5396B7; margin-top: 4px; }
@@ -41,49 +72,13 @@ export function buildQrPrintHtml(equipment: Equipment): string {
   </style>
 </head>
 <body>
-  <div class="grid">
-    <div class="card">
-      <div class="logo">DHE Hidráulicos</div>
-      <div class="subtitle">Manutenção Preditiva</div>
-      <div class="qr">
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(equipment.qr_code)}" />
-      </div>
-      <div class="code">${qrValue}</div>
-      <div class="name">${nome}</div>
-      <div class="meta">${cliente}</div>
-      <div class="meta">Patrimônio: ${patrimonio}</div>
-      <div class="meta">${local}</div>
-      <div class="hint">O QR contém apenas o ID. Dados vêm do banco.</div>
-    </div>
-  </div>
+  <div class="grid">${card}</div>
 </body>
 </html>`;
 }
 
-export function buildBulkQrPrintHtml(equipments: Equipment[]): string {
-  const cards = equipments
-    .map((eq) => {
-      const qrValue = escapeHtml(eq.qr_code);
-      const nome = escapeHtml(eq.nome);
-      const cliente = escapeHtml(eq.cliente?.empresa ?? eq.empresa);
-      const patrimonio = escapeHtml(eq.patrimonio);
-      const local = escapeHtml(eq.localizacao);
-
-      return `<div class="card">
-        <div class="logo">DHE Hidráulicos</div>
-        <div class="subtitle">Manutenção Preditiva</div>
-        <div class="qr">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(eq.qr_code)}" />
-        </div>
-        <div class="code">${qrValue}</div>
-        <div class="name">${nome}</div>
-        <div class="meta">${cliente}</div>
-        <div class="meta">Patrimônio: ${patrimonio}</div>
-        <div class="meta">${local}</div>
-        <div class="hint">O QR contém apenas o ID. Dados vêm do banco.</div>
-      </div>`;
-    })
-    .join("");
+export async function buildBulkQrPrintHtml(equipments: Equipment[]): Promise<string> {
+  const cards = await Promise.all(equipments.map((eq) => buildQrCardHtml(eq, 160)));
 
   return `<!DOCTYPE html>
 <html>
@@ -97,16 +92,16 @@ export function buildBulkQrPrintHtml(equipments: Equipment[]): string {
       width: 260px; border: 2px solid #1E4A73; border-radius: 16px;
       padding: 20px; text-align: center; page-break-inside: avoid;
     }
-    .logo { font-size: 16px; font-weight: bold; color: #0172FE; }
+    .logo { font-size: 14px; font-weight: bold; color: #0172FE; }
     .subtitle { font-size: 9px; color: #5396B7; margin-bottom: 12px; }
-    .qr img { width: 160px; height: 160px; }
+    .qr { display: flex; justify-content: center; }
     .code { font-size: 22px; font-weight: bold; margin-top: 10px; }
     .name { font-size: 13px; font-weight: 600; margin-top: 6px; }
     .meta { font-size: 10px; color: #5396B7; margin-top: 3px; }
     .hint { font-size: 8px; color: #7CBFE0; margin-top: 12px; }
   </style>
 </head>
-<body><div class="grid">${cards}</div></body>
+<body><div class="grid">${cards.join("")}</div></body>
 </html>`;
 }
 

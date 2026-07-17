@@ -131,6 +131,7 @@ export function mapInspection(
       fotoUrl: string | null;
       createdAt: Date;
     } | null;
+    equipamento?: Parameters<typeof mapEquipment>[0] | null;
     fotos?: Array<{
       id: string;
       inspecaoId: string;
@@ -154,6 +155,7 @@ export function mapInspection(
     assinatura_url: inspection.assinatura?.url,
     created_at: inspection.createdAt.toISOString(),
     tecnico: inspection.tecnico ? mapUser(inspection.tecnico) : undefined,
+    equipamento: inspection.equipamento ? mapEquipment(inspection.equipamento) : undefined,
     fotos: inspection.fotos?.map((foto) => ({
       id: foto.id,
       inspecao_id: foto.inspecaoId,

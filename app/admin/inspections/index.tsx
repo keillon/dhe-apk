@@ -2,9 +2,7 @@ import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import * as FileSystem from "expo-file-system/legacy";
-import * as Sharing from "expo-sharing";
-import { Eye, Pencil, Trash2, Download } from "lucide-react-native";
+import { Eye, Pencil, Trash2, Download, FileSpreadsheet } from "lucide-react-native";
 import {
   BackHeader,
   Card,
@@ -22,6 +20,7 @@ import { feedback } from "@/services/feedback";
 import { api } from "@/services/api";
 import type { Inspection, OilContamination } from "@/types";
 import { formatDateTime, getApiErrorMessage } from "@/utils";
+import { shareTextFile } from "@/utils/share-file";
 import { colors } from "@/theme";
 
 type PeriodFilter = "all" | "30d" | "90d";
@@ -48,7 +47,7 @@ export default function AdminInspectionsScreen() {
   const [tecnicoId, setTecnicoId] = useState("all");
   const [periodFilter, setPeriodFilter] = useState<PeriodFilter>("all");
   const [contaminationFilter, setContaminationFilter] = useState<ContaminationFilter>("all");
-  const [exporting, setExporting] = useState(false);
+  const [exporting, setExporting] = useState<"csv" | "excel" | null>(null);
 
   const filters = useMemo(
     () => ({
@@ -75,29 +74,37 @@ export default function AdminInspectionsScreen() {
     contaminationFilter !== "all",
   ].filter(Boolean).length;
 
-  const handleExportCsv = async () => {
-    setExporting(true);
+  const handleExport = async (format: "csv" | "excel") => {
+    setExporting(format);
     try {
-      const csv = await api.exportInspectionsCsv();
-      const path = `${FileSystem.cacheDirectory}inspecoes-dhe-${Date.now()}.csv`;
-      await FileSystem.writeAsStringAsync(path, csv, {
-        encoding: FileSystem.EncodingType.UTF8,
-      });
+      const filters = {
+        tecnico_id: tecnicoId,
+        contaminacao: contaminationFilter,
+        period: periodFilter,
+      };
 
-      const canShare = await Sharing.isAvailableAsync();
-      if (!canShare) {
-        feedback.toast.error("Compartilhamento não disponível neste dispositivo.");
-        return;
+      if (format === "excel") {
+        const content = await api.exportInspectionsExcel(filters);
+        await shareTextFile({
+          content,
+          filename: `inspecoes-dhe-${Date.now()}.xls`,
+          mimeType: "application/vnd.ms-excel",
+          dialogTitle: "Exportar Excel",
+        });
+      } else {
+        const content = await api.exportInspectionsCsv(filters);
+        await shareTextFile({
+          content,
+          filename: `inspecoes-dhe-${Date.now()}.csv`,
+          mimeType: "text/csv",
+          dialogTitle: "Exportar CSV",
+        });
       }
-
-      await Sharing.shareAsync(path, {
-        mimeType: "text/csv",
-        dialogTitle: "Exportar inspeções",
-      });
+      feedback.toast.success("Arquivo pronto para compartilhar.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao exportar inspeções."));
     } finally {
-      setExporting(false);
+      setExporting(null);
     }
   };
 
@@ -141,15 +148,26 @@ export default function AdminInspectionsScreen() {
             Todas as inspeções realizadas pelos funcionários
           </Text>
 
-          <Button
-            title="Exportar CSV"
-            onPress={() => void handleExportCsv()}
-            loading={exporting}
-            variant="secondary"
-            fullWidth
-            className="mb-6"
-            icon={<Download size={18} color={colors.text} />}
-          />
+          <View className="mb-6 gap-3">
+            <Button
+              title="Exportar CSV"
+              onPress={() => void handleExport("csv")}
+              loading={exporting === "csv"}
+              disabled={exporting !== null}
+              variant="secondary"
+              fullWidth
+              icon={<Download size={18} color={colors.text} />}
+            />
+            <Button
+              title="Exportar Excel"
+              onPress={() => void handleExport("excel")}
+              loading={exporting === "excel"}
+              disabled={exporting !== null}
+              variant="outline"
+              fullWidth
+              icon={<FileSpreadsheet size={18} color={colors.primary} />}
+            />
+          </View>
 
           <SelectField
             label="Funcionário"

@@ -16,7 +16,6 @@ import {
   useMarkAllNotificationsRead,
   useMarkNotificationRead,
   useNotifications,
-  useRequireAdmin,
   useResponsive,
 } from "@/hooks";
 import { useAuthStore } from "@/store";
@@ -40,7 +39,6 @@ const NOTIF_COLORS: Record<NotificationType, string> = {
 export default function NotificationsScreen() {
   const { user } = useAuthStore();
   const router = useRouter();
-  const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: notifications, isLoading, error, refetch } = useNotifications(user?.id ?? "");
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
@@ -82,7 +80,7 @@ export default function NotificationsScreen() {
     }
   }, [markAllRead, unreadCount]);
 
-  if (authLoading || !allowed) return <Loading fullScreen />;
+  if (!user) return <Loading fullScreen />;
   if (isLoading) return <Loading fullScreen />;
   if (error) return <ErrorState onRetry={refetch} />;
 

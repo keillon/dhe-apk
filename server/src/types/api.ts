@@ -56,6 +56,7 @@ export interface ApiInspection {
   assinatura_url?: string;
   created_at: string;
   tecnico?: ApiUser;
+  equipamento?: ApiEquipment;
   fotos?: Array<{
     id: string;
     inspecao_id: string;
