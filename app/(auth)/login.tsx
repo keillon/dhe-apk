@@ -80,9 +80,9 @@ export default function LoginScreen() {
           <PageContainer>
             <View className={isCompactHeight ? "mb-6 items-center" : "mb-10 items-center"}>
               <DheLogo variant="mark" size={isSmallPhone || isCompactHeight ? "md" : "lg"} />
-              {/* <View className="mt-4">
+              <View className="mt-4">
                 <DheLogo variant="white" size={isSmallPhone ? "sm" : "md"} />
-              </View> */}
+              </View>
               <Text className="mt-3 text-center text-sm text-dhe-textSecondary">
                 Manutenção Hidráulica Preditiva
               </Text>
