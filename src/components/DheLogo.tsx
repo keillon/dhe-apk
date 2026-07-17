@@ -2,14 +2,28 @@ import { Image } from "expo-image";
 import { View } from "react-native";
 
 interface DheLogoProps {
-  variant?: "color" | "white";
+  variant?: "color" | "white" | "mark";
   size?: "sm" | "md" | "lg";
 }
 
-const SIZES = { sm: 80, md: 140, lg: 200 };
+const WORDMARK_SIZES = { sm: 80, md: 140, lg: 200 };
+const MARK_SIZES = { sm: 40, md: 64, lg: 96 };
 
 export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
-  const width = SIZES[size];
+  if (variant === "mark") {
+    const side = MARK_SIZES[size];
+    return (
+      <View className="items-center">
+        <Image
+          source={require("../../assets/adaptive-icon.png")}
+          style={{ width: side, height: side, borderRadius: side * 0.22 }}
+          contentFit="cover"
+        />
+      </View>
+    );
+  }
+
+  const width = WORDMARK_SIZES[size];
   const height = width * 0.35;
 
   return (

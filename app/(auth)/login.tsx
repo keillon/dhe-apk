@@ -63,7 +63,10 @@ export default function LoginScreen() {
         >
           <PageContainer>
             <View className="mb-10 items-center">
-              <DheLogo variant="white" size="lg" />
+              <DheLogo variant="mark" size="lg" />
+              <View className="mt-5">
+                <DheLogo variant="white" size="md" />
+              </View>
               <Text className="mt-4 text-center text-sm text-dhe-textSecondary">
                 Manutenção Hidráulica Preditiva
               </Text>

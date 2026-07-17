@@ -58,8 +58,8 @@ export default function HomeScreen() {
         }}
       >
         <PageContainer>
-          <View className="mb-6 flex-row items-center justify-between">
-            <DheLogo variant="white" size="sm" />
+            <View className="mb-6 flex-row items-center justify-between">
+            <DheLogo variant="mark" size="sm" />
             {admin && (
               <Pressable
                 onPress={() => router.push("/notifications")}

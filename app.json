@@ -15,14 +15,15 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dhepr.hidraulicos"
+      "bundleIdentifier": "com.dhepr.hidraulicos",
+      "icon": "./assets/appstore.png"
     },
     "android": {
       "package": "com.dhepr.hidraulicos",
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
-        "backgroundColor": "#001423",
-        "foregroundImage": "./assets/icon.png"
+        "backgroundColor": "#0172FE",
+        "foregroundImage": "./assets/adaptive-icon.png"
       },
       "permissions": [
         "android.permission.CAMERA",
@@ -34,7 +35,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "DHE Hidráulicos",
+      "shortName": "DHE",
+      "themeColor": "#0172FE",
+      "backgroundColor": "#001423"
     },
     "plugins": [
       "./plugins/withCleartextTraffic.js",
@@ -63,7 +68,19 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "default"
+          "icon": "./assets/notification-icon.png",
+          "color": "#0172FE",
+          "defaultChannel": "default",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo-dhe-white.webp",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#001423"
         }
       ]
     ],

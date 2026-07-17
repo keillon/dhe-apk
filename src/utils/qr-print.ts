@@ -31,7 +31,7 @@ export function buildQrPrintHtml(equipment: Equipment): string {
       width: 280px; border: 2px solid #1E4A73; border-radius: 16px;
       padding: 24px; text-align: center; page-break-inside: avoid;
     }
-    .logo { font-size: 18px; font-weight: bold; color: #0073FF; margin-bottom: 4px; }
+    .logo { font-size: 18px; font-weight: bold; color: #0172FE; margin-bottom: 4px; }
     .subtitle { font-size: 10px; color: #5396B7; margin-bottom: 16px; }
     .qr img { width: 180px; height: 180px; }
     .code { font-size: 24px; font-weight: bold; margin-top: 12px; }
@@ -97,7 +97,7 @@ export function buildBulkQrPrintHtml(equipments: Equipment[]): string {
       width: 260px; border: 2px solid #1E4A73; border-radius: 16px;
       padding: 20px; text-align: center; page-break-inside: avoid;
     }
-    .logo { font-size: 16px; font-weight: bold; color: #0073FF; }
+    .logo { font-size: 16px; font-weight: bold; color: #0172FE; }
     .subtitle { font-size: 9px; color: #5396B7; margin-bottom: 12px; }
     .qr img { width: 160px; height: 160px; }
     .code { font-size: 22px; font-weight: bold; margin-top: 10px; }

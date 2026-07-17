@@ -8,7 +8,7 @@ interface StatCardProps {
   color?: string;
 }
 
-export function StatCard({ icon: Icon, label, value, color = "#3D9EFF" }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, color = "#0172FE" }: StatCardProps) {
   return (
     <View className="flex-1 rounded-2xl border border-dhe-border bg-dhe-card p-5">
       <View

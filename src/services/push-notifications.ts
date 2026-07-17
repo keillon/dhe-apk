@@ -65,7 +65,7 @@ async function ensureAndroidChannel(Notifications: NotificationsModule): Promise
     name: "Alertas DHE",
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: "#00E5FF",
+    lightColor: "#0172FE",
   });
 }
 

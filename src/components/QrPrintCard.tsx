@@ -21,7 +21,7 @@ export const QrPrintCard = forwardRef<View, QrPrintCardProps>(function QrPrintCa
       className="items-center rounded-3xl border-2 border-[#1E4A73] bg-white p-8"
       style={{ width: 320 }}
     >
-      <DheLogo variant="color" size="sm" />
+      <DheLogo variant="mark" size="md" />
       <Text className="mt-4 text-center text-xs font-semibold text-[#001423]">
         DHE Componentes Hidráulicos
       </Text>

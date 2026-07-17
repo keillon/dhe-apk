@@ -59,7 +59,7 @@ export function buildInspectionReportHtml(inspection: Inspection): string {
   <style>
     @page { size: A4; margin: 18mm; }
     body { font-family: Arial, sans-serif; color: #001423; }
-    h1 { color: #0073FF; margin-bottom: 4px; }
+    h1 { color: #0172FE; margin-bottom: 4px; }
     .meta { color: #5396B7; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; margin: 16px 0; }
     th, td { border: 1px solid #d0e4f2; padding: 8px; text-align: left; font-size: 12px; }
