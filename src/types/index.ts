@@ -243,6 +243,7 @@ export interface EquipmentInput {
   status: EquipmentStatus;
   proxima_manutencao?: string;
   foto_url?: string;
+  qr_code?: string;
 }
 
 export interface UpdateInspectionInput {

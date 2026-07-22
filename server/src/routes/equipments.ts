@@ -22,6 +22,13 @@ const equipmentSchema = z.object({
   status: z.enum(["operando", "parado", "manutencao"]).default("operando"),
   proxima_manutencao: z.string().optional(),
   foto_url: z.string().optional(),
+  qr_code: z
+    .string()
+    .trim()
+    .min(2)
+    .max(40)
+    .regex(/^[A-Za-z0-9][A-Za-z0-9 _.-]*$/, "QR Code inválido")
+    .optional(),
 });
 
 export const equipmentsRouter = Router();
@@ -170,7 +177,19 @@ equipmentsRouter.post("/", adminMiddleware, async (req, res) => {
       ? parseOptionalDate(data.proxima_manutencao)
       : null;
 
-    const qrCode = await generateNextQrCode();
+    const requestedQr = data.qr_code ? normalizeQrCode(data.qr_code) : null;
+    if (requestedQr) {
+      const existingQr = await prisma.equipamento.findFirst({
+        where: { qrCode: { equals: requestedQr, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (existingQr) {
+        res.status(409).json({ error: "Já existe um equipamento com este QR Code." });
+        return;
+      }
+    }
+
+    const qrCode = requestedQr ?? (await generateNextQrCode());
 
     const equipment = await prisma.equipamento.create({
       data: {
@@ -252,9 +271,25 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
 
     const fotoUrl = await resolveEquipmentPhoto(data.foto_url, id);
 
+    const requestedQr = data.qr_code ? normalizeQrCode(data.qr_code) : null;
+    if (requestedQr && requestedQr !== existing.qrCode.toUpperCase()) {
+      const conflict = await prisma.equipamento.findFirst({
+        where: {
+          qrCode: { equals: requestedQr, mode: "insensitive" },
+          NOT: { id },
+        },
+        select: { id: true },
+      });
+      if (conflict) {
+        res.status(409).json({ error: "Já existe um equipamento com este QR Code." });
+        return;
+      }
+    }
+
     const equipment = await prisma.equipamento.update({
       where: { id },
       data: {
+        ...(requestedQr ? { qrCode: requestedQr } : {}),
         clienteId: data.cliente_id,
         empresa: client.empresa,
         nome: data.nome,
