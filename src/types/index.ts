@@ -240,6 +240,7 @@ export interface EquipmentInput {
   numero_serie: string;
   ano: number;
   localizacao: string;
+  tipo?: string;
   status: EquipmentStatus;
   proxima_manutencao?: string;
   foto_url?: string;

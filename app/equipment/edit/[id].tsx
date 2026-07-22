@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ScrollView, Text } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Trash2 } from "lucide-react-native";
@@ -20,6 +20,7 @@ import {
   useUpdateEquipment,
   useDeleteEquipment,
   useRequireAdmin,
+  useResponsive,
 } from "@/hooks";
 import { feedback } from "@/services/feedback";
 import { dateBRToISO, formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
@@ -40,15 +41,23 @@ export default function EditEquipmentScreen() {
   const { data: clients } = useClients();
   const updateEquipment = useUpdateEquipment();
   const deleteEquipment = useDeleteEquipment();
+  const {
+    horizontalPadding,
+    screenTopPadding,
+    scrollBottomPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+  } = useResponsive();
 
   const [clienteId, setClienteId] = useState("");
   const [nome, setNome] = useState("");
   const [patrimonio, setPatrimonio] = useState("");
+  const [setor, setSetor] = useState("");
+  const [tipo, setTipo] = useState("");
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [numeroSerie, setNumeroSerie] = useState("");
   const [ano, setAno] = useState("");
-  const [localizacao, setLocalizacao] = useState("");
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
   const [fotoUrl, setFotoUrl] = useState<string | undefined>();
@@ -62,7 +71,8 @@ export default function EditEquipmentScreen() {
     setModelo(equipment.modelo);
     setNumeroSerie(equipment.numero_serie);
     setAno(String(equipment.ano));
-    setLocalizacao(equipment.localizacao);
+    setSetor(equipment.localizacao);
+    setTipo(equipment.tipo ?? "");
     setStatus(equipment.status);
     setProximaManutencao(
       equipment.proxima_manutencao ? formatDate(equipment.proxima_manutencao) : ""
@@ -96,7 +106,8 @@ export default function EditEquipmentScreen() {
           modelo: modelo.trim(),
           numero_serie: numeroSerie.trim(),
           ano: anoNum,
-          localizacao: localizacao.trim(),
+          localizacao: setor.trim(),
+          tipo: tipo.trim() || undefined,
           status,
           proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
           foto_url: fotoUrl,
@@ -138,53 +149,70 @@ export default function EditEquipmentScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
-        <PageContainer>
-          <BackHeader fallback={`/equipment/${id}`} />
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={keyboardBehavior}
+        keyboardVerticalOffset={keyboardVerticalOffset}
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: horizontalPadding,
+            paddingTop: screenTopPadding + 8,
+            paddingBottom: scrollBottomPadding + 24,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          showsVerticalScrollIndicator={false}
+        >
+          <PageContainer>
+            <BackHeader fallback={`/equipment/${id}`} />
 
-          <Text className="mb-1 text-2xl font-bold text-dhe-text">Editar equipamento</Text>
-          <Text className="mb-6 text-sm text-dhe-textSecondary">QR: {equipment.qr_code}</Text>
+            <Text className="mb-1 text-2xl font-bold text-dhe-text">Editar equipamento</Text>
+            <Text className="mb-6 text-sm text-dhe-textSecondary">QR: {equipment.qr_code}</Text>
 
-          <SelectField
-            label="Cliente"
-            value={clienteId}
-            options={clientOptions}
-            onChange={setClienteId}
-          />
-          <Input label="Nome" value={nome} onChangeText={setNome} />
-          <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
-          <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
-          <Input label="Marca" value={marca} onChangeText={setMarca} />
-          <Input label="Modelo" value={modelo} onChangeText={setModelo} />
-          <Input label="Nº Série" value={numeroSerie} onChangeText={setNumeroSerie} />
-          <Input label="Ano" value={ano} onChangeText={setAno} keyboardType="number-pad" />
-          <Input label="Localização" value={localizacao} onChangeText={setLocalizacao} />
-          <SelectField label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
-          <DateInput
-            label="Próxima manutenção"
-            value={proximaManutencao}
-            onChangeText={setProximaManutencao}
-          />
+            <SelectField
+              label="Cliente"
+              value={clienteId}
+              options={clientOptions}
+              onChange={setClienteId}
+            />
+            <Input label="Nome" value={nome} onChangeText={setNome} />
+            <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
+            <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
+            <Input label="Setor" value={setor} onChangeText={setSetor} />
+            <Input label="Tipo" value={tipo} onChangeText={setTipo} />
+            <Input label="Marca" value={marca} onChangeText={setMarca} />
+            <Input label="Modelo" value={modelo} onChangeText={setModelo} />
+            <Input label="Nº Série" value={numeroSerie} onChangeText={setNumeroSerie} />
+            <Input label="Ano" value={ano} onChangeText={setAno} keyboardType="number-pad" />
+            <SelectField label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
+            <DateInput
+              label="Próxima manutenção"
+              value={proximaManutencao}
+              onChangeText={setProximaManutencao}
+            />
 
-          <Button
-            title="Salvar alterações"
-            onPress={handleSave}
-            loading={updateEquipment.isPending}
-            fullWidth
-            size="lg"
-            className="mb-3"
-          />
+            <Button
+              title="Salvar alterações"
+              onPress={handleSave}
+              loading={updateEquipment.isPending}
+              fullWidth
+              size="lg"
+              className="mb-3"
+            />
 
-          <Button
-            title="Excluir equipamento"
-            variant="outline"
-            onPress={handleDelete}
-            loading={deleteEquipment.isPending}
-            fullWidth
-            icon={<Trash2 size={18} color={colors.danger} />}
-          />
-        </PageContainer>
-      </ScrollView>
+            <Button
+              title="Excluir equipamento"
+              variant="outline"
+              onPress={handleDelete}
+              loading={deleteEquipment.isPending}
+              fullWidth
+              icon={<Trash2 size={18} color={colors.danger} />}
+            />
+          </PageContainer>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

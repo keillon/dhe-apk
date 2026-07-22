@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ScrollView, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { QrCode } from "lucide-react-native";
@@ -15,7 +15,7 @@ import {
   PageContainer,
   SelectField,
 } from "@/components";
-import { useClients, useCreateEquipment, useNextQrCode, useRequireAdmin } from "@/hooks";
+import { useClients, useCreateEquipment, useNextQrCode, useRequireAdmin, useResponsive } from "@/hooks";
 import { feedback } from "@/services/feedback";
 import { dateBRToISO, getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
@@ -34,15 +34,23 @@ export default function NewEquipmentScreen() {
   const { data: clients, isLoading: clientsLoading, error: clientsError, refetch } = useClients();
   const { data: nextQr } = useNextQrCode();
   const createEquipment = useCreateEquipment();
+  const {
+    horizontalPadding,
+    screenTopPadding,
+    scrollBottomPadding,
+    keyboardBehavior,
+    keyboardVerticalOffset,
+  } = useResponsive();
 
   const [clienteId, setClienteId] = useState(clientId ?? "");
   const [nome, setNome] = useState("");
   const [patrimonio, setPatrimonio] = useState("");
+  const [setor, setSetor] = useState("");
+  const [tipo, setTipo] = useState("");
   const [marca, setMarca] = useState("");
   const [modelo, setModelo] = useState("");
   const [numeroSerie, setNumeroSerie] = useState("");
   const [ano, setAno] = useState(String(new Date().getFullYear()));
-  const [localizacao, setLocalizacao] = useState("");
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
   const [fotoUrl, setFotoUrl] = useState<string | undefined>();
@@ -51,8 +59,17 @@ export default function NewEquipmentScreen() {
     clients?.map((c) => ({ id: c.id, label: c.empresa })) ?? [];
 
   const handleSubmit = async () => {
-    if (!clienteId || !nome.trim() || !patrimonio.trim() || !marca.trim() || !modelo.trim()) {
-      feedback.toast.error("Preencha cliente, nome, patrimônio, marca e modelo.");
+    if (
+      !clienteId ||
+      !nome.trim() ||
+      !patrimonio.trim() ||
+      !setor.trim() ||
+      !tipo.trim() ||
+      !marca.trim() ||
+      !modelo.trim() ||
+      !numeroSerie.trim()
+    ) {
+      feedback.toast.error("Preencha cliente, nome, patrimônio, setor, tipo, marca, modelo e nº série.");
       return;
     }
 
@@ -69,9 +86,10 @@ export default function NewEquipmentScreen() {
         patrimonio: patrimonio.trim(),
         marca: marca.trim(),
         modelo: modelo.trim(),
-        numero_serie: numeroSerie.trim() || "N/A",
+        numero_serie: numeroSerie.trim(),
         ano: anoNum,
-        localizacao: localizacao.trim() || "Não informado",
+        localizacao: setor.trim(),
+        tipo: tipo.trim(),
         status,
         proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
         foto_url: fotoUrl,
@@ -101,61 +119,78 @@ export default function NewEquipmentScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView className="flex-1 px-5 pb-8" showsVerticalScrollIndicator={false}>
-        <PageContainer>
-          <BackHeader fallback="/(tabs)/manage" />
+      <KeyboardAvoidingView
+        className="flex-1"
+        behavior={keyboardBehavior}
+        keyboardVerticalOffset={keyboardVerticalOffset}
+      >
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{
+            paddingHorizontal: horizontalPadding,
+            paddingTop: screenTopPadding + 8,
+            paddingBottom: scrollBottomPadding + 24,
+          }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === "ios" ? "interactive" : "on-drag"}
+          showsVerticalScrollIndicator={false}
+        >
+          <PageContainer>
+            <BackHeader fallback="/(tabs)/manage" />
 
-          <Text className="mb-6 text-2xl font-bold text-dhe-text">Novo equipamento</Text>
+            <Text className="mb-6 text-2xl font-bold text-dhe-text">Novo equipamento</Text>
 
-          {nextQr && (
-            <Card className="mb-6 flex-row items-center border-dhe-primary/40">
-              <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
-                <QrCode size={24} color={colors.primary} />
-              </View>
-              <View>
-                <Text className="text-xs text-dhe-textMuted">Próximo QR Code</Text>
-                <Text className="text-lg font-bold text-dhe-primary">{nextQr}</Text>
-              </View>
-            </Card>
-          )}
+            {nextQr && (
+              <Card className="mb-6 flex-row items-center border-dhe-primary/40">
+                <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
+                  <QrCode size={24} color={colors.primary} />
+                </View>
+                <View>
+                  <Text className="text-xs text-dhe-textMuted">QR Code</Text>
+                  <Text className="text-lg font-bold text-dhe-primary">{nextQr}</Text>
+                </View>
+              </Card>
+            )}
 
-          <SelectField
-            label="Cliente"
-            value={clienteId}
-            options={clientOptions}
-            onChange={setClienteId}
-            placeholder="Selecione o cliente"
-          />
-          <Input label="Nome do equipamento" value={nome} onChangeText={setNome} />
-          <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
-          <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
-          <Input label="Marca" value={marca} onChangeText={setMarca} />
-          <Input label="Modelo" value={modelo} onChangeText={setModelo} />
-          <Input label="Nº Série" value={numeroSerie} onChangeText={setNumeroSerie} />
-          <Input
-            label="Ano"
-            value={ano}
-            onChangeText={setAno}
-            keyboardType="number-pad"
-            maxLength={4}
-          />
-          <Input label="Localização" value={localizacao} onChangeText={setLocalizacao} />
-          <SelectField label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
-          <DateInput
-            label="Próxima manutenção (opcional)"
-            value={proximaManutencao}
-            onChangeText={setProximaManutencao}
-          />
+            <SelectField
+              label="Cliente"
+              value={clienteId}
+              options={clientOptions}
+              onChange={setClienteId}
+              placeholder="Selecione o cliente"
+            />
+            <Input label="Nome do equipamento" value={nome} onChangeText={setNome} />
+            <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
+            <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />
+            <Input label="Setor" value={setor} onChangeText={setSetor} placeholder="Ex: Injeção" />
+            <Input label="Tipo" value={tipo} onChangeText={setTipo} placeholder="Ex: Injetora" />
+            <Input label="Marca" value={marca} onChangeText={setMarca} />
+            <Input label="Modelo" value={modelo} onChangeText={setModelo} />
+            <Input label="Nº Série" value={numeroSerie} onChangeText={setNumeroSerie} />
+            <Input
+              label="Ano"
+              value={ano}
+              onChangeText={setAno}
+              keyboardType="number-pad"
+              maxLength={4}
+            />
+            <SelectField label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
+            <DateInput
+              label="Próxima manutenção (opcional)"
+              value={proximaManutencao}
+              onChangeText={setProximaManutencao}
+            />
 
-          <Button
-            title="Cadastrar e gerar QR"
-            onPress={handleSubmit}
-            loading={createEquipment.isPending}
-            fullWidth
-            size="lg"
-          />
-        </PageContainer>
-      </ScrollView>
+            <Button
+              title="Cadastrar e gerar QR"
+              onPress={handleSubmit}
+              loading={createEquipment.isPending}
+              fullWidth
+              size="lg"
+            />
+          </PageContainer>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

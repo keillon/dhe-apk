@@ -131,6 +131,7 @@ export default function EquipmentScreen() {
               <Text className="mb-4 text-sm font-bold text-dhe-text">Detalhes</Text>
               {[
                 ["Patrimônio", equipment.patrimonio],
+                ["Setor", equipment.localizacao],
                 ["Tipo", equipment.tipo ?? "—"],
                 ["Marca", equipment.marca],
                 ["Modelo", equipment.modelo],
