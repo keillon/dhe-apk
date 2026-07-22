@@ -44,6 +44,7 @@ export default function NewEquipmentScreen() {
 
   const [clienteId, setClienteId] = useState(clientId ?? "");
   const [nome, setNome] = useState("");
+  const [customQr, setCustomQr] = useState("");
   const [patrimonio, setPatrimonio] = useState("");
   const [setor, setSetor] = useState("");
   const [tipo, setTipo] = useState("");
@@ -93,6 +94,7 @@ export default function NewEquipmentScreen() {
         status,
         proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
         foto_url: fotoUrl,
+        qr_code: customQr.trim() ? customQr.trim().toUpperCase() : undefined,
       });
 
       feedback.toast.success(`Equipamento criado com QR ${equipment.qr_code}.`);
@@ -145,8 +147,8 @@ export default function NewEquipmentScreen() {
                 <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
                   <QrCode size={24} color={colors.primary} />
                 </View>
-                <View>
-                  <Text className="text-xs text-dhe-textMuted">QR Code</Text>
+                <View className="flex-1">
+                  <Text className="text-xs text-dhe-textMuted">Próximo QR automático</Text>
                   <Text className="text-lg font-bold text-dhe-primary">{nextQr}</Text>
                 </View>
               </Card>
@@ -159,6 +161,17 @@ export default function NewEquipmentScreen() {
               onChange={setClienteId}
               placeholder="Selecione o cliente"
             />
+            <Input
+              label="QR Code (opcional)"
+              value={customQr}
+              onChangeText={(text) => setCustomQr(text.toUpperCase())}
+              placeholder={nextQr ?? "DHE-0001"}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            <Text className="mb-4 -mt-2 text-xs text-dhe-textMuted">
+              Deixe em branco para usar o próximo código automático.
+            </Text>
             <Input label="Nome do equipamento" value={nome} onChangeText={setNome} />
             <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />
             <Input label="Patrimônio" value={patrimonio} onChangeText={setPatrimonio} />

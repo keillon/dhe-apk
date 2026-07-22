@@ -620,9 +620,17 @@ export const demoData = {
     const client = demoClients.find((c) => c.id === data.cliente_id);
     if (!client) throw new Error("Cliente não encontrado");
 
+    const requestedQr = data.qr_code?.trim().toUpperCase();
+    if (
+      requestedQr &&
+      demoEquipments.some((item) => item.qr_code.toUpperCase() === requestedQr)
+    ) {
+      throw new Error("Já existe um equipamento com este QR Code.");
+    }
+
     const equipment: Equipment = {
       id: generateId(),
-      qr_code: nextDemoQrCode(),
+      qr_code: requestedQr || nextDemoQrCode(),
       cliente_id: data.cliente_id,
       empresa: client.empresa,
       nome: data.nome,
@@ -653,6 +661,16 @@ export const demoData = {
     const client = demoClients.find((c) => c.id === data.cliente_id);
     if (!client) throw new Error("Cliente não encontrado");
 
+    const requestedQr = data.qr_code?.trim().toUpperCase();
+    if (
+      requestedQr &&
+      demoEquipments.some(
+        (item) => item.id !== id && item.qr_code.toUpperCase() === requestedQr
+      )
+    ) {
+      throw new Error("Já existe um equipamento com este QR Code.");
+    }
+
     const updated: Equipment = {
       ...demoEquipments[index],
       cliente_id: data.cliente_id,
@@ -668,6 +686,7 @@ export const demoData = {
       status: data.status,
       foto_url: data.foto_url,
       proxima_manutencao: data.proxima_manutencao,
+      qr_code: requestedQr || demoEquipments[index].qr_code,
       updated_at: new Date().toISOString(),
       cliente: client,
     };
@@ -681,11 +700,16 @@ export const demoData = {
     return updated;
   },
 
-  async deleteEquipment(id: string): Promise<void> {
+  async deleteEquipment(id: string, options?: { cascade?: boolean }): Promise<void> {
     await delay(400);
     const hasInspections = demoInspections.some((i) => i.equipamento_id === id);
-    if (hasInspections) {
+    if (hasInspections && !options?.cascade) {
       throw new Error("Equipamento possui inspeções registradas.");
+    }
+
+    if (options?.cascade) {
+      demoInspections = demoInspections.filter((i) => i.equipamento_id !== id);
+      demoNotifications = demoNotifications.filter((n) => n.equipamento_id !== id);
     }
 
     demoEquipments = demoEquipments.filter((e) => e.id !== id);

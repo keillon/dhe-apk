@@ -21,6 +21,7 @@ export type { MediaKind, MediaPreviewItem } from "./media";
 export { getRouteParam } from "./route-params";
 export { logger, bootstrapLogging } from "./logger";
 export { isAdmin, getRoleLabel } from "./roles";
+export { confirmAndDeleteEquipment } from "./equipment-delete";
 
 export function formatDate(date: string | undefined): string {
   if (!date) return "—";

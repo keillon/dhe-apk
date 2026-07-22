@@ -16,8 +16,7 @@ import {
 } from "@/components";
 import { useEquipment, useDeleteEquipment } from "@/hooks";
 import { useAuthStore } from "@/store";
-import { feedback } from "@/services/feedback";
-import { formatDate, getApiErrorMessage, getRouteParam, isAdmin, resolveMediaUrl } from "@/utils";
+import { formatDate, getApiErrorMessage, getRouteParam, isAdmin, resolveMediaUrl, confirmAndDeleteEquipment } from "@/utils";
 import { colors } from "@/theme";
 
 export default function EquipmentScreen() {
@@ -32,23 +31,14 @@ export default function EquipmentScreen() {
   const handleDelete = async () => {
     if (!equipment) return;
 
-    const confirmed = await feedback.choose(
-      "Excluir equipamento",
-      `Deseja remover ${equipment.nome}? Remova as inspeções antes, se houver.`,
-      [
-        { text: "Cancelar", value: "cancel", style: "cancel" },
-        { text: "Excluir", value: "delete", style: "destructive" },
-      ]
-    );
+    const result = await confirmAndDeleteEquipment({
+      id: equipment.id,
+      name: equipment.nome,
+      deleteFn: (args) => deleteEquipment.mutateAsync(args),
+    });
 
-    if (confirmed !== "delete") return;
-
-    try {
-      await deleteEquipment.mutateAsync(equipment.id);
-      feedback.toast.success("Equipamento removido.");
+    if (result === "deleted") {
       router.replace("/(tabs)");
-    } catch (err) {
-      feedback.toast.error(getApiErrorMessage(err, "Erro ao remover equipamento."));
     }
   };
 

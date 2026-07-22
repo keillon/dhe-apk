@@ -299,6 +299,7 @@ export function useUpdateEquipment() {
     onSuccess: (equipment) => {
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
       queryClient.invalidateQueries({ queryKey: ["equipment", equipment.id] });
+      queryClient.invalidateQueries({ queryKey: ["next-qr"] });
     },
   });
 }
@@ -307,10 +308,14 @@ export function useDeleteEquipment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => api.deleteEquipment(id),
+    mutationFn: ({ id, cascade }: { id: string; cascade?: boolean }) =>
+      api.deleteEquipment(id, { cascade }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["equipments"] });
+      queryClient.invalidateQueries({ queryKey: ["inspections"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["next-qr"] });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 }

@@ -500,10 +500,12 @@ export const api = {
     return equipment;
   },
 
-  async deleteEquipment(id: string): Promise<void> {
-    if (!isApiConfigured) return demoData.deleteEquipment(id);
+  async deleteEquipment(id: string, options?: { cascade?: boolean }): Promise<void> {
+    if (!isApiConfigured) return demoData.deleteEquipment(id, options);
 
-    await http.delete(`/equipments/${id}`);
+    await http.delete(`/equipments/${id}`, {
+      params: options?.cascade ? { cascade: "1" } : undefined,
+    });
   },
 
   async deleteInspection(id: string): Promise<void> {

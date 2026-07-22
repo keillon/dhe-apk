@@ -17,6 +17,10 @@ export function isNotFoundError(error: unknown): boolean {
   return axios.isAxiosError(error) && error.response?.status === 404;
 }
 
+export function isConflictError(error: unknown): boolean {
+  return axios.isAxiosError(error) && error.response?.status === 409;
+}
+
 export function getConnectionInfo() {
   return {
     mode: isApiConfigured ? ("api" as const) : ("demo" as const),

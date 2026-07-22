@@ -315,6 +315,7 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
       antes: pickAuditFields(existing as unknown as Record<string, unknown>, [
         "nome",
         "patrimonio",
+        "qrCode",
         "status",
         "tipo",
         "localizacao",
@@ -322,6 +323,7 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
       depois: pickAuditFields(equipment as unknown as Record<string, unknown>, [
         "nome",
         "patrimonio",
+        "qrCode",
         "status",
         "tipo",
         "localizacao",
@@ -337,19 +339,24 @@ equipmentsRouter.put("/:id", adminMiddleware, async (req, res) => {
 
 equipmentsRouter.delete("/:id", adminMiddleware, async (req, res) => {
   const id = String(req.params.id);
+  const cascade =
+    req.query.cascade === "1" ||
+    req.query.cascade === "true" ||
+    req.query.cascade === "yes";
 
   try {
-    const inspectionCount = await prisma.inspecao.count({ where: { equipamentoId: id } });
-    if (inspectionCount > 0) {
-      res.status(409).json({
-        error: "Equipamento possui inspeções. Remova as inspeções antes de excluir.",
-      });
-      return;
-    }
-
     const existing = await prisma.equipamento.findUnique({ where: { id } });
     if (!existing) {
       res.status(404).json({ error: "Equipamento não encontrado" });
+      return;
+    }
+
+    const inspectionCount = await prisma.inspecao.count({ where: { equipamentoId: id } });
+    if (inspectionCount > 0 && !cascade) {
+      res.status(409).json({
+        error: "Equipamento possui inspeções. Remova as inspeções antes de excluir.",
+        inspection_count: inspectionCount,
+      });
       return;
     }
 
@@ -358,10 +365,32 @@ equipmentsRouter.delete("/:id", adminMiddleware, async (req, res) => {
       entidadeId: id,
       usuarioId: req.auth!.userId,
       acao: "delete",
-      antes: pickAuditFields(existing as unknown as Record<string, unknown>, ["nome", "patrimonio", "qrCode"]),
+      antes: pickAuditFields(existing as unknown as Record<string, unknown>, [
+        "nome",
+        "patrimonio",
+        "qrCode",
+      ]),
     });
 
-    await prisma.equipamento.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      if (cascade && inspectionCount > 0) {
+        const inspections = await tx.inspecao.findMany({
+          where: { equipamentoId: id },
+          select: { id: true },
+        });
+        const inspectionIds = inspections.map((item) => item.id);
+
+        await tx.historico.deleteMany({ where: { equipamentoId: id } });
+        await tx.foto.deleteMany({ where: { inspecaoId: { in: inspectionIds } } });
+        await tx.assinatura.deleteMany({ where: { inspecaoId: { in: inspectionIds } } });
+        await tx.inspecao.deleteMany({ where: { equipamentoId: id } });
+      }
+
+      await tx.notificacao.deleteMany({ where: { equipamentoId: id } });
+      await tx.rotaItem.deleteMany({ where: { equipamentoId: id } });
+      await tx.equipamento.delete({ where: { id } });
+    });
+
     res.json({ message: "Equipamento removido com sucesso" });
   } catch (error) {
     console.error("Erro ao remover equipamento:", error);

@@ -23,7 +23,7 @@ import {
   useResponsive,
 } from "@/hooks";
 import { feedback } from "@/services/feedback";
-import { dateBRToISO, formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
+import { dateBRToISO, confirmAndDeleteEquipment, formatDate, getApiErrorMessage, resolveMediaUrl } from "@/utils";
 import { colors } from "@/theme";
 import type { EquipmentStatus } from "@/types";
 
@@ -51,6 +51,7 @@ export default function EditEquipmentScreen() {
 
   const [clienteId, setClienteId] = useState("");
   const [nome, setNome] = useState("");
+  const [qrCode, setQrCode] = useState("");
   const [patrimonio, setPatrimonio] = useState("");
   const [setor, setSetor] = useState("");
   const [tipo, setTipo] = useState("");
@@ -66,6 +67,7 @@ export default function EditEquipmentScreen() {
     if (!equipment) return;
     setClienteId(equipment.cliente_id);
     setNome(equipment.nome);
+    setQrCode(equipment.qr_code);
     setPatrimonio(equipment.patrimonio);
     setMarca(equipment.marca);
     setModelo(equipment.modelo);
@@ -84,8 +86,8 @@ export default function EditEquipmentScreen() {
     clients?.map((c) => ({ id: c.id, label: c.empresa })) ?? [];
 
   const handleSave = async () => {
-    if (!equipment || !clienteId || !nome.trim()) {
-      feedback.toast.error("Preencha os campos obrigatórios.");
+    if (!equipment || !clienteId || !nome.trim() || !qrCode.trim()) {
+      feedback.toast.error("Preencha os campos obrigatórios, incluindo o QR Code.");
       return;
     }
 
@@ -111,6 +113,7 @@ export default function EditEquipmentScreen() {
           status,
           proxima_manutencao: proximaManutencao ? dateBRToISO(proximaManutencao) : undefined,
           foto_url: fotoUrl,
+          qr_code: qrCode.trim().toUpperCase(),
         },
       });
       feedback.toast.success("Equipamento atualizado.");
@@ -123,23 +126,14 @@ export default function EditEquipmentScreen() {
   const handleDelete = async () => {
     if (!equipment) return;
 
-    const confirmed = await feedback.choose(
-      "Excluir equipamento",
-      `Deseja remover ${equipment.nome}? Remova as inspeções antes, se houver.`,
-      [
-        { text: "Cancelar", value: "cancel", style: "cancel" },
-        { text: "Excluir", value: "delete", style: "destructive" },
-      ]
-    );
+    const result = await confirmAndDeleteEquipment({
+      id: equipment.id,
+      name: equipment.nome,
+      deleteFn: (args) => deleteEquipment.mutateAsync(args),
+    });
 
-    if (confirmed !== "delete") return;
-
-    try {
-      await deleteEquipment.mutateAsync(equipment.id);
-      feedback.toast.success("Equipamento removido.");
-      router.replace("/(tabs)");
-    } catch (err) {
-      feedback.toast.error(getApiErrorMessage(err, "Erro ao remover equipamento."));
+    if (result === "deleted") {
+      router.replace("/qrcodes");
     }
   };
 
@@ -169,13 +163,22 @@ export default function EditEquipmentScreen() {
             <BackHeader fallback={`/equipment/${id}`} />
 
             <Text className="mb-1 text-2xl font-bold text-dhe-text">Editar equipamento</Text>
-            <Text className="mb-6 text-sm text-dhe-textSecondary">QR: {equipment.qr_code}</Text>
+            <Text className="mb-6 text-sm text-dhe-textSecondary">
+              Altere os dados e o QR Code impresso na máquina.
+            </Text>
 
             <SelectField
               label="Cliente"
               value={clienteId}
               options={clientOptions}
               onChange={setClienteId}
+            />
+            <Input
+              label="QR Code"
+              value={qrCode}
+              onChangeText={(text) => setQrCode(text.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
             />
             <Input label="Nome" value={nome} onChangeText={setNome} />
             <EquipmentPhotoPicker value={fotoUrl} onChange={setFotoUrl} />

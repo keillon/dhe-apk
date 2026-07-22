@@ -1,34 +1,100 @@
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useMemo, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import { useRouter, type Href } from "expo-router";
-import { Printer, Share2, QrCode, Plus } from "lucide-react-native";
-import { BackHeader, Button, Card, EmptyState, ErrorState, Loading, Screen } from "@/components";
-import { useEquipments, useRequireAdmin } from "@/hooks";
+import { Printer, Share2, QrCode, Plus, Pencil, Trash2, Search } from "lucide-react-native";
+import {
+  BackHeader,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  Input,
+  Loading,
+  Screen,
+} from "@/components";
+import { useDeleteEquipment, useEquipments, useRequireAdmin, useResponsive } from "@/hooks";
 import { feedback } from "@/services/feedback";
-import { getApiErrorMessage } from "@/utils";
+import { confirmAndDeleteEquipment, getApiErrorMessage } from "@/utils";
 import { buildBulkQrPrintHtml, printQrPdf, shareQrPdf } from "@/utils/qr-print";
 import { colors } from "@/theme";
+import type { Equipment } from "@/types";
 
 export default function QrCodesScreen() {
   const router = useRouter();
   const { allowed, isLoading: authLoading } = useRequireAdmin();
   const { data: equipments, isLoading, error, refetch } = useEquipments();
+  const deleteEquipment = useDeleteEquipment();
+  const { isSmallPhone } = useResponsive();
+  const [query, setQuery] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<"print" | "delete" | null>(null);
+
+  const filtered = useMemo(() => {
+    const list = equipments ?? [];
+    const normalized = query.trim().toUpperCase();
+    if (!normalized) return list;
+
+    return list.filter((eq) => {
+      const haystack = [
+        eq.qr_code,
+        eq.nome,
+        eq.patrimonio,
+        eq.localizacao,
+        eq.tipo,
+        eq.cliente?.empresa,
+        eq.empresa,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toUpperCase();
+      return haystack.includes(normalized);
+    });
+  }, [equipments, query]);
 
   const handlePrintAll = async () => {
-    if (!equipments?.length) return;
+    if (!filtered.length) return;
     try {
-      await printQrPdf(await buildBulkQrPrintHtml(equipments));
+      await printQrPdf(await buildBulkQrPrintHtml(filtered));
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
     }
   };
 
   const handleShareAll = async () => {
-    if (!equipments?.length) return;
+    if (!filtered.length) return;
     try {
-      await shareQrPdf(await buildBulkQrPrintHtml(equipments), "QR Codes DHE");
+      await shareQrPdf(await buildBulkQrPrintHtml(filtered), "QR Codes DHE");
       feedback.toast.success("PDF pronto para compartilhar.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Erro ao compartilhar PDF."));
+    }
+  };
+
+  const handlePrintOne = async (equipment: Equipment) => {
+    setBusyId(equipment.id);
+    setBusyAction("print");
+    try {
+      await printQrPdf(await buildBulkQrPrintHtml([equipment]));
+    } catch (err) {
+      feedback.toast.error(getApiErrorMessage(err, "Erro ao imprimir PDF."));
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
+    }
+  };
+
+  const handleDelete = async (equipment: Equipment) => {
+    setBusyId(equipment.id);
+    setBusyAction("delete");
+    try {
+      await confirmAndDeleteEquipment({
+        id: equipment.id,
+        name: equipment.nome,
+        deleteFn: (args) => deleteEquipment.mutateAsync(args),
+      });
+    } finally {
+      setBusyId(null);
+      setBusyAction(null);
     }
   };
 
@@ -38,8 +104,8 @@ export default function QrCodesScreen() {
 
   return (
     <Screen
-      title="QR Codes para Impressão"
-      subtitle="Gere e imprima QR Codes dos equipamentos cadastrados."
+      title="QR Codes"
+      subtitle="Busque, edite, exclua e imprima os códigos dos equipamentos."
     >
       <BackHeader />
 
@@ -50,28 +116,31 @@ export default function QrCodesScreen() {
         className="mb-4"
       />
 
-      <Card className="mb-6 border-dhe-primary/40 bg-dhe-elevated">
-        <Text className="text-base font-bold text-dhe-text">Como funciona</Text>
-        <Text className="mt-2 text-sm leading-6 text-dhe-textSecondary">
-          1. Selecione o equipamento{"\n"}
-          2. Gere o QR com o ID único{"\n"}
-          3. Imprima e cole na máquina{"\n"}
-          4. O técnico escaneia para registrar inspeções
-        </Text>
-      </Card>
+      <View className="mb-4">
+        <Input
+          label="Buscar"
+          value={query}
+          onChangeText={setQuery}
+          placeholder="QR, nome, cliente, patrimônio..."
+          autoCorrect={false}
+        />
+        <View className="absolute right-4 top-9 opacity-50" pointerEvents="none">
+          <Search size={18} color={colors.textMuted} />
+        </View>
+      </View>
 
-      {equipments && equipments.length > 0 && (
+      {filtered.length > 0 && (
         <View className="mb-6 flex-row gap-3">
           <Button
-            title="Imprimir todos"
-            onPress={handlePrintAll}
+            title={isSmallPhone ? "Imprimir" : "Imprimir lista"}
+            onPress={() => void handlePrintAll()}
             variant="primary"
             className="flex-1"
             icon={<Printer size={18} color={colors.bg} />}
           />
           <Button
-            title="Compartilhar PDF"
-            onPress={handleShareAll}
+            title={isSmallPhone ? "PDF" : "Compartilhar"}
+            onPress={() => void handleShareAll()}
             variant="secondary"
             className="flex-1"
             icon={<Share2 size={18} color={colors.text} />}
@@ -79,31 +148,62 @@ export default function QrCodesScreen() {
         </View>
       )}
 
-      {equipments?.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState
-          title="Nenhum equipamento"
-          description="Cadastre equipamentos no banco para gerar QR Codes."
+          title={query ? "Nenhum resultado" : "Nenhum equipamento"}
+          description={
+            query
+              ? "Tente outro termo de busca."
+              : "Cadastre equipamentos para gerar e gerenciar QR Codes."
+          }
         />
       ) : (
-        equipments?.map((eq) => (
-          <Pressable
-            key={eq.id}
-            onPress={() => router.push(`/qrcodes/print/${eq.id}` as Href)}
-          >
-            <Card className="mb-4 flex-row items-center">
-              <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl bg-dhe-primary/20">
-                <QrCode size={28} color={colors.primary} />
+        filtered.map((eq) => (
+          <Card key={eq.id} className="mb-4">
+            <Pressable onPress={() => router.push(`/qrcodes/print/${eq.id}` as Href)}>
+              <View className="flex-row items-center">
+                <View className="mr-4 h-14 w-14 items-center justify-center rounded-2xl bg-dhe-primary/20">
+                  <QrCode size={28} color={colors.primary} />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-lg font-bold text-dhe-text">{eq.qr_code}</Text>
+                  <Text className="mt-1 text-sm text-dhe-textSecondary">{eq.nome}</Text>
+                  <Text className="mt-1 text-xs text-dhe-textMuted">
+                    {[eq.localizacao, eq.cliente?.empresa ?? eq.empresa].filter(Boolean).join(" · ")}
+                  </Text>
+                </View>
               </View>
-              <View className="flex-1">
-                <Text className="text-lg font-bold text-dhe-text">{eq.qr_code}</Text>
-                <Text className="mt-1 text-sm text-dhe-textSecondary">{eq.nome}</Text>
-                <Text className="mt-1 text-xs text-dhe-textMuted">
-                  {eq.cliente?.empresa ?? eq.empresa}
-                </Text>
-              </View>
-              <Printer size={20} color={colors.textSecondary} />
-            </Card>
-          </Pressable>
+            </Pressable>
+
+            <View className="mt-4 flex-row gap-2">
+              <Button
+                title="Imprimir"
+                variant="secondary"
+                className="flex-1"
+                size="sm"
+                loading={busyId === eq.id && busyAction === "print"}
+                onPress={() => void handlePrintOne(eq)}
+                icon={<Printer size={16} color={colors.text} />}
+              />
+              <Button
+                title="Editar"
+                variant="outline"
+                className="flex-1"
+                size="sm"
+                onPress={() => router.push(`/equipment/edit/${eq.id}` as Href)}
+                icon={<Pencil size={16} color={colors.primary} />}
+              />
+              <Button
+                title="Excluir"
+                variant="outline"
+                className="flex-1"
+                size="sm"
+                loading={busyId === eq.id && busyAction === "delete"}
+                onPress={() => void handleDelete(eq)}
+                icon={<Trash2 size={16} color={colors.danger} />}
+              />
+            </View>
+          </Card>
         ))
       )}
     </Screen>
