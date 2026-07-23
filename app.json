@@ -67,7 +67,6 @@
     },
     "plugins": [
       "./plugins/withCleartextTraffic.js",
-      "./plugins/withNotificationIcon.js",
       "expo-router",
       "expo-system-ui",
       [
@@ -114,6 +113,7 @@
           "sounds": []
         }
       ],
+      "./plugins/withNotificationIcon.js",
       [
         "expo-splash-screen",
         {

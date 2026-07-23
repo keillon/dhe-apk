@@ -19,7 +19,14 @@ import {
   PageContainer,
 } from "@/components";
 import { useMyInspections } from "@/hooks";
-import { formatDateTime, getContaminationLabel, getContaminationColor, getRouteParam, logger } from "@/utils";
+import {
+  formatDate,
+  formatDateTime,
+  getContaminationLabel,
+  getContaminationColor,
+  getRouteParam,
+  logger,
+} from "@/utils";
 import type { Inspection } from "@/types";
 import { colors } from "@/theme";
 
@@ -45,6 +52,15 @@ function getEquipmentItems(inspections: Inspection[]): EquipmentListItem[] {
   }
 
   return Array.from(map.values());
+}
+
+function OilLevelBar({ level }: { level: number }) {
+  const safe = Math.max(0, Math.min(100, level));
+  return (
+    <View className="mt-2 h-1.5 overflow-hidden rounded-full bg-dhe-border">
+      <View className="h-full rounded-full bg-dhe-primary" style={{ width: `${safe}%` }} />
+    </View>
+  );
 }
 
 export default function ActivityScreen() {
@@ -76,109 +92,143 @@ export default function ActivityScreen() {
         onRefresh={refetch}
       >
         <PageContainer>
-            <Text className="mb-1 text-2xl font-bold text-dhe-text">Minha atividade</Text>
-            <Text className="mb-6 text-sm text-dhe-textSecondary">
-              Equipamentos e inspeções que você realizou
-            </Text>
+          <Text className="mb-1 text-2xl font-bold text-dhe-text">Minha atividade</Text>
+          <Text className="mb-6 text-sm text-dhe-textSecondary">
+            Equipamentos e inspeções que você realizou
+          </Text>
 
-            <View className="mb-6 flex-row gap-3">
-              <StatCard
-                icon={ClipboardCheck}
-                label="Inspeções"
-                value={inspections?.length ?? 0}
-                color={colors.primary}
+          <View className="mb-6 flex-row gap-3">
+            <StatCard
+              icon={ClipboardCheck}
+              label="Inspeções"
+              value={inspections?.length ?? 0}
+              color={colors.primary}
+            />
+            <StatCard
+              icon={Wrench}
+              label="Equipamentos"
+              value={equipments.length}
+              color={colors.success}
+            />
+          </View>
+
+          <Text className="mb-3 text-lg font-bold text-dhe-text">Meus equipamentos</Text>
+
+          {equipments.length === 0 ? (
+            <Card className="mb-6">
+              <EmptyState
+                title="Nenhum equipamento ainda"
+                description="Escaneie um QR Code e registre sua primeira inspeção."
               />
-              <StatCard
-                icon={Wrench}
-                label="Equipamentos"
-                value={equipments.length}
-                color={colors.success}
+            </Card>
+          ) : (
+            equipments.map((equipment) => (
+              <Pressable
+                key={equipment.id}
+                onPress={() => openEquipment(equipment.id)}
+                className="mb-3"
+              >
+                <Card className="flex-row items-center">
+                  <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
+                    <Wrench size={22} color={colors.primary} />
+                  </View>
+                  <View className="flex-1">
+                    <Text className="font-semibold text-dhe-text">{equipment.nome}</Text>
+                    <Text className="mt-1 text-xs text-dhe-textSecondary">
+                      {equipment.subtitle}
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color={colors.textMuted} />
+                </Card>
+              </Pressable>
+            ))
+          )}
+
+          <Text className="mb-3 text-lg font-bold text-dhe-text">Meu histórico</Text>
+
+          {(inspections?.length ?? 0) === 0 ? (
+            <Card>
+              <EmptyState
+                title="Nenhuma inspeção registrada"
+                description="Suas inspeções aparecerão aqui após o primeiro registro."
               />
-            </View>
-
-            <Text className="mb-3 text-lg font-bold text-dhe-text">Meus equipamentos</Text>
-
-            {equipments.length === 0 ? (
-              <Card className="mb-6">
-                <EmptyState
-                  title="Nenhum equipamento ainda"
-                  description="Escaneie um QR Code e registre sua primeira inspeção."
-                />
-              </Card>
-            ) : (
-              equipments.map((equipment) => (
-                <Pressable
-                  key={equipment.id}
-                  onPress={() => openEquipment(equipment.id)}
-                  className="mb-3"
-                >
-                  <Card className="flex-row items-center">
-                    <View className="mr-4 h-12 w-12 items-center justify-center rounded-xl bg-dhe-primary/20">
-                      <Wrench size={22} color={colors.primary} />
-                    </View>
-                    <View className="flex-1">
-                      <Text className="font-semibold text-dhe-text">{equipment.nome}</Text>
-                      <Text className="mt-1 text-xs text-dhe-textSecondary">
-                        {equipment.subtitle}
-                      </Text>
-                    </View>
-                    <ChevronRight size={18} color={colors.textMuted} />
-                  </Card>
-                </Pressable>
-              ))
-            )}
-
-            <Text className="mb-3 text-lg font-bold text-dhe-text">Meu histórico</Text>
-
-            {(inspections?.length ?? 0) === 0 ? (
-              <Card>
-                <EmptyState
-                  title="Nenhuma inspeção registrada"
-                  description="Suas inspeções aparecerão aqui após o primeiro registro."
-                />
-              </Card>
-            ) : (
-              inspections?.map((inspection) => (
-                <Card key={inspection.id} className="mb-3">
-                  <View className="mb-3 flex-row items-start justify-between">
-                    <View className="flex-1 pr-3">
-                      <Text className="text-base font-bold text-dhe-text">
-                        {inspection.equipamento?.nome ?? "Equipamento"}
-                      </Text>
-                      <Text className="mt-1 text-xs text-dhe-textSecondary">
-                        {formatDateTime(inspection.created_at)}
-                      </Text>
-                    </View>
+            </Card>
+          ) : (
+            inspections?.map((inspection) => (
+              <Card key={inspection.id} className="mb-3">
+                <View className="mb-2 flex-row items-start justify-between">
+                  <View className="flex-1 pr-3">
+                    <Text className="text-base font-bold text-dhe-text">
+                      {inspection.equipamento?.nome ?? "Equipamento"}
+                    </Text>
+                    <Text className="mt-1 text-xs text-dhe-textSecondary">
+                      {inspection.equipamento?.qr_code
+                        ? `QR ${inspection.equipamento.qr_code}`
+                        : "Inspeção registrada"}
+                    </Text>
+                  </View>
+                  <View
+                    className="rounded-full px-2.5 py-1"
+                    style={{
+                      backgroundColor: `${getContaminationColor(inspection.contaminacao_oleo)}22`,
+                    }}
+                  >
                     <Text
-                      className="text-xs font-bold"
+                      className="text-[10px] font-bold uppercase"
                       style={{ color: getContaminationColor(inspection.contaminacao_oleo) }}
                     >
                       {getContaminationLabel(inspection.contaminacao_oleo)}
                     </Text>
                   </View>
+                </View>
 
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={() => router.push(`/inspection/${inspection.id}`)}
-                      className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-elevated py-2.5"
-                    >
-                      <Eye size={14} color={colors.primary} />
-                      <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={() =>
-                        router.push(`/equipment/history/${inspection.equipamento_id}`)
-                      }
-                      className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-primary py-2.5"
-                    >
-                      <History size={14} color={colors.bg} />
-                      <Text className="ml-1 text-xs font-bold text-dhe-bg">Histórico</Text>
-                    </Pressable>
+                <View className="mb-3 rounded-xl bg-dhe-elevated px-3 py-3">
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="text-xs text-dhe-textMuted">Nível do óleo</Text>
+                    <Text className="text-sm font-bold text-dhe-primary">
+                      {inspection.nivel_oleo}%
+                    </Text>
                   </View>
-                </Card>
-              ))
-            )}
-          </PageContainer>
+                  <OilLevelBar level={inspection.nivel_oleo} />
+
+                  <View className="mt-3 flex-row flex-wrap gap-x-4 gap-y-1">
+                    <Text className="text-xs text-dhe-textSecondary">
+                      Data: {formatDateTime(inspection.created_at)}
+                    </Text>
+                    {inspection.data_ultima_limpeza ? (
+                      <Text className="text-xs text-dhe-textSecondary">
+                        Limpeza: {formatDate(inspection.data_ultima_limpeza)}
+                      </Text>
+                    ) : null}
+                  </View>
+
+                  <Text className="mt-1 text-xs text-dhe-textSecondary">
+                    Contaminação: {getContaminationLabel(inspection.contaminacao_oleo)}
+                  </Text>
+                </View>
+
+                <View className="flex-row gap-2">
+                  <Pressable
+                    onPress={() => router.push(`/inspection/${inspection.id}`)}
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-elevated py-2.5"
+                  >
+                    <Eye size={14} color={colors.primary} />
+                    <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() =>
+                      router.push(`/equipment/history/${inspection.equipamento_id}`)
+                    }
+                    className="flex-1 flex-row items-center justify-center rounded-xl bg-dhe-primary py-2.5"
+                  >
+                    <History size={14} color={colors.bg} />
+                    <Text className="ml-1 text-xs font-bold text-dhe-bg">Histórico</Text>
+                  </Pressable>
+                </View>
+              </Card>
+            ))
+          )}
+        </PageContainer>
       </RefreshableScrollView>
     </SafeAreaView>
   );
