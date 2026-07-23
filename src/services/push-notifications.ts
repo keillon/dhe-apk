@@ -1,20 +1,37 @@
-import { Platform } from "react-native";
+import { AppState, Platform, type AppStateStatus } from "react-native";
 import Constants from "expo-constants";
 import type { PermissionStatus } from "expo-notifications";
+import { logger } from "@/utils/logger";
 
 export type PushPermissionStatus = "granted" | "denied" | "undetermined";
+
+export type PushRegistrationResult = {
+  ok: boolean;
+  token?: string;
+  permission?: PushPermissionStatus;
+  error?: string;
+};
 
 type NotificationsModule = typeof import("expo-notifications");
 
 let cachedModule: NotificationsModule | null | undefined;
 let handlerConfigured = false;
+let lastRegisteredToken: string | null = null;
+let appStateSubscription: { remove: () => void } | null = null;
 
 export function isNotificationsSupported(): boolean {
   return Constants.appOwnership !== "expo";
 }
 
 export function getNotificationsUnavailableMessage(): string {
-  return "Notificações push só funcionam no aplicativo instalado.";
+  return "Notificações push só funcionam no aplicativo instalado (APK).";
+}
+
+export function getFcmSetupMessage(): string {
+  return (
+    "Push Android exige Firebase (FCM): coloque google-services.json na raiz do projeto, " +
+    'defina android.googleServicesFile em app.json, faça prebuild --clean e gere um APK novo.'
+  );
 }
 
 async function getNotifications(): Promise<NotificationsModule | null> {
@@ -30,7 +47,8 @@ async function getNotifications(): Promise<NotificationsModule | null> {
   try {
     cachedModule = await import("expo-notifications");
     return cachedModule;
-  } catch {
+  } catch (error) {
+    logger.error("Push", "Falha ao carregar expo-notifications", error);
     cachedModule = null;
     return null;
   }
@@ -97,6 +115,24 @@ export async function requestPushPermissions(): Promise<PushPermissionStatus> {
   return normalizePermissionStatus(status);
 }
 
+function formatPushTokenError(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error ?? "");
+  const lower = message.toLowerCase();
+
+  if (
+    lower.includes("firebase") ||
+    lower.includes("fcm") ||
+    lower.includes("default firebaseapp") ||
+    lower.includes("google-services") ||
+    lower.includes("messaging")
+  ) {
+    return `${getFcmSetupMessage()} Detalhe: ${message}`;
+  }
+
+  if (message.trim()) return message;
+  return "Não foi possível obter o token de notificação.";
+}
+
 export async function getExpoPushToken(): Promise<{ token?: string; error?: string }> {
   if (!isNotificationsSupported()) {
     return { error: getNotificationsUnavailableMessage() };
@@ -104,7 +140,7 @@ export async function getExpoPushToken(): Promise<{ token?: string; error?: stri
 
   const Notifications = await getNotifications();
   if (!Notifications) {
-    return { error: "Módulo de notificações indisponível." };
+    return { error: "Módulo de notificações indisponível neste APK." };
   }
 
   const permission = await getPushPermissionStatus();
@@ -112,20 +148,27 @@ export async function getExpoPushToken(): Promise<{ token?: string; error?: stri
     return { error: "Permissão de notificação não concedida." };
   }
 
+  await ensureAndroidChannel(Notifications);
+  await ensureNotificationHandler();
+
   const projectId =
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
   if (!projectId) {
     return {
-      error: "Configuração de notificações incompleta neste aplicativo.",
+      error: "projectId EAS ausente. Verifique extra.eas.projectId no app.json.",
     };
   }
 
   try {
     const result = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!result?.data) {
+      return { error: "Expo retornou token vazio." };
+    }
     return { token: result.data };
-  } catch {
-    return { error: "Não foi possível obter o token de notificação." };
+  } catch (error) {
+    logger.error("Push", "getExpoPushTokenAsync falhou", error);
+    return { error: formatPushTokenError(error) };
   }
 }
 
@@ -199,16 +242,66 @@ export async function dismissPresentedNotifications(): Promise<void> {
 
 export async function registerPushForCurrentUser(
   registerToken: (token: string, platform?: string) => Promise<void>
-): Promise<void> {
-  if (!isNotificationsSupported()) return;
+): Promise<PushRegistrationResult> {
+  if (!isNotificationsSupported()) {
+    return { ok: false, error: getNotificationsUnavailableMessage() };
+  }
 
   const permission = await requestPushPermissions();
-  if (permission !== "granted") return;
+  if (permission !== "granted") {
+    return {
+      ok: false,
+      permission,
+      error: "Permissão de notificação negada. Ative nas configurações do Android.",
+    };
+  }
 
   const { token, error } = await getExpoPushToken();
-  if (!token || error) return;
+  if (!token) {
+    return { ok: false, permission, error: error ?? "Token indisponível." };
+  }
 
-  await registerToken(token, Platform.OS);
+  if (lastRegisteredToken === token) {
+    return { ok: true, token, permission };
+  }
+
+  try {
+    await registerToken(token, Platform.OS);
+    lastRegisteredToken = token;
+    logger.info("Push", "Token registrado no servidor");
+    return { ok: true, token, permission };
+  } catch (registerError) {
+    logger.error("Push", "Falha ao salvar token no servidor", registerError);
+    return {
+      ok: false,
+      token,
+      permission,
+      error: "Token obtido, mas a API não salvou. Verifique login/rede.",
+    };
+  }
+}
+
+/** Re-registra push ao voltar para o app (útil após conceder permissão). */
+export function watchPushRegistration(
+  registerToken: (token: string, platform?: string) => Promise<void>
+): () => void {
+  if (appStateSubscription) {
+    appStateSubscription.remove();
+    appStateSubscription = null;
+  }
+
+  const onChange = (state: AppStateStatus) => {
+    if (state !== "active") return;
+    void registerPushForCurrentUser(registerToken);
+  };
+
+  appStateSubscription = AppState.addEventListener("change", onChange);
+  void registerPushForCurrentUser(registerToken);
+
+  return () => {
+    appStateSubscription?.remove();
+    appStateSubscription = null;
+  };
 }
 
 export async function addNotificationResponseListener(

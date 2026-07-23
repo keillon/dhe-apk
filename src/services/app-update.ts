@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform, Linking } from "react-native";
 import Constants from "expo-constants";
 import * as Application from "expo-application";
@@ -13,6 +14,8 @@ const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "http://195.35.40.86:8090").
   ""
 );
 
+const INSTALLED_RELEASE_KEY = "dhe:installed_release_marker";
+
 export function getInstalledVersionCode(): number {
   const native = Number(Application.nativeBuildVersion);
   if (Number.isFinite(native) && native > 0) return native;
@@ -25,9 +28,32 @@ export function getInstalledVersionName(): string {
   return Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? "1.0.0";
 }
 
+export function getReleaseMarker(remote: AppVersionInfo): string {
+  return `${remote.versionCode}|${remote.publishedAt ?? ""}|${remote.version}`;
+}
+
+export async function getInstalledReleaseMarker(): Promise<string | null> {
+  try {
+    return await AsyncStorage.getItem(INSTALLED_RELEASE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function markReleaseInstalled(remote: AppVersionInfo): Promise<void> {
+  try {
+    await AsyncStorage.setItem(INSTALLED_RELEASE_KEY, getReleaseMarker(remote));
+  } catch (error) {
+    logger.warn("AppUpdate", "Falha ao gravar marcador de release", error);
+  }
+}
+
 export async function fetchRemoteAppVersion(): Promise<AppVersionInfo | null> {
   try {
-    const response = await fetch(`${API_URL}/api/app/version`, { cache: "no-store" });
+    const response = await fetch(`${API_URL}/api/app/version?t=${Date.now()}`, {
+      cache: "no-store",
+      headers: { "Cache-Control": "no-cache" },
+    });
     if (!response.ok) return null;
     return (await response.json()) as AppVersionInfo;
   } catch (error) {
@@ -36,8 +62,26 @@ export async function fetchRemoteAppVersion(): Promise<AppVersionInfo | null> {
   }
 }
 
-export function isRemoteUpdateAvailable(remote: AppVersionInfo): boolean {
-  return remote.versionCode > getInstalledVersionCode();
+/**
+ * Atualização disponível se versionCode remoto for maior,
+ * ou se republicaram APK (mesmo code) com publishedAt diferente.
+ */
+export async function isRemoteUpdateAvailable(remote: AppVersionInfo): Promise<boolean> {
+  const localCode = getInstalledVersionCode();
+
+  if (remote.versionCode > localCode) return true;
+  if (remote.versionCode < localCode) return false;
+
+  const marker = getReleaseMarker(remote);
+  const saved = await getInstalledReleaseMarker();
+
+  if (!saved) {
+    // Primeira execução: assume que o APK instalado já corresponde ao servidor.
+    await markReleaseInstalled(remote);
+    return false;
+  }
+
+  return saved !== marker;
 }
 
 export async function downloadAndInstallApk(
@@ -53,7 +97,11 @@ export async function downloadAndInstallApk(
   const download = FileSystem.createDownloadResumable(
     apkUrl,
     target,
-    {},
+    {
+      headers: {
+        "Cache-Control": "no-cache",
+      },
+    },
     (progress) => {
       if (!progress.totalBytesExpectedToWrite) return;
       const pct = progress.totalBytesWritten / progress.totalBytesExpectedToWrite;
@@ -74,12 +122,18 @@ export async function downloadAndInstallApk(
   });
 }
 
-export async function promptAndInstallRemoteUpdate(remote: AppVersionInfo): Promise<boolean> {
+export async function promptAndInstallRemoteUpdate(
+  remote: AppVersionInfo,
+  options?: { force?: boolean }
+): Promise<boolean> {
+  const localName = getInstalledVersionName();
+  const localCode = getInstalledVersionCode();
+
   const confirmed = await feedback.confirm(
-    "Nova versão disponível",
-    `Versão ${remote.version} pronta para instalar${
+    options?.force ? "Reinstalar APK" : "Nova versão disponível",
+    `Instalado: v${localName} (${localCode})\nServidor: v${remote.version} (${remote.versionCode})${
       remote.notes ? `\n\n${remote.notes}` : ""
-    }\n\nO app vai baixar o APK e abrir o instalador.`,
+    }\n\nO app vai baixar o APK e abrir o instalador do Android.`,
     "Baixar e instalar"
   );
 
@@ -88,7 +142,8 @@ export async function promptAndInstallRemoteUpdate(remote: AppVersionInfo): Prom
   try {
     feedback.toast.info("Baixando atualização...");
     await downloadAndInstallApk(remote.apkUrl);
-    feedback.toast.success("Abra o instalador e confirme a atualização.");
+    await markReleaseInstalled(remote);
+    feedback.toast.success("Confirme a instalação na tela do Android.");
     return true;
   } catch (error) {
     logger.error("AppUpdate", "Falha ao baixar/instalar APK", error);
@@ -109,17 +164,24 @@ export async function checkAppUpdates(options?: {
   const remote = await fetchRemoteAppVersion();
   if (!remote) return;
 
-  if (!isRemoteUpdateAvailable(remote)) return;
+  if (!(await isRemoteUpdateAvailable(remote))) return;
   if (options?.promptNative === false) return;
 
   await promptAndInstallRemoteUpdate(remote);
 }
 
 /** Trata toque em push de atualização do app. */
-export async function handleAppUpdatePushData(data: Record<string, unknown> | undefined): Promise<boolean> {
+export async function handleAppUpdatePushData(
+  data: Record<string, unknown> | undefined
+): Promise<boolean> {
   if (!data || data.type !== "app_update") return false;
 
-  const apkUrl = typeof data.apkUrl === "string" ? data.apkUrl : typeof data.url === "string" ? data.url : null;
+  const apkUrl =
+    typeof data.apkUrl === "string"
+      ? data.apkUrl
+      : typeof data.url === "string"
+        ? data.url
+        : null;
   if (!apkUrl) return false;
 
   if (Platform.OS !== "android") {
@@ -128,12 +190,13 @@ export async function handleAppUpdatePushData(data: Record<string, unknown> | un
   }
 
   const remote = await fetchRemoteAppVersion();
-  if (remote && isRemoteUpdateAvailable(remote)) {
-    await promptAndInstallRemoteUpdate(remote);
+  if (remote) {
+    await promptAndInstallRemoteUpdate(remote, {
+      force: !(await isRemoteUpdateAvailable(remote)),
+    });
     return true;
   }
 
-  // Mesmo se já estiver atualizado, oferece baixar (ou abre link).
   const confirmed = await feedback.confirm(
     "Baixar APK",
     "Deseja baixar o instalador do DHE agora?",

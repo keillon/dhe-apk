@@ -15,6 +15,7 @@ import {
   Shield,
   Trash2,
   Download,
+  Bell,
 } from "lucide-react-native";
 import { Card, Button, Input, DisplayImage, PageContainer, InfoRowList } from "@/components";
 import { useResponsive } from "@/hooks";
@@ -28,6 +29,10 @@ import {
   isRemoteUpdateAvailable,
   promptAndInstallRemoteUpdate,
 } from "@/services/app-update";
+import {
+  getFcmSetupMessage,
+  registerPushForCurrentUser,
+} from "@/services/push-notifications";
 import { checkAndApplyOtaUpdate } from "@/services/ota-updates";
 import { getApiErrorMessage, isAdmin, getRoleLabel, resolveMediaUrl, pickProfileImage } from "@/utils";
 import { colors } from "@/theme";
@@ -42,6 +47,7 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [registeringPush, setRegisteringPush] = useState(false);
 
   useEffect(() => {
     setNome(user?.nome ?? "");
@@ -103,22 +109,53 @@ export default function ProfileScreen() {
       const localName = getInstalledVersionName();
 
       if (!remote) {
-        feedback.toast.info(`Versão atual: ${localName} (${localCode}). Nenhuma APK no servidor.`);
-        return;
-      }
-
-      if (!isRemoteUpdateAvailable(remote)) {
-        feedback.toast.success(
-          `App atualizado: v${localName} (${localCode}). Servidor: v${remote.version} (${remote.versionCode}).`
+        feedback.toast.info(
+          `Versão instalada: ${localName} (${localCode}). Nenhuma APK publicada no servidor.`
         );
         return;
       }
 
-      await promptAndInstallRemoteUpdate(remote);
+      if (await isRemoteUpdateAvailable(remote)) {
+        await promptAndInstallRemoteUpdate(remote);
+        return;
+      }
+
+      const reinstall = await feedback.confirm(
+        "App atualizado",
+        `Instalado: v${localName} (${localCode})\nServidor: v${remote.version} (${remote.versionCode})\n\nNão há versão mais nova. Deseja baixar e reinstalar o APK do servidor mesmo assim?`,
+        "Baixar APK"
+      );
+
+      if (reinstall) {
+        await promptAndInstallRemoteUpdate(remote, { force: true });
+      }
     } catch (error) {
       feedback.toast.error(getApiErrorMessage(error, "Falha ao verificar atualização."));
     } finally {
       setCheckingUpdate(false);
+    }
+  };
+
+  const handleRegisterPush = async () => {
+    setRegisteringPush(true);
+    try {
+      const result = await registerPushForCurrentUser((token, platform) =>
+        api.registerPushToken(token, platform)
+      );
+
+      if (result.ok) {
+        feedback.toast.success("Dispositivo registrado para notificações.");
+        return;
+      }
+
+      await feedback.alert(
+        "Notificações",
+        result.error ?? getFcmSetupMessage()
+      );
+    } catch (error) {
+      feedback.toast.error(getApiErrorMessage(error, "Falha ao registrar notificações."));
+    } finally {
+      setRegisteringPush(false);
     }
   };
 
@@ -296,6 +333,17 @@ export default function ProfileScreen() {
           />
 
           <Button
+            title="Ativar notificações neste aparelho"
+            variant="outline"
+            fullWidth
+            className="mb-3"
+            loading={registeringPush}
+            disabled={registeringPush}
+            icon={<Bell size={18} color={colors.primary} />}
+            onPress={() => void handleRegisterPush()}
+          />
+
+          <Button
             title="Alterar senha"
             variant="outline"
             fullWidth
@@ -333,6 +381,9 @@ export default function ProfileScreen() {
           <View className="mt-8 items-center">
             <Text className="text-xs text-dhe-textMuted">DHE Componentes Hidráulicos</Text>
             <Text className="mt-1 text-xs text-dhe-textMuted">(41) 99947-0057</Text>
+            <Text className="mt-2 text-xs text-dhe-textMuted">
+              App v{getInstalledVersionName()} ({getInstalledVersionCode()})
+            </Text>
           </View>
         </PageContainer>
       </ScrollView>

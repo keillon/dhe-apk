@@ -15,6 +15,7 @@
     "build:apk:local": "node scripts/generate-notification-icon.js && node scripts/build-apk-local.js",
     "build:apk:clean": "node scripts/generate-notification-icon.js && node scripts/build-apk-local.js --clean",
     "build:apk:fast": "node scripts/build-apk-local.js --skip-prebuild",
+    "bump:version": "node scripts/bump-app-version.js",
     "icons:notification": "node scripts/generate-notification-icon.js",
     "publish:update": "node scripts/publish-update.js",
     "publish:apk": "node scripts/publish-apk.js",

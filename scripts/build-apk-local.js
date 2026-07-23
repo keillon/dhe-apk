@@ -58,6 +58,9 @@ function clearLockedNativeBuilds() {
   }
 }
 
+console.log("→ Incrementando versão do app antes do build...\n");
+run("node", [path.join("scripts", "bump-app-version.js")]);
+
 const needsPrebuild = forceClean || !fs.existsSync(gradle);
 
 if (!skipPrebuild && needsPrebuild) {

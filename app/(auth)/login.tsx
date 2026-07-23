@@ -49,7 +49,13 @@ export default function LoginScreen() {
       void hydrateStorage().catch(() => {});
       const user = await api.login(email, password);
       setUser(user);
-      void registerPushForCurrentUser((token, platform) => api.registerPushToken(token, platform));
+      void registerPushForCurrentUser((token, platform) =>
+        api.registerPushToken(token, platform)
+      ).then((result) => {
+        if (!result.ok && result.error) {
+          console.warn("[Push]", result.error);
+        }
+      });
       void prefetchEquipmentCache(() => api.getEquipments());
       router.replace("/(tabs)");
     } catch (err) {

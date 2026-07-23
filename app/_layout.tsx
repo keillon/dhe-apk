@@ -27,7 +27,7 @@ import {
   setPendingDeepLink,
 } from "@/services/deep-link";
 import { checkAppUpdates, handleAppUpdatePushData } from "@/services/app-update";
-import { registerPushForCurrentUser, addNotificationResponseListener } from "@/services/push-notifications";
+import { watchPushRegistration, addNotificationResponseListener } from "@/services/push-notifications";
 
 bootstrapLogging();
 
@@ -71,14 +71,14 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   const segments = useSegments();
   const router = useRouter();
 
-  const registerPush = useCallback(() => {
-    void registerPushForCurrentUser((token, platform) =>
-      api.registerPushToken(token, platform)
-    );
-  }, []);
+  const registerPushToken = useCallback(
+    (token: string, platform?: string) => api.registerPushToken(token, platform),
+    []
+  );
 
   useEffect(() => {
     let mounted = true;
+    let stopPushWatch = () => {};
     const safetyTimer = setTimeout(() => {
       if (!mounted) return;
       logger.warn("App", "Timeout no startup — liberando tela");
@@ -97,7 +97,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
         if (user) {
           setUser(user);
-          registerPush();
+          stopPushWatch = watchPushRegistration(registerPushToken);
           void prefetchEquipmentCache(() => api.getEquipments());
           void checkAppUpdates({ promptNative: true });
 
@@ -123,9 +123,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
     return () => {
       mounted = false;
+      stopPushWatch();
       clearTimeout(safetyTimer);
     };
-  }, [setUser, setLoading, registerPush, router]);
+  }, [setUser, setLoading, registerPushToken, router]);
 
   useEffect(() => {
     if (!isLoading) {

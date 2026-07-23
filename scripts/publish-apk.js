@@ -54,6 +54,20 @@ async function main() {
   }
 
   const { token } = await loginRes.json();
+
+  const remoteRes = await fetch(`${apiUrl}/api/app/version`, { cache: "no-store" });
+  if (remoteRes.ok) {
+    const remote = await remoteRes.json();
+    if (Number(remote.versionCode) >= versionCode) {
+      console.error(
+        `\n❌ Servidor já tem versionCode ${remote.versionCode} (v${remote.version}).\n` +
+          `   Seu APK local é ${versionCode}. Gere um APK novo (npm run build:apk:local faz bump automático)\n` +
+          `   e publique de novo — senão os aparelhos vão achar que já estão atualizados.\n`
+      );
+      process.exit(1);
+    }
+  }
+
   const form = new FormData();
   form.append("apk", new Blob([fs.readFileSync(apkPath)]), "dhe-hidraulicos.apk");
   form.append("version", version);

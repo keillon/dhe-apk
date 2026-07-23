@@ -2,8 +2,8 @@
   "expo": {
     "name": "DHE Hidráulicos",
     "slug": "dhe-hidraulicos",
-    "version": "1.0.1",
-    "runtimeVersion": "1.0.1",
+    "version": "1.0.2",
+    "runtimeVersion": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "dhe",
@@ -27,7 +27,7 @@
     },
     "android": {
       "package": "com.dhepr.hidraulicos",
-      "versionCode": 2,
+      "versionCode": 3,
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "resize",
       "navigationBarColor": "#000A14",

@@ -20,28 +20,38 @@ const testSchema = z.object({
 });
 
 pushRouter.post("/register", async (req, res) => {
-  const parsed = registerSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Token inválido" });
-    return;
+  try {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Token inválido" });
+      return;
+    }
+
+    const { token, platform } = parsed.data;
+
+    const saved = await prisma.pushToken.upsert({
+      where: { token },
+      create: {
+        usuarioId: req.auth!.userId,
+        token,
+        platform,
+      },
+      update: {
+        usuarioId: req.auth!.userId,
+        platform,
+      },
+      select: {
+        id: true,
+        platform: true,
+        updatedAt: true,
+      },
+    });
+
+    res.json({ success: true, device: saved });
+  } catch (error) {
+    console.error("Erro ao registrar push token:", error);
+    res.status(500).json({ error: "Erro ao registrar token push" });
   }
-
-  const { token, platform } = parsed.data;
-
-  await prisma.pushToken.upsert({
-    where: { token },
-    create: {
-      usuarioId: req.auth!.userId,
-      token,
-      platform,
-    },
-    update: {
-      usuarioId: req.auth!.userId,
-      platform,
-    },
-  });
-
-  res.json({ success: true });
 });
 
 pushRouter.get("/tokens", adminMiddleware, async (req, res) => {
@@ -57,6 +67,41 @@ pushRouter.get("/tokens", adminMiddleware, async (req, res) => {
   });
 
   res.json(tokens);
+});
+
+pushRouter.get("/devices", adminMiddleware, async (_req, res) => {
+  try {
+    const devices = await prisma.pushToken.findMany({
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        platform: true,
+        updatedAt: true,
+        token: true,
+        usuario: {
+          select: {
+            id: true,
+            nome: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    res.json({
+      count: devices.length,
+      devices: devices.map((device) => ({
+        id: device.id,
+        platform: device.platform,
+        updatedAt: device.updatedAt,
+        tokenPreview: `${device.token.slice(0, 22)}…`,
+        usuario: device.usuario,
+      })),
+    });
+  } catch (error) {
+    console.error("Erro ao listar dispositivos push:", error);
+    res.status(500).json({ error: "Erro ao listar dispositivos" });
+  }
 });
 
 pushRouter.post("/test", adminMiddleware, async (req, res) => {
