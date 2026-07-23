@@ -21,7 +21,7 @@ const equipmentSchema = z.object({
   tipo: z.string().optional(),
   status: z.enum(["operando", "parado", "manutencao"]).default("operando"),
   proxima_manutencao: z.string().optional(),
-  foto_url: z.string().optional(),
+  foto_url: z.union([z.string(), z.null()]).optional(),
   qr_code: z
     .string()
     .trim()
@@ -34,10 +34,10 @@ const equipmentSchema = z.object({
 export const equipmentsRouter = Router();
 
 async function resolveEquipmentPhoto(
-  fotoUrl: string | undefined,
+  fotoUrl: string | undefined | null,
   equipmentId: string
 ): Promise<string | null> {
-  if (!fotoUrl) return null;
+  if (fotoUrl === null || fotoUrl === undefined || fotoUrl === "") return null;
   if (fotoUrl.startsWith("data:")) {
     return persistImageData(fotoUrl, `equipments/${equipmentId}`);
   }

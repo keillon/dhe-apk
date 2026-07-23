@@ -54,7 +54,7 @@ export default function NewEquipmentScreen() {
   const [ano, setAno] = useState(String(new Date().getFullYear()));
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
-  const [fotoUrl, setFotoUrl] = useState<string | undefined>();
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
 
   const clientOptions =
     clients?.map((c) => ({ id: c.id, label: c.empresa })) ?? [];

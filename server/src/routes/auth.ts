@@ -26,7 +26,7 @@ const resetPasswordSchema = z.object({
 
 const updateProfileSchema = z.object({
   nome: z.string().min(2).max(120).optional(),
-  foto_url: z.string().optional(),
+  foto_url: z.union([z.string().min(1), z.null()]).optional(),
 });
 
 const changePasswordSchema = z.object({
@@ -181,17 +181,15 @@ authRouter.patch("/profile", authMiddleware, async (req, res) => {
   const data = parsed.data;
 
   try {
-    let fotoUrl: string | undefined;
-
-    if (data.foto_url) {
-      fotoUrl = await persistImageData(data.foto_url, `users/${req.auth!.userId}`);
-    }
-
     const user = await prisma.usuario.update({
       where: { id: req.auth!.userId },
       data: {
         ...(data.nome ? { nome: data.nome } : {}),
-        ...(fotoUrl ? { fotoUrl } : {}),
+        ...(data.foto_url === null
+          ? { fotoUrl: null }
+          : data.foto_url
+            ? { fotoUrl: await persistImageData(data.foto_url, `users/${req.auth!.userId}`) }
+            : {}),
       },
     });
 

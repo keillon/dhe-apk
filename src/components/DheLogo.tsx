@@ -19,7 +19,7 @@ export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
     return (
       <View className="items-center">
         <Image
-          source={require("../../assets/adaptive-icon.png")}
+          source={require("../../assets/logo.png")}
           style={{ width: side, height: side, borderRadius: side * 0.22 }}
           contentFit="cover"
         />
@@ -35,8 +35,8 @@ export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
       <Image
         source={
           variant === "white"
-            ? require("../../assets/logo-dhe-white.png")
-            : require("../../assets/logo-dhe.png")
+            ? require("../../assets/logo.png")
+            : require("../../assets/logo.png")
         }
         style={{ width, height }}
         contentFit="contain"

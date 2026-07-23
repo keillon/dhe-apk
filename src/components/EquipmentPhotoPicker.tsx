@@ -7,8 +7,8 @@ import { getPhotoPreviewUri, pickEquipmentImage, resolveMediaUrl } from "@/utils
 import { colors } from "@/theme";
 
 interface EquipmentPhotoPickerProps {
-  value?: string;
-  onChange: (value: string | undefined) => void;
+  value?: string | null;
+  onChange: (value: string | null) => void;
 }
 
 export function EquipmentPhotoPicker({ value, onChange }: EquipmentPhotoPickerProps) {
@@ -35,6 +35,16 @@ export function EquipmentPhotoPicker({ value, onChange }: EquipmentPhotoPickerPr
     onChange(photo.dataUrl);
   };
 
+  const handleRemove = async () => {
+    const confirmed = await feedback.confirm(
+      "Remover foto",
+      "O equipamento voltará a ficar sem foto (visual padrão).",
+      "Remover"
+    );
+    if (!confirmed) return;
+    onChange(null);
+  };
+
   return (
     <View className="mb-5">
       <Text className="mb-2 text-sm font-semibold text-dhe-textSecondary">
@@ -52,27 +62,28 @@ export function EquipmentPhotoPicker({ value, onChange }: EquipmentPhotoPickerPr
           <View className="h-48 items-center justify-center">
             <ImageIcon size={40} color={colors.textMuted} />
             <Text className="mt-2 text-sm text-dhe-textMuted">
-              Adicione uma foto para identificar a máquina
+              Sem foto — visual padrão do app
             </Text>
           </View>
         )}
 
-        <View className="flex-row gap-2 p-3">
+        <View className="gap-2 p-3">
           <Button
             title={previewUri ? "Trocar foto" : "Adicionar foto"}
             onPress={handlePick}
             variant="secondary"
-            className="flex-1"
+            fullWidth
             icon={<Camera size={16} color={colors.text} />}
           />
-          {previewUri && (
+          {previewUri ? (
             <Pressable
-              onPress={() => onChange(undefined)}
-              className="items-center justify-center rounded-xl bg-dhe-danger/15 px-4"
+              onPress={() => void handleRemove()}
+              className="flex-row items-center justify-center rounded-xl bg-dhe-danger/15 px-4 py-3"
             >
-              <Trash2 size={18} color={colors.danger} />
+              <Trash2 size={16} color={colors.danger} />
+              <Text className="ml-2 text-sm font-bold text-dhe-danger">Remover foto</Text>
             </Pressable>
-          )}
+          ) : null}
         </View>
       </View>
     </View>

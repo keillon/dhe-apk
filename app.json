@@ -2,8 +2,8 @@
   "expo": {
     "name": "DHE Hidráulicos",
     "slug": "dhe-hidraulicos",
-    "version": "1.0.0",
-    "runtimeVersion": "1.0.0",
+    "version": "1.0.1",
+    "runtimeVersion": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "dhe",
@@ -16,7 +16,7 @@
       "url": "http://195.35.40.86:8090/api/updates/manifest"
     },
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo.png",
       "resizeMode": "contain",
       "backgroundColor": "#001423"
     },
@@ -27,6 +27,7 @@
     },
     "android": {
       "package": "com.dhepr.hidraulicos",
+      "versionCode": 2,
       "usesCleartextTraffic": true,
       "softwareKeyboardLayoutMode": "resize",
       "navigationBarColor": "#000A14",
@@ -40,7 +41,8 @@
         "android.permission.RECORD_AUDIO",
         "android.permission.POST_NOTIFICATIONS",
         "android.permission.USE_BIOMETRIC",
-        "android.permission.USE_FINGERPRINT"
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.REQUEST_INSTALL_PACKAGES"
       ]
     },
     "notification": {

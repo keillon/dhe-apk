@@ -479,7 +479,11 @@ export const demoData = {
     const next: User = { ...demoSessionUser };
 
     if (data.nome) next.nome = data.nome;
-    if (data.foto_url) next.foto_url = data.foto_url;
+    if (data.foto_url === null) {
+      delete next.foto_url;
+    } else if (data.foto_url) {
+      next.foto_url = data.foto_url;
+    }
 
     demoSessionUser = next;
     return { ...demoSessionUser };

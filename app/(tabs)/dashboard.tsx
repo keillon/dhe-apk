@@ -185,17 +185,17 @@ export default function DashboardScreen() {
           </View>
 
           <Card className="mb-6">
-            <Text className="mb-4 text-lg font-bold text-dhe-text">Inspeções por mês</Text>
+            <Text className="mb-20 text-lg font-bold text-dhe-text">Inspeções por mês</Text>
             <SimpleBarChart data={inspectionsChart} barColor={colors.primary} />
           </Card>
 
           <Card className="mb-6">
-            <Text className="mb-4 text-lg font-bold text-dhe-text">Equipamentos por status</Text>
+            <Text className="mb-20 text-lg font-bold text-dhe-text">Equipamentos por status</Text>
             <SimpleBarChart data={statusChart} />
           </Card>
 
           <Card className="mb-6">
-            <Text className="mb-4 text-lg font-bold text-dhe-text">Contaminação do óleo</Text>
+            <Text className="mb-20 text-lg font-bold text-dhe-text">Contaminação do óleo</Text>
             <SimpleBarChart data={contaminationChart} />
           </Card>
 

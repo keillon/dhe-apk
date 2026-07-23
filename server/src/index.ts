@@ -16,6 +16,7 @@ import { dailyRoutesRouter } from "./routes/daily-routes";
 import { checklistsRouter } from "./routes/checklists";
 import { auditRouter, maintenanceRouter } from "./routes/features";
 import { updatesRouter } from "./routes/updates";
+import { appRouter } from "./routes/app";
 import { ensureUpdatesDir } from "./lib/updates-storage";
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use("/api/media", express.static(getUploadRoot(), { maxAge: "7d" }));
 app.use("/api/updates", updatesRouter);
+app.use("/api/app", appRouter);
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;

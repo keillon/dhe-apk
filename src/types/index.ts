@@ -199,7 +199,16 @@ export interface CreateInspectionInput {
 
 export interface UpdateProfileInput {
   nome?: string;
-  foto_url?: string;
+  /** Envie `null` para remover a foto e voltar ao avatar padrão. */
+  foto_url?: string | null;
+}
+
+export interface AppVersionInfo {
+  version: string;
+  versionCode: number;
+  apkUrl: string;
+  notes?: string;
+  publishedAt?: string;
 }
 
 export interface ChangePasswordInput {
@@ -243,7 +252,7 @@ export interface EquipmentInput {
   tipo?: string;
   status: EquipmentStatus;
   proxima_manutencao?: string;
-  foto_url?: string;
+  foto_url?: string | null;
   qr_code?: string;
 }
 

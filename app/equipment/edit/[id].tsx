@@ -61,7 +61,7 @@ export default function EditEquipmentScreen() {
   const [ano, setAno] = useState("");
   const [status, setStatus] = useState<EquipmentStatus>("operando");
   const [proximaManutencao, setProximaManutencao] = useState("");
-  const [fotoUrl, setFotoUrl] = useState<string | undefined>();
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!equipment) return;
@@ -79,7 +79,7 @@ export default function EditEquipmentScreen() {
     setProximaManutencao(
       equipment.proxima_manutencao ? formatDate(equipment.proxima_manutencao) : ""
     );
-    setFotoUrl(equipment.foto_url ? resolveMediaUrl(equipment.foto_url) : undefined);
+    setFotoUrl(equipment.foto_url ? resolveMediaUrl(equipment.foto_url) : null);
   }, [equipment]);
 
   const clientOptions =

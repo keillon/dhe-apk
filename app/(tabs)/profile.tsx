@@ -13,12 +13,21 @@ import {
   Save,
   History,
   Shield,
+  Trash2,
+  Download,
 } from "lucide-react-native";
 import { Card, Button, Input, DisplayImage, PageContainer, InfoRowList } from "@/components";
 import { useResponsive } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
+import {
+  downloadAndInstallApk,
+  fetchRemoteAppVersion,
+  getInstalledVersionCode,
+  getInstalledVersionName,
+} from "@/services/app-update";
+import { checkAndApplyOtaUpdate } from "@/services/ota-updates";
 import { getApiErrorMessage, isAdmin, getRoleLabel, resolveMediaUrl, pickProfileImage } from "@/utils";
 import { colors } from "@/theme";
 
@@ -31,6 +40,7 @@ export default function ProfileScreen() {
   const [nome, setNome] = useState(user?.nome ?? "");
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     setNome(user?.nome ?? "");
@@ -59,6 +69,65 @@ export default function ProfileScreen() {
       feedback.toast.error(getApiErrorMessage(error, "Não foi possível atualizar a foto."));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    const confirmed = await feedback.confirm(
+      "Remover foto",
+      "Sua foto voltará ao avatar padrão (inicial do nome).",
+      "Remover"
+    );
+    if (!confirmed) return;
+
+    setSaving(true);
+    try {
+      const updated = await api.updateProfile({ foto_url: null });
+      setUser(updated);
+      feedback.toast.success("Foto removida. Avatar padrão restaurado.");
+    } catch (error) {
+      feedback.toast.error(getApiErrorMessage(error, "Não foi possível remover a foto."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      await checkAndApplyOtaUpdate();
+
+      const remote = await fetchRemoteAppVersion();
+      const localCode = getInstalledVersionCode();
+      const localName = getInstalledVersionName();
+
+      if (!remote) {
+        feedback.toast.info(`Versão atual: ${localName}. Nenhuma APK nova no servidor.`);
+        return;
+      }
+
+      if (remote.versionCode <= localCode) {
+        feedback.toast.success(`App atualizado (v${localName}).`);
+        return;
+      }
+
+      const confirmed = await feedback.confirm(
+        "Nova versão disponível",
+        `Atual: v${localName}\nNova: v${remote.version}${
+          remote.notes ? `\n\n${remote.notes}` : ""
+        }\n\nBaixar e instalar agora?`,
+        "Baixar e instalar"
+      );
+
+      if (!confirmed) return;
+
+      feedback.toast.info("Baixando APK...");
+      await downloadAndInstallApk(remote.apkUrl);
+      feedback.toast.success("Confirme a instalação na tela do Android.");
+    } catch (error) {
+      feedback.toast.error(getApiErrorMessage(error, "Falha ao verificar atualização."));
+    } finally {
+      setCheckingUpdate(false);
     }
   };
 
@@ -142,6 +211,20 @@ export default function ProfileScreen() {
               </View>
             </Pressable>
 
+            {avatarUri ? (
+              <Button
+                title="Remover foto"
+                variant="ghost"
+                size="sm"
+                className="mb-3"
+                disabled={saving}
+                icon={<Trash2 size={14} color={colors.danger} />}
+                onPress={() => void handleRemovePhoto()}
+              />
+            ) : (
+              <Text className="mb-3 text-xs text-dhe-textMuted">Avatar padrão</Text>
+            )}
+
             {editing ? (
               <View className="w-full">
                 <Input
@@ -209,6 +292,17 @@ export default function ProfileScreen() {
               />
             </Card>
           )}
+
+          <Button
+            title="Verificar atualização"
+            variant="outline"
+            fullWidth
+            className="mb-3"
+            loading={checkingUpdate}
+            disabled={checkingUpdate}
+            icon={<Download size={18} color={colors.primary} />}
+            onPress={() => void handleCheckUpdate()}
+          />
 
           <Button
             title="Alterar senha"

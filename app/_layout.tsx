@@ -26,8 +26,8 @@ import {
   parseResetPasswordToken,
   setPendingDeepLink,
 } from "@/services/deep-link";
+import { checkAppUpdates } from "@/services/app-update";
 import { registerPushForCurrentUser, addNotificationResponseListener } from "@/services/push-notifications";
-import { checkAndApplyOtaUpdate } from "@/services/ota-updates";
 
 bootstrapLogging();
 
@@ -94,7 +94,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           setUser(user);
           registerPush();
           void prefetchEquipmentCache(() => api.getEquipments());
-          void checkAndApplyOtaUpdate();
+          void checkAppUpdates({ promptNative: true });
 
           const pending = getPendingDeepLink();
           if (pending) {
