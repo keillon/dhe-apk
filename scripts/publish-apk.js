@@ -74,7 +74,10 @@ async function main() {
 
   console.log("\n✅ APK publicado na VPS:");
   console.log(text);
-  console.log("\nNo app: Perfil → Verificar atualização → Baixar e instalar.\n");
+  console.log(
+    "\nPush de atualização enviado aos aparelhos (se o servidor estiver com a versão nova do /api/app/publish)."
+  );
+  console.log("Reenviar push sem republicar: npm run notify:apk\n");
 }
 
 main().catch((error) => {

@@ -22,10 +22,11 @@ import { useAuthStore } from "@/store";
 import { api } from "@/services/api";
 import { feedback } from "@/services/feedback";
 import {
-  downloadAndInstallApk,
   fetchRemoteAppVersion,
   getInstalledVersionCode,
   getInstalledVersionName,
+  isRemoteUpdateAvailable,
+  promptAndInstallRemoteUpdate,
 } from "@/services/app-update";
 import { checkAndApplyOtaUpdate } from "@/services/ota-updates";
 import { getApiErrorMessage, isAdmin, getRoleLabel, resolveMediaUrl, pickProfileImage } from "@/utils";
@@ -102,28 +103,18 @@ export default function ProfileScreen() {
       const localName = getInstalledVersionName();
 
       if (!remote) {
-        feedback.toast.info(`Versão atual: ${localName}. Nenhuma APK nova no servidor.`);
+        feedback.toast.info(`Versão atual: ${localName} (${localCode}). Nenhuma APK no servidor.`);
         return;
       }
 
-      if (remote.versionCode <= localCode) {
-        feedback.toast.success(`App atualizado (v${localName}).`);
+      if (!isRemoteUpdateAvailable(remote)) {
+        feedback.toast.success(
+          `App atualizado: v${localName} (${localCode}). Servidor: v${remote.version} (${remote.versionCode}).`
+        );
         return;
       }
 
-      const confirmed = await feedback.confirm(
-        "Nova versão disponível",
-        `Atual: v${localName}\nNova: v${remote.version}${
-          remote.notes ? `\n\n${remote.notes}` : ""
-        }\n\nBaixar e instalar agora?`,
-        "Baixar e instalar"
-      );
-
-      if (!confirmed) return;
-
-      feedback.toast.info("Baixando APK...");
-      await downloadAndInstallApk(remote.apkUrl);
-      feedback.toast.success("Confirme a instalação na tela do Android.");
+      await promptAndInstallRemoteUpdate(remote);
     } catch (error) {
       feedback.toast.error(getApiErrorMessage(error, "Falha ao verificar atualização."));
     } finally {

@@ -212,25 +212,26 @@ export async function registerPushForCurrentUser(
 }
 
 export async function addNotificationResponseListener(
-  onResponse: (url: string) => void
+  onResponse: (payload: { url?: string; data?: Record<string, unknown> }) => void
 ): Promise<() => void> {
   const Notifications = await getNotifications();
   if (!Notifications) return () => {};
 
   await ensureNotificationHandler();
 
+  const emit = (data: Record<string, unknown> | undefined) => {
+    const url = typeof data?.url === "string" ? data.url : undefined;
+    onResponse({ url, data });
+  };
+
   const lastResponse = await Notifications.getLastNotificationResponseAsync();
-  const lastUrl = lastResponse?.notification.request.content.data?.url;
-  if (typeof lastUrl === "string") {
-    onResponse(lastUrl);
+  if (lastResponse) {
+    emit(lastResponse.notification.request.content.data as Record<string, unknown> | undefined);
     await Notifications.clearLastNotificationResponseAsync();
   }
 
   const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const url = response.notification.request.content.data?.url;
-    if (typeof url === "string") {
-      onResponse(url);
-    }
+    emit(response.notification.request.content.data as Record<string, unknown> | undefined);
   });
 
   return () => subscription.remove();

@@ -26,7 +26,7 @@ import {
   parseResetPasswordToken,
   setPendingDeepLink,
 } from "@/services/deep-link";
-import { checkAppUpdates } from "@/services/app-update";
+import { checkAppUpdates, handleAppUpdatePushData } from "@/services/app-update";
 import { registerPushForCurrentUser, addNotificationResponseListener } from "@/services/push-notifications";
 
 bootstrapLogging();
@@ -49,6 +49,11 @@ const queryClient = new QueryClient({
 });
 
 function handleDeepLinkUrl(url: string, router: ReturnType<typeof useRouter>): void {
+  if (url.startsWith("http://") || url.startsWith("https://")) {
+    void Linking.openURL(url);
+    return;
+  }
+
   const equipmentId = parseEquipmentDeepLink(url);
   if (equipmentId) {
     router.push(`/equipment/${equipmentId}`);
@@ -162,7 +167,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
     const linkSub = Linking.addEventListener("url", ({ url }) => processUrl(url));
     let removeNotifSub = () => {};
 
-    void addNotificationResponseListener((url) => processUrl(url)).then((remove) => {
+    void addNotificationResponseListener(async ({ url, data }) => {
+      const handledUpdate = await handleAppUpdatePushData(data);
+      if (handledUpdate) return;
+      if (url) processUrl(url);
+    }).then((remove) => {
       removeNotifSub = remove;
     });
 
