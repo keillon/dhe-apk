@@ -26,6 +26,9 @@ export async function sendExpoPushMessages(
         title,
         body,
         data,
+        channelId: "default",
+        priority: "high",
+        mutableContent: true,
       }))
     ),
   });

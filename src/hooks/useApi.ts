@@ -98,7 +98,7 @@ export function useNotifications(userId: string) {
     queryKey: ["notifications", userId],
     queryFn: () => api.getNotifications(userId),
     enabled: !!userId,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 30,
     refetchOnWindowFocus: true,
   });
 }
@@ -123,8 +123,8 @@ export function useMarkNotificationRead() {
         queryClient.setQueryData(key, data);
       });
     },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    onSuccess: (notifications) => {
+      queryClient.setQueriesData<Notification[]>({ queryKey: ["notifications"] }, notifications);
     },
   });
 }
@@ -149,8 +149,8 @@ export function useMarkAllNotificationsRead() {
         queryClient.setQueryData(key, data);
       });
     },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    onSuccess: (notifications) => {
+      queryClient.setQueriesData<Notification[]>({ queryKey: ["notifications"] }, notifications);
     },
   });
 }

@@ -51,25 +51,25 @@ async function sendPushForNotification(
 
 /**
  * Garante no máximo um alerta ativo por usuário+equipamento+tipo.
- * Se o usuário já marcou como lida enquanto a condição persiste, não recria nem reenvia push.
- * Quando a condição some, settleResolvedNotifications remove o registro para permitir reaviso futuro.
+ * Nunca reinicia `lida` para false — se o técnico já leu, permanece lida
+ * enquanto a condição existir.
  */
 async function ensureNotification(input: EnsureNotificationInput): Promise<void> {
-  const existing = await prisma.notificacao.findFirst({
+  const existing = await prisma.notificacao.findUnique({
     where: {
-      usuarioId: input.usuarioId,
-      equipamentoId: input.equipamentoId,
-      tipo: input.tipo,
+      usuarioId_equipamentoId_tipo: {
+        usuarioId: input.usuarioId,
+        equipamentoId: input.equipamentoId,
+        tipo: input.tipo,
+      },
     },
-    orderBy: { createdAt: "desc" },
   });
 
   if (existing) {
-    if (existing.lida) {
-      return;
-    }
+    const needsContentUpdate =
+      existing.mensagem !== input.mensagem || existing.titulo !== input.titulo;
 
-    if (existing.mensagem !== input.mensagem || existing.titulo !== input.titulo) {
+    if (needsContentUpdate) {
       await prisma.notificacao.update({
         where: { id: existing.id },
         data: {
@@ -78,6 +78,9 @@ async function ensureNotification(input: EnsureNotificationInput): Promise<void>
         },
       });
     }
+
+    // Já lida: não reenvia push nem reabre o alerta.
+    if (existing.lida) return;
 
     if (!existing.pushSentAt) {
       await sendPushForNotification(
@@ -91,23 +94,37 @@ async function ensureNotification(input: EnsureNotificationInput): Promise<void>
     return;
   }
 
-  const created = await prisma.notificacao.create({ data: input });
-  await sendPushForNotification(
-    input.usuarioId,
-    created.id,
-    input.equipamentoId,
-    input.titulo,
-    input.mensagem
-  );
+  try {
+    const created = await prisma.notificacao.create({ data: input });
+    await sendPushForNotification(
+      input.usuarioId,
+      created.id,
+      input.equipamentoId,
+      input.titulo,
+      input.mensagem
+    );
+  } catch (error) {
+    // Corrida: outro request criou o mesmo alerta — não falha o sync.
+    const raced = await prisma.notificacao.findUnique({
+      where: {
+        usuarioId_equipamentoId_tipo: {
+          usuarioId: input.usuarioId,
+          equipamentoId: input.equipamentoId,
+          tipo: input.tipo,
+        },
+      },
+    });
+    if (!raced) throw error;
+  }
 }
 
-/** Remove alertas cuja condição já não existe, liberando recriação se o problema voltar. */
+/** Remove apenas alertas cuja condição já não existe (libera reaviso futuro). */
 async function settleResolvedNotifications(
   usuarioId: string,
   activeKeys: Set<string>
 ): Promise<void> {
   const rows = await prisma.notificacao.findMany({
-    where: { usuarioId },
+    where: { usuarioId, equipamentoId: { not: null } },
     select: { id: true, equipamentoId: true, tipo: true },
   });
 
@@ -125,34 +142,6 @@ async function settleResolvedNotifications(
   });
 }
 
-/** Mantém apenas a notificação mais recente por equipamento+tipo. */
-async function dedupeNotifications(usuarioId: string): Promise<void> {
-  const rows = await prisma.notificacao.findMany({
-    where: { usuarioId },
-    orderBy: { createdAt: "desc" },
-    select: { id: true, equipamentoId: true, tipo: true },
-  });
-
-  const seen = new Set<string>();
-  const duplicateIds: string[] = [];
-
-  for (const row of rows) {
-    if (!row.equipamentoId) continue;
-    const key = alertKey(row.equipamentoId, row.tipo);
-    if (seen.has(key)) {
-      duplicateIds.push(row.id);
-      continue;
-    }
-    seen.add(key);
-  }
-
-  if (duplicateIds.length === 0) return;
-
-  await prisma.notificacao.deleteMany({
-    where: { id: { in: duplicateIds } },
-  });
-}
-
 export async function syncNotificationsForUser(userId: string): Promise<void> {
   const user = await prisma.usuario.findUnique({
     where: { id: userId },
@@ -161,15 +150,13 @@ export async function syncNotificationsForUser(userId: string): Promise<void> {
 
   if (!user) return;
 
-  await dedupeNotifications(userId);
-
-  const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const now = Date.now();
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const activeKeys = new Set<string>();
 
   const overdueEquipments = await prisma.equipamento.findMany({
-    where: { proximaManutencao: { lt: now } },
+    where: { proximaManutencao: { lt: new Date(now) } },
   });
 
   for (const equipment of overdueEquipments) {

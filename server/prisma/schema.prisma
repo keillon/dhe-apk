@@ -201,6 +201,7 @@ model Notificacao {
 
   @@index([usuarioId])
   @@index([lida])
+  @@unique([usuarioId, equipamentoId, tipo], map: "notificacoes_usuario_equipamento_tipo_uidx")
   @@map("notificacoes")
 }
 

@@ -66,6 +66,9 @@ async function ensureAndroidChannel(Notifications: NotificationsModule): Promise
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: "#0172FE",
+    enableLights: true,
+    enableVibrate: true,
+    showBadge: true,
   });
 }
 
@@ -143,10 +146,13 @@ export async function scheduleLocalTestNotification(
       title,
       body,
       data: { source: "local-test" },
+      color: "#0172FE",
+      sound: "default",
     },
     trigger: {
       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: 2,
+      channelId: "default",
     },
   });
 }
@@ -168,9 +174,27 @@ export async function scheduleImmediateTestNotification(
       title,
       body,
       data: { source: "immediate-test" },
+      color: "#0172FE",
+      sound: "default",
     },
-    trigger: null,
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+      seconds: 1,
+      channelId: "default",
+    },
   });
+}
+
+export async function dismissPresentedNotifications(): Promise<void> {
+  const Notifications = await getNotifications();
+  if (!Notifications) return;
+
+  try {
+    await Notifications.dismissAllNotificationsAsync();
+    await Notifications.setBadgeCountAsync(0);
+  } catch {
+    // Ignora em plataformas sem suporte.
+  }
 }
 
 export async function registerPushForCurrentUser(

@@ -514,23 +514,39 @@ export const api = {
     await http.delete(`/inspections/${id}`);
   },
 
-  async getNotifications(userId: string): Promise<Notification[]> {
+  async getNotifications(userId: string, options?: { skipSync?: boolean }): Promise<Notification[]> {
     if (!isApiConfigured) return demoData.getNotifications();
 
-    const { data } = await http.get<Notification[]>("/notifications");
+    const { data } = await http.get<Notification[]>("/notifications", {
+      params: options?.skipSync ? { skipSync: 1 } : undefined,
+    });
     return data;
   },
 
-  async markNotificationRead(id: string): Promise<void> {
-    if (!isApiConfigured) return demoData.markNotificationRead(id);
+  async markNotificationRead(id: string): Promise<Notification[]> {
+    if (!isApiConfigured) {
+      await demoData.markNotificationRead(id);
+      return demoData.getNotifications();
+    }
 
-    await http.patch(`/notifications/${id}/read`);
+    const { data } = await http.patch<{
+      success: boolean;
+      notifications: Notification[];
+    }>(`/notifications/${id}/read`);
+    return data.notifications ?? [];
   },
 
-  async markAllNotificationsRead(): Promise<void> {
-    if (!isApiConfigured) return demoData.markAllNotificationsRead();
+  async markAllNotificationsRead(): Promise<Notification[]> {
+    if (!isApiConfigured) {
+      await demoData.markAllNotificationsRead();
+      return demoData.getNotifications();
+    }
 
-    await http.patch("/notifications/read-all");
+    const { data } = await http.patch<{
+      success: boolean;
+      notifications: Notification[];
+    }>("/notifications/read-all");
+    return data.notifications ?? [];
   },
 
   async registerPushToken(token: string, platform?: string): Promise<void> {

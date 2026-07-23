@@ -36,6 +36,12 @@
         "android.permission.USE_FINGERPRINT"
       ]
     },
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#0172FE",
+      "androidMode": "default",
+      "androidCollapsedTitle": "DHE Hidráulicos"
+    },
     "androidNavigationBar": {
       "backgroundColor": "#000A14",
       "barStyle": "light-content"
@@ -52,6 +58,7 @@
     },
     "plugins": [
       "./plugins/withCleartextTraffic.js",
+      "./plugins/withNotificationIcon.js",
       "expo-router",
       "expo-system-ui",
       [

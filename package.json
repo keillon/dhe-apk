@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "dev": "CHOKIDAR_USEPOLLING=1 EXPO_NO_TELEMETRY=1 expo start --clear",
     "start:clean": "expo start -c",
     "logs:android": "adb logcat *:S ReactNative:V ReactNativeJS:V",
     "android": "expo run:android",

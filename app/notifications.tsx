@@ -1,8 +1,8 @@
 import { useCallback, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Bell, AlertTriangle, Droplets, ClipboardList } from "lucide-react-native";
+import { Bell, AlertTriangle, Droplets, ClipboardList, CheckCheck } from "lucide-react-native";
 import {
   Card,
   Button,
@@ -11,6 +11,7 @@ import {
   EmptyState,
   BackHeader,
   PageContainer,
+  RefreshableScrollView,
 } from "@/components";
 import {
   useMarkAllNotificationsRead,
@@ -20,6 +21,7 @@ import {
 } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
+import { dismissPresentedNotifications } from "@/services/push-notifications";
 import { formatRelative, getApiErrorMessage } from "@/utils";
 import { colors } from "@/theme";
 import type { NotificationType } from "@/types";
@@ -48,14 +50,24 @@ export default function NotificationsScreen() {
 
   const unreadCount = notifications?.filter((n) => !n.lida).length ?? 0;
 
+  const markAsRead = useCallback(
+    async (id: string) => {
+      await markRead.mutateAsync(id);
+      await dismissPresentedNotifications();
+    },
+    [markRead]
+  );
+
   const handleOpen = useCallback(
-    async (id: string, equipmentId?: string) => {
+    async (id: string, equipmentId?: string, alreadyRead?: boolean) => {
       if (openingLockRef.current) return;
       openingLockRef.current = true;
       setOpeningId(id);
 
       try {
-        await markRead.mutateAsync(id);
+        if (!alreadyRead) {
+          await markAsRead(id);
+        }
         if (equipmentId) {
           router.push(`/equipment/${equipmentId}`);
         }
@@ -66,7 +78,25 @@ export default function NotificationsScreen() {
         setOpeningId(null);
       }
     },
-    [markRead, router]
+    [markAsRead, router]
+  );
+
+  const handleMarkReadOnly = useCallback(
+    async (id: string) => {
+      if (openingLockRef.current) return;
+      openingLockRef.current = true;
+      setOpeningId(id);
+      try {
+        await markAsRead(id);
+        feedback.toast.success("Notificação marcada como lida.");
+      } catch (err) {
+        feedback.toast.error(getApiErrorMessage(err, "Não foi possível marcar como lida."));
+      } finally {
+        openingLockRef.current = false;
+        setOpeningId(null);
+      }
+    },
+    [markAsRead]
   );
 
   const handleMarkAllRead = useCallback(async () => {
@@ -74,6 +104,7 @@ export default function NotificationsScreen() {
 
     try {
       await markAllRead.mutateAsync();
+      await dismissPresentedNotifications();
       feedback.toast.success("Todas as notificações foram marcadas como lidas.");
     } catch (err) {
       feedback.toast.error(getApiErrorMessage(err, "Não foi possível marcar todas como lidas."));
@@ -86,7 +117,7 @@ export default function NotificationsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-dhe-bg" edges={["top"]}>
-      <ScrollView
+      <RefreshableScrollView
         className="flex-1"
         contentContainerStyle={{
           paddingHorizontal: horizontalPadding,
@@ -94,6 +125,9 @@ export default function NotificationsScreen() {
           paddingBottom: scrollBottomPadding,
         }}
         showsVerticalScrollIndicator={false}
+        onRefresh={async () => {
+          await refetch();
+        }}
       >
         <PageContainer>
           <BackHeader />
@@ -111,6 +145,7 @@ export default function NotificationsScreen() {
               loading={markAllRead.isPending}
               disabled={markAllRead.isPending}
               onPress={() => void handleMarkAllRead()}
+              icon={<CheckCheck size={16} color={colors.primary} />}
             />
           ) : null}
 
@@ -126,44 +161,63 @@ export default function NotificationsScreen() {
               const busy = openingId === notif.id;
 
               return (
-                <Pressable
-                  key={notif.id}
-                  disabled={busy || openingLockRef.current}
-                  onPress={() => void handleOpen(notif.id, notif.equipamento_id)}
-                >
-                  <Card
-                    className={`mb-4 ${!notif.lida ? "border-l-4" : "opacity-80"}`}
-                    style={!notif.lida ? { borderLeftColor: color } : undefined}
+                <View key={notif.id} className="mb-4">
+                  <Pressable
+                    disabled={busy}
+                    onPress={() => void handleOpen(notif.id, notif.equipamento_id, notif.lida)}
                   >
-                    <View className="flex-row items-start gap-4">
-                      <View
-                        className="h-11 w-11 shrink-0 items-center justify-center rounded-xl"
-                        style={{ backgroundColor: `${color}20` }}
-                      >
-                        <Icon size={18} color={color} />
-                      </View>
-                      <View className="min-w-0 flex-1">
-                        <View className="flex-row items-center gap-2">
-                          <Text className="flex-1 font-semibold text-dhe-text">{notif.titulo}</Text>
+                    <Card
+                      className={!notif.lida ? "border-l-4" : "opacity-80"}
+                      style={!notif.lida ? { borderLeftColor: color } : undefined}
+                    >
+                      <View className="flex-row items-start gap-4">
+                        <View
+                          className="h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: `${color}20` }}
+                        >
+                          <Icon size={18} color={color} />
+                        </View>
+                        <View className="min-w-0 flex-1">
+                          <View className="flex-row items-center gap-2">
+                            <Text className="flex-1 font-semibold text-dhe-text">{notif.titulo}</Text>
+                            {!notif.lida ? (
+                              <View className="h-2.5 w-2.5 rounded-full bg-dhe-primary" />
+                            ) : (
+                              <Text className="text-[10px] font-bold uppercase text-dhe-textMuted">
+                                Lida
+                              </Text>
+                            )}
+                          </View>
+                          <Text className="mt-2 text-sm leading-5 text-dhe-textSecondary">
+                            {notif.mensagem}
+                          </Text>
+                          <Text className="mt-3 text-xs text-dhe-textMuted">
+                            {formatRelative(notif.created_at)}
+                          </Text>
                           {!notif.lida ? (
-                            <View className="h-2.5 w-2.5 rounded-full bg-dhe-primary" />
+                            <Pressable
+                              className="mt-3 self-start rounded-full bg-dhe-elevated px-3 py-1.5"
+                              disabled={busy}
+                              onPress={(event) => {
+                                event.stopPropagation?.();
+                                void handleMarkReadOnly(notif.id);
+                              }}
+                            >
+                              <Text className="text-xs font-bold text-dhe-primary">
+                                Marcar como lida
+                              </Text>
+                            </Pressable>
                           ) : null}
                         </View>
-                        <Text className="mt-2 text-sm leading-5 text-dhe-textSecondary">
-                          {notif.mensagem}
-                        </Text>
-                        <Text className="mt-3 text-xs text-dhe-textMuted">
-                          {formatRelative(notif.created_at)}
-                        </Text>
                       </View>
-                    </View>
-                  </Card>
-                </Pressable>
+                    </Card>
+                  </Pressable>
+                </View>
               );
             })
           )}
         </PageContainer>
-      </ScrollView>
+      </RefreshableScrollView>
     </SafeAreaView>
   );
 }
