@@ -27,6 +27,7 @@ import {
   setPendingDeepLink,
 } from "@/services/deep-link";
 import { registerPushForCurrentUser, addNotificationResponseListener } from "@/services/push-notifications";
+import { checkAndApplyOtaUpdate } from "@/services/ota-updates";
 
 bootstrapLogging();
 
@@ -93,6 +94,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
           setUser(user);
           registerPush();
           void prefetchEquipmentCache(() => api.getEquipments());
+          void checkAndApplyOtaUpdate();
 
           const pending = getPendingDeepLink();
           if (pending) {

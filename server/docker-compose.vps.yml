@@ -37,10 +37,13 @@ services:
       PORT: 4002
       NODE_ENV: production
       UPLOAD_DIR: /app/uploads
+      UPDATES_DIR: /app/updates
+      PUBLIC_API_URL: http://195.35.40.86:8090
     ports:
       - "0.0.0.0:8090:4002"
     volumes:
       - dhe_uploads:/app/uploads
+      - dhe_updates:/app/updates
     networks:
       - dhe-internal
     healthcheck:
@@ -55,6 +58,8 @@ volumes:
     name: dhe_postgres_data
   dhe_uploads:
     name: dhe_uploads
+  dhe_updates:
+    name: dhe_updates
 
 networks:
   dhe-internal:

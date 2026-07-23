@@ -15,6 +15,8 @@ import { pushRouter } from "./routes/push";
 import { dailyRoutesRouter } from "./routes/daily-routes";
 import { checklistsRouter } from "./routes/checklists";
 import { auditRouter, maintenanceRouter } from "./routes/features";
+import { updatesRouter } from "./routes/updates";
+import { ensureUpdatesDir } from "./lib/updates-storage";
 
 const app = express();
 const port = Number(process.env.PORT ?? 4002);
@@ -22,7 +24,7 @@ const port = Number(process.env.PORT ?? 4002);
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use("/api/media", express.static(getUploadRoot(), { maxAge: "7d" }));
-
+app.use("/api/updates", updatesRouter);
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -69,6 +71,7 @@ app.use(
 
 app.listen(port, "0.0.0.0", async () => {
   try {
+    await ensureUpdatesDir();
     await ensureDefaultUsers();
     console.log("Usuários padrão verificados (admin e técnico).");
     await ensureDefaultChecklist();

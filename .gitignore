@@ -41,3 +41,7 @@ server/.env
 # generated native folders
 /ios
 /android
+
+# OTA export local
+dist-update/
+server/updates/

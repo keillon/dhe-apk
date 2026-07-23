@@ -35,7 +35,7 @@ export function DheLogo({ variant = "color", size = "md" }: DheLogoProps) {
       <Image
         source={
           variant === "white"
-            ? require("../../assets/logo-dhe-white.png")
+            ? require("../../assets/logo.png")
             : require("../../assets/logo-dhe.png")
         }
         style={{ width, height }}

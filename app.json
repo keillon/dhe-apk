@@ -3,11 +3,18 @@
     "name": "DHE Hidráulicos",
     "slug": "dhe-hidraulicos",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "dhe",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0,
+      "url": "http://195.35.40.86:8090/api/updates/manifest"
+    },
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -61,6 +68,12 @@
       "./plugins/withNotificationIcon.js",
       "expo-router",
       "expo-system-ui",
+      [
+        "expo-updates",
+        {
+          "username": "keillon"
+        }
+      ],
       [
         "expo-navigation-bar",
         {
