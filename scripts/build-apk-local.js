@@ -11,13 +11,50 @@ const skipPrebuild = process.argv.includes("--skip-prebuild");
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
-    cwd: root,
+    cwd: options.cwd || root,
     stdio: "inherit",
     shell: isWin,
-    ...options,
+    env: options.env || process.env,
   });
-  if (result.status !== 0) {
+  if ((result.status ?? 1) !== 0) {
     process.exit(result.status ?? 1);
+  }
+  return result;
+}
+
+function tryRm(target) {
+  try {
+    fs.rmSync(target, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function stopGradleDaemons() {
+  if (!fs.existsSync(gradle)) return;
+  console.log("→ Parando daemons Gradle (evita arquivo travado no Windows)...\n");
+  spawnSync(gradle, ["--stop"], {
+    cwd: androidDir,
+    stdio: "inherit",
+    shell: isWin,
+  });
+}
+
+function clearLockedNativeBuilds() {
+  const targets = [
+    path.join(root, "node_modules", "expo-modules-core", "android", "build"),
+    path.join(root, "node_modules", "expo-updates", "android", "build"),
+    path.join(root, "node_modules", "expo", "android", "build"),
+    path.join(androidDir, ".gradle"),
+    path.join(androidDir, "build"),
+    path.join(androidDir, "app", "build"),
+  ];
+
+  for (const target of targets) {
+    if (!fs.existsSync(target)) continue;
+    const ok = tryRm(target);
+    console.log(ok ? `  limpou ${path.relative(root, target)}` : `  avisou: não limpou ${path.relative(root, target)}`);
   }
 }
 
@@ -34,7 +71,9 @@ if (!skipPrebuild && needsPrebuild) {
   console.error("Pasta android/ não encontrada. Rode: npm run prebuild:android");
   process.exit(1);
 } else {
-  console.log("\n→ Reusando android/ existente (muito mais rápido). Use --clean se mudou plugins/nativo.\n");
+  console.log(
+    "\n→ Reusando android/ existente (mais rápido). Use --clean se mudou plugins/nativo.\n"
+  );
 }
 
 const androidHome =
@@ -54,45 +93,48 @@ if (gradleUserHome && !fs.existsSync(gradleUserHome)) {
   fs.mkdirSync(gradleUserHome, { recursive: true });
 }
 
-console.log("→ Gradle assembleRelease (daemon + cache + parallel)...\n");
+stopGradleDaemons();
+console.log("→ Limpando builds nativos travados...\n");
+clearLockedNativeBuilds();
 
-const result = spawnSync(
-  gradle,
-  ["assembleRelease", "--parallel", "--build-cache", "--configuration-cache"],
-  {
-    cwd: androidDir,
-    stdio: "inherit",
-    shell: isWin,
-    env: {
-      ...process.env,
-      ANDROID_HOME: androidHome,
-      ANDROID_SDK_ROOT: androidHome,
-      ...(gradleUserHome ? { GRADLE_USER_HOME: gradleUserHome } : {}),
-      EXPO_PUBLIC_API_URL:
-        process.env.EXPO_PUBLIC_API_URL || "http://195.35.40.86:8090",
-      ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a",
-    },
-  }
-);
+const gradleEnv = {
+  ...process.env,
+  NODE_ENV: "production",
+  ANDROID_HOME: androidHome,
+  ANDROID_SDK_ROOT: androidHome,
+  ...(gradleUserHome ? { GRADLE_USER_HOME: gradleUserHome } : {}),
+  EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL || "http://195.35.40.86:8090",
+  // Expo + Gradle 9: configuration-cache quebra por spawn de node no configure.
+  ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a",
+};
+
+console.log("→ Gradle assembleRelease (daemon + cache + parallel, sem configuration-cache)...\n");
+
+const gradleArgs = [
+  "assembleRelease",
+  "--parallel",
+  "--build-cache",
+  "--no-configuration-cache",
+];
+
+let result = spawnSync(gradle, gradleArgs, {
+  cwd: androidDir,
+  stdio: "inherit",
+  shell: isWin,
+  env: gradleEnv,
+});
 
 if (result.status !== 0) {
-  // Fallback sem configuration-cache (Gradle antigo / incompatível)
-  console.log("\n→ Retry sem configuration-cache...\n");
-  const retry = spawnSync(gradle, ["assembleRelease", "--parallel", "--build-cache"], {
+  console.log("\n→ Retry: para daemons, limpa locks e rebuild...\n");
+  stopGradleDaemons();
+  clearLockedNativeBuilds();
+  result = spawnSync(gradle, gradleArgs, {
     cwd: androidDir,
     stdio: "inherit",
     shell: isWin,
-    env: {
-      ...process.env,
-      ANDROID_HOME: androidHome,
-      ANDROID_SDK_ROOT: androidHome,
-      ...(gradleUserHome ? { GRADLE_USER_HOME: gradleUserHome } : {}),
-      EXPO_PUBLIC_API_URL:
-        process.env.EXPO_PUBLIC_API_URL || "http://195.35.40.86:8090",
-      ORG_GRADLE_PROJECT_reactNativeArchitectures: "arm64-v8a",
-    },
+    env: gradleEnv,
   });
-  if (retry.status !== 0) process.exit(retry.status ?? 1);
+  if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
 const candidates = [
