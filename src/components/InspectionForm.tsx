@@ -10,14 +10,7 @@ import {
 import { useResponsive } from "@/hooks/useResponsive";
 import * as Haptics from "expo-haptics";
 import { FileText, Save } from "lucide-react-native";
-import { Button } from "./Button";
-import { Card } from "./Card";
-import { DateInput } from "./DateInput";
-import { Input } from "./Input";
-import { OilLevelSlider } from "./OilLevelSlider";
-import { PhotoPickerSection } from "./PhotoPickerSection";
-import { SignaturePad } from "./SignaturePad";
-import { useCreateInspection, useDefaultChecklist, useNetworkStatus, useUpdateInspection } from "@/hooks";
+import { useCreateInspection, useDefaultChecklist, useInspections, useNetworkStatus, useUpdateInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
 import { isNetworkError } from "@/services/http";
@@ -39,6 +32,14 @@ import {
 import type { ChecklistItem, Inspection, OilContamination } from "@/types";
 import type { LocalPhoto } from "@/utils/images";
 import { colors } from "@/theme";
+import { PreviousInspectionHistory } from "./PreviousInspectionHistory";
+import { Button } from "./Button";
+import { Card } from "./Card";
+import { DateInput } from "./DateInput";
+import { Input } from "./Input";
+import { OilLevelSlider } from "./OilLevelSlider";
+import { PhotoPickerSection } from "./PhotoPickerSection";
+import { SignaturePad } from "./SignaturePad";
 
 const CONTAMINATION_OPTIONS: { value: OilContamination; label: string; color: string }[] = [
   { value: "baixa", label: "Baixa", color: colors.success },
@@ -96,6 +97,7 @@ export function InspectionForm({
   } = useResponsive();
   const createInspection = useCreateInspection();
   const updateInspection = useUpdateInspection();
+  const { data: previousInspections = [] } = useInspections(mode === "create" ? equipmentId : "");
   const savingRef = useRef(false);
   const { template, labels, checklist: defaultChecklist } = useDefaultChecklist(
     equipmentTipo,
@@ -151,6 +153,15 @@ export function InspectionForm({
     }
   };
 
+  const applyLastInspectionValues = (last: Inspection) => {
+    setNivelOleo(last.nivel_oleo);
+    setContaminacao(last.contaminacao_oleo);
+    if (last.data_ultima_limpeza) {
+      setDataLimpeza(formatDate(last.data_ultima_limpeza));
+    }
+    feedback.toast.info("Valores da última inspeção aplicados. Ajuste se necessário.");
+  };
+
   const handleSaveDraft = async () => {
     const saved = saveInspectionDraft({
       id: currentDraftId,
@@ -194,7 +205,7 @@ export function InspectionForm({
     const confirmed = await feedback.confirm(
       mode === "create" ? "Salvar inspeção?" : "Atualizar inspeção?",
       mode === "create"
-        ? "Confirme para registrar a inspeção. Você poderá visualizar e editar depois no histórico."
+        ? "Confirme para registrar a inspeção. Você poderá visualizar, editar ou excluir depois no histórico."
         : "Confirme para salvar as alterações desta inspeção.",
       mode === "create" ? "Salvar" : "Atualizar"
     );
@@ -327,6 +338,13 @@ export function InspectionForm({
       <Text className="mb-6 text-xs text-dhe-textMuted">
         Campos com * são obrigatórios para salvar.
       </Text>
+
+      {mode === "create" ? (
+        <PreviousInspectionHistory
+          inspections={previousInspections}
+          onApplyLast={applyLastInspectionValues}
+        />
+      ) : null}
 
       <Card className="mb-4">
         <OilLevelSlider value={nivelOleo} onChange={setNivelOleo} />

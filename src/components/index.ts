@@ -9,7 +9,7 @@ export { SignaturePad } from "./SignaturePad";
 export { InspectionGallery } from "./InspectionGallery";
 export { InspectionDetailContent } from "./InspectionDetailContent";
 export { InspectionForm } from "./InspectionForm";
-export { FilterDropdown } from "./FilterDropdown";
+export { PreviousInspectionHistory } from "./PreviousInspectionHistory";export { FilterDropdown } from "./FilterDropdown";
 export type { FilterGroup } from "./FilterDropdown";
 export { PageContainer } from "./PageContainer";
 export { AppToast } from "./AppToast";

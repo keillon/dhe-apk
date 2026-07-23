@@ -10,7 +10,7 @@ import {
   buildInspectionsExcelXml,
 } from "../lib/inspection-export";
 import { authMiddleware } from "../middleware/auth";
-import { adminMiddleware } from "../middleware/admin";
+import { adminMiddleware, canUserManageInspection } from "../middleware/admin";
 
 const checklistSchema = z.record(z.boolean());
 
@@ -326,7 +326,7 @@ inspectionsRouter.post("/", async (req, res) => {
   }
 });
 
-inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
+inspectionsRouter.put("/:id", async (req, res) => {
   const inspectionId = String(req.params.id);
   const parsed = updateInspectionSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -349,6 +349,12 @@ inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
 
   if (!existing) {
     res.status(404).json({ error: "Inspeção não encontrada" });
+    return;
+  }
+
+  const allowed = await canUserManageInspection(req.auth!.userId, existing.tecnicoId);
+  if (!allowed) {
+    res.status(403).json({ error: "Você só pode editar suas próprias inspeções." });
     return;
   }
 
@@ -417,7 +423,7 @@ inspectionsRouter.put("/:id", adminMiddleware, async (req, res) => {
   }
 });
 
-inspectionsRouter.delete("/:id", adminMiddleware, async (req, res) => {
+inspectionsRouter.delete("/:id", async (req, res) => {
   const inspectionId = String(req.params.id);
 
   try {
@@ -428,6 +434,12 @@ inspectionsRouter.delete("/:id", adminMiddleware, async (req, res) => {
 
     if (!existing) {
       res.status(404).json({ error: "Inspeção não encontrada" });
+      return;
+    }
+
+    const allowed = await canUserManageInspection(req.auth!.userId, existing.tecnicoId);
+    if (!allowed) {
+      res.status(403).json({ error: "Você só pode excluir suas próprias inspeções." });
       return;
     }
 

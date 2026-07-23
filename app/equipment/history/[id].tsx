@@ -18,7 +18,7 @@ import { useInspections, useEquipment, useDeleteInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
 import type { Inspection, OilContamination } from "@/types";
-import { getApiErrorMessage, isAdmin } from "@/utils";
+import { getApiErrorMessage, canManageInspection, formatDate, getContaminationLabel, getContaminationColor } from "@/utils";
 import { colors } from "@/theme";
 
 type PeriodFilter = "all" | "30d" | "90d";
@@ -74,7 +74,6 @@ export default function HistoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
-  const admin = isAdmin(user);
   const { data: equipment, refetch: refetchEquipment } = useEquipment(id);
   const { data: inspections, isLoading, error, refetch } = useInspections(id);
   const deleteInspection = useDeleteInspection();
@@ -179,46 +178,77 @@ export default function HistoryScreen() {
               description="Ajuste os filtros ou realize uma nova inspeção."
             />
           ) : (
-            filteredInspections.map((inspection, index) => (
+            filteredInspections.map((inspection, index) => {
+              const canManage = canManageInspection(user, inspection.tecnico_id);
+              return (
               <Card key={inspection.id} className="mb-5">
-                <View className="mb-4 flex-row items-center justify-between border-b border-dhe-border pb-3">
-                  <Text className="text-xs font-bold uppercase tracking-wide text-dhe-primary">
-                    Inspeção #{filteredInspections.length - index}
-                  </Text>
-                  <View className="flex-row gap-2">
-                    <Pressable
-                      onPress={() => router.push(`/inspection/${inspection.id}`)}
-                      className="flex-row items-center rounded-full bg-dhe-elevated px-3 py-1.5"
+                <View className="mb-3 border-b border-dhe-border pb-3">
+                  <View className="mb-2 flex-row items-center justify-between">
+                    <Text className="text-xs font-bold uppercase tracking-wide text-dhe-primary">
+                      Inspeção #{filteredInspections.length - index}
+                    </Text>
+                    <View className="flex-row gap-2">
+                      <Pressable
+                        onPress={() => router.push(`/inspection/${inspection.id}`)}
+                        className="flex-row items-center rounded-full bg-dhe-elevated px-3 py-1.5"
+                      >
+                        <Eye size={14} color={colors.primary} />
+                        <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
+                      </Pressable>
+                      {canManage && (
+                        <>
+                          <Pressable
+                            onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
+                            className="flex-row items-center rounded-full bg-dhe-primary px-3 py-1.5"
+                          >
+                            <Pencil size={14} color={colors.bg} />
+                            <Text className="ml-1 text-xs font-bold text-dhe-bg">Editar</Text>
+                          </Pressable>
+                          <Pressable
+                            onPress={() => handleDelete(inspection)}
+                            className="flex-row items-center rounded-full bg-dhe-danger px-3 py-1.5"
+                          >
+                            <Trash2 size={14} color={colors.bg} />
+                            <Text className="ml-1 text-xs font-bold text-dhe-bg">Excluir</Text>
+                          </Pressable>
+                        </>
+                      )}
+                    </View>
+                  </View>
+                  <View className="flex-row flex-wrap items-center gap-2">
+                    <View className="rounded-full bg-dhe-primary/15 px-3 py-1">
+                      <Text className="text-xs font-bold text-dhe-primary">
+                        Óleo {inspection.nivel_oleo}%
+                      </Text>
+                    </View>
+                    <View
+                      className="rounded-full px-3 py-1"
+                      style={{
+                        backgroundColor: `${getContaminationColor(inspection.contaminacao_oleo)}22`,
+                      }}
                     >
-                      <Eye size={14} color={colors.primary} />
-                      <Text className="ml-1 text-xs font-bold text-dhe-primary">Ver</Text>
-                    </Pressable>
-                    {admin && (
-                      <>
-                        <Pressable
-                          onPress={() => router.push(`/inspection/edit/${inspection.id}`)}
-                          className="flex-row items-center rounded-full bg-dhe-primary px-3 py-1.5"
-                        >
-                          <Pencil size={14} color={colors.bg} />
-                          <Text className="ml-1 text-xs font-bold text-dhe-bg">Editar</Text>
-                        </Pressable>
-                        <Pressable
-                          onPress={() => handleDelete(inspection)}
-                          className="flex-row items-center rounded-full bg-dhe-danger px-3 py-1.5"
-                        >
-                          <Trash2 size={14} color={colors.bg} />
-                          <Text className="ml-1 text-xs font-bold text-dhe-bg">Excluir</Text>
-                        </Pressable>
-                      </>
-                    )}
+                      <Text
+                        className="text-xs font-bold"
+                        style={{ color: getContaminationColor(inspection.contaminacao_oleo) }}
+                      >
+                        Contaminação {getContaminationLabel(inspection.contaminacao_oleo)}
+                      </Text>
+                    </View>
+                    {inspection.data_ultima_limpeza ? (
+                      <Text className="text-xs text-dhe-textMuted">
+                        Limpeza {formatDate(inspection.data_ultima_limpeza)}
+                      </Text>
+                    ) : null}
                   </View>
                 </View>
                 <InspectionDetailContent inspection={inspection} />
               </Card>
-            ))
+              );
+            })
           )}
         </PageContainer>
       </RefreshableScrollView>
     </SafeAreaView>
   );
 }
+

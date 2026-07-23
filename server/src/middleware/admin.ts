@@ -23,3 +23,18 @@ export async function adminMiddleware(
 
   next();
 }
+
+/** Admin pode tudo; técnico só nas próprias inspeções. */
+export async function canUserManageInspection(
+  userId: string,
+  tecnicoId: string
+): Promise<boolean> {
+  if (userId === tecnicoId) return true;
+
+  const user = await prisma.usuario.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return user?.role === "admin";
+}

@@ -15,7 +15,7 @@ import {
 import { useInspection, useDeleteInspection } from "@/hooks";
 import { useAuthStore } from "@/store";
 import { feedback } from "@/services/feedback";
-import { formatDateTime, getApiErrorMessage, isAdmin } from "@/utils";
+import { canManageInspection, formatDateTime, getApiErrorMessage } from "@/utils";
 import { printInspectionPdf, shareInspectionPdf } from "@/utils/inspection-report";
 import { colors } from "@/theme";
 
@@ -23,8 +23,8 @@ export default function InspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuthStore();
-  const admin = isAdmin(user);
   const { data: inspection, isLoading, error, refetch } = useInspection(id);
+  const canManage = inspection ? canManageInspection(user, inspection.tecnico_id) : false;
   const deleteInspection = useDeleteInspection();
   const [exporting, setExporting] = useState<"share" | "print" | null>(null);
 
@@ -111,7 +111,7 @@ export default function InspectionDetailScreen() {
             />
           </View>
 
-          {admin && (
+          {canManage && (
             <View className="mb-4 flex-row gap-3">
               <Button
                 title="Editar"
